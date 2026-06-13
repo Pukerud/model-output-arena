@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini PvZ Game</title>
+<style>
+  body { margin: 0; padding: 0; background-color: #222; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; user-select: none; }
+  #game-container { position: relative; width: 800px; height: 500px; background: #558B2F; overflow: hidden; border: 4px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+  .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); z-index: 10; }
+  .hidden { display: none !important; }
+  h1 { font-size: 3rem; margin-bottom: 1rem; color: #a4c639; text-shadow: 2px 2px 0 #000; }
+  button { padding: 10px 20px; font-size: 1.5rem; margin: 10px; cursor: pointer; background: #8bc34a; border: 2px solid #33691e; color: #fff; border-radius: 5px; }
+  button:hover { background: #7cb342; }
+  #hud { position: absolute; top: 0; left: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.5); display: flex; align-items: center; padding: 0 10px; box-sizing: border-box; z-index: 5; }
+  .hud-item { margin-right: 20px; font-size: 1.2rem; font-weight: bold; }
+  #toolbar { position: absolute; top: 50px; left: 0; width: 100px; height: calc(100% - 50px); background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; padding-top: 10px; z-index: 5; }
+  .plant-card { width: 80px; height: 80px; background: #333; border: 2px solid #555; margin-bottom: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .plant-card.selected { border-color: #ffeb3b; background: #444; }
+  .plant-card span { font-size: 0.8rem; margin-top: 5px; }
+  #board { position: absolute; top: 50px; left: 100px; width: 700px; height: 450px; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(5, 1fr); gap: 2px; }
+  .cell { background: rgba(255,255,255,0.1); border: 1px dashed rgba(0,0,0,0.2); position: relative; }
+  .cell:hover { background: rgba(255,255,255,0.2); }
+  .entity { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; }
+  .plant-peashooter { width: 40px; height: 40px; background: #4CAF50; border-radius: 50%; border: 3px solid #1B5E20; }
+  .plant-sunflower { width: 40px; height: 40px; background: #FFEB3B; border-radius: 50%; border: 3px solid #F57F17; }
+  .zombie { width: 40px; height: 60px; background: #9E9E9E; border: 3px solid #424242; position: absolute; transition: left 0.1s linear; }
+  .projectile { width: 15px; height: 15px; background: #8BC34A; border-radius: 50%; position: absolute; transition: left 0.1s linear; }
+  .sun { width: 30px; height: 30px; background: #FFC107; border-radius: 50%; position: absolute; cursor: pointer; border: 2px solid #FF8F00; z-index: 6; transition: top 0.1s linear; animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+  #leaderboard-list { list-style: none; padding: 0; width: 300px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid #555; margin-bottom: 20px; }
+  #leaderboard-list li { padding: 10px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="menu-screen" class="screen">
+    <h1>Plants vs Zombies<br><small style="font-size: 1rem; color: #fff;">Mini Edition</small></h1>
+    <button id="start-btn">Start Game</button>
+    <button id="leaderboard-btn">Leaderboard</button>
+  </div>
+
+  <div id="leaderboard-screen" class="screen hidden">
+    <h1>Leaderboard</h1>
+    <ul id="leaderboard-list"></ul>
+    <button id="back-btn">Back to Menu</button>
+  </div>
+
+  <div id="game-over-screen" class="screen hidden">
+    <h1>Game Over</h1>
+    <div style="font-size: 1.5rem; margin-bottom: 20px;">Score: <span id="final-score">0</span></div>
+    <input type="text" id="player-name" placeholder="Enter your name" style="padding: 10px; font-size: 1.2rem; margin-bottom: 10px; width: 200px; text-align: center;">
+    <button id="save-score-btn">Save Score</button>
+    <button id="restart-btn">Menu</button>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div class="hud-item">Sun: <span id="sun-count">50</span></div>
+    <div class="hud-item">Score: <span id="score-count">0</span></div>
+    <div class="hud-item">Wave: <span id="wave-count">1</span></div>
+  </div>
+
+  <div id="toolbar" class="hidden">
+    <div class="plant-card" data-type="peashooter" data-cost="100">
+      <div class="plant-peashooter"></div>
+      <span>100</span>
+    </div>
+    <div class="plant-card" data-type="sunflower" data-cost="50">
+      <div class="plant-sunflower"></div>
+      <span>50</span>
+    </div>
+  </div>
+
+  <div id="board" class="hidden"></div>
+  <div id="entities" class="hidden"></div>
+</div>
+
+<script>
+  // Game State
+  const state = {
+    sun: 50,
+    score: 0,
+    wave: 1,
+    selectedPlant: null,
+    plants: [],
+    zombies: [],
+    projectiles: [],
+    suns: [],
+    gameLoop: null,
+    spawnInterval: null,
+    sunInterval: null,
+    lastTime: 0,
+    isRunning: false
+  };
+
+  const CONSTANTS = {
+    ROWS: 5,
+    COLS: 9,
+    CELL_W: 700 / 9,
+    CELL_H: 450 / 5,
+    PLANTS: {
+      peashooter: { cost: 100, hp: 100, dmg: 20, cd: 1500 },
+      sunflower: { cost: 50, hp: 100, cd: 10000 }
+    },
+    ZOMBIE: { hp: 100, speed: 20, dmg: 10 }
+  };
+
+  // DOM Elements
+  const els = {
+    menuScreen: document.getElementById('menu-screen'),
+    leaderboardScreen: document.getElementById('leaderboard-screen'),
+    gameOverScreen: document.getElementById('game-over-screen'),
+    hud: document.getElementById('hud'),
+    toolbar: document.getElementById('toolbar'),
+    board: document.getElementById('board'),
+    entities: document.getElementById('entities'),
+    sunCount: document.getElementById('sun-count'),
+    scoreCount: document.getElementById('score-count'),
+    waveCount: document.getElementById('wave-count'),
+    leaderboardList: document.getElementById('leaderboard-list'),
+    finalScore: document.getElementById('final-score'),
+    playerName: document.getElementById('player-name')
+  };
+
+  // Setup Board
+  function setupBoard() {
+    els.board.innerHTML = '';
+    for (let r = 0; r < CONSTANTS.ROWS; r++) {
+      for (let c = 0; c < CONSTANTS.COLS; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.addEventListener('click', () => placePlant(r, c));
+        els.board.appendChild(cell);
+      }
+    }
+  }
+
+  // Events
+  document.getElementById('start-btn').onclick = startGame;
+  document.getElementById('leaderboard-btn').onclick = showLeaderboard;
+  document.getElementById('back-btn').onclick = () => { els.leaderboardScreen.classList.add('hidden'); els.menuScreen.classList.remove('hidden'); };
+  document.getElementById('restart-btn').onclick = () => { els.gameOverScreen.classList.add('hidden'); els.menuScreen.classList.remove('hidden'); };
+  document.getElementById('save-score-btn').onclick = saveScore;
+
+  document.querySelectorAll('.plant-card').forEach(card => {
+    card.onclick = () => {
+      document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.selectedPlant = card.dataset.type;
+    };
+  });
+
+  function updateHUD() {
+    els.sunCount.textContent = state.sun;
+    els.scoreCount.textContent = state.score;
+    els.waveCount.textContent = state.wave;
+  }
+
+  function spawnSun(r, c, isFromSky = false) {
+    const sun = document.createElement('div');
+    sun.className = 'sun';
+    let startX, startY, targetY;
+    
+    if (isFromSky) {
+      startX = 100 + Math.random() * 600;
+      startY = -50;
+      targetY = 50 + Math.random() * 400;
+    } else {
+      startX = 100 + c * CONSTANTS.CELL_W + CONSTANTS.CELL_W / 2 - 15;
+      startY = 50 + r * CONSTANTS.CELL_H + CONSTANTS.CELL_H / 2 - 15;
+      targetY = startY;
+    }
+
+    sun.style.left = startX + 'px';
+    sun.style.top = startY + 'px';
+    els.entities.appendChild(sun);
+
+    const sunObj = { el: sun, x: startX, y: startY, targetY, isCollected: false };
+    state.suns.push(sunObj);
+
+    sun.onclick = () => {
+      if (sunObj.isCollected) return;
+      sunObj.isCollected = true;
+      state.sun += 25;
+      updateHUD();
+      sun.remove();
+      state.suns = state.suns.filter(s => s !== sunObj);
+    };
+
+    setTimeout(() => {
+      if (!sunObj.isCollected && sunObj.el.parentNode) {
+        sunObj.el.remove();
+        state.suns = state.suns.filter(s => s !== sunObj);
+      }
+    }, 10000);
+  }
+
+  function placePlant(r, c) {
+    if (!state.selectedPlant) return;
+    const pData = CONSTANTS.PLANTS[state.selectedPlant];
+    if (state.sun < pData.cost) return;
+
+    if (state.plants.some(p => p.r === r && p.c === c)) return;
+
+    state.sun -= pData.cost;
+    updateHUD();
+
+    const plantEl = document.createElement('div');
+    plantEl.className = 'entity plant-' + state.selectedPlant;
+    els.board.children[r * CONSTANTS.COLS + c].appendChild(plantEl);
+
+    state.plants.push({
+      type: state.selectedPlant,
+      r, c,
+      hp: pData.hp,
+      lastAction: Date.now(),
+      el: plantEl
+    });
+
+    document.querySelectorAll('.plant-card').forEach(card => card.classList.remove('selected'));
+    state.selectedPlant = null;
+  }
+
+  function spawnZombie() {
+    const r = Math.floor(Math.random() * CONSTANTS.ROWS);
+    const zEl = document.createElement('div');
+    zEl.className = 'zombie';
+    const startX = 100 + CONSTANTS.COLS * CONSTANTS.CELL_W;
+    const startY = 50 + r * CONSTANTS.CELL_H + CONSTANTS.CELL_H / 2 - 30;
+    
+    zEl.style.left = startX + 'px';
+    zEl.style.top = startY + 'px';
+    els.entities.appendChild(zEl);
+
+    state.zombies.push({
+      r, x: startX, hp: CONSTANTS.ZOMBIE.hp + state.wave * 10, el: zEl
+    });
+  }
+
+  function spawnProjectile(r, c) {
+    const pEl = document.createElement('div');
+    pEl.className = 'projectile';
+    const startX = 100 + c * CONSTANTS.CELL_W + CONSTANTS.CELL_W / 2 + 10;
+    const startY = 50 + r * CONSTANTS.CELL_H + CONSTANTS.CELL_H / 2 - 7.5;
+    
+    pEl.style.left = startX + 'px';
+    pEl.style.top = startY + 'px';
+    els.entities.appendChild(pEl);
+
+    state.projectiles.push({ r, x: startX, startY, el: pEl });
+  }
+
+  function gameLoop(timestamp) {
+    if (!state.isRunning) return;
+    const dt = (timestamp - state.lastTime) / 1000;
+    state.lastTime = timestamp;
+
+    const now = Date.now();
+
+    // Plants logic
+    state.plants.forEach(p => {
+      const pData = CONSTANTS.PLANTS[p.type];
+      if (now - p.lastAction > pData.cd) {
+        if (p.type === 'peashooter') {
+          // Check if zombie in lane
+          if (state.zombies.some(z => z.r === p.r && z.x > 100 + p.c * CONSTANTS.CELL_W)) {
+            spawnProjectile(p.r, p.c);
+            p.lastAction = now;
+          }
+        } else if (p.type === 'sunflower') {
+          spawnSun(p.r, p.c);
+          p.lastAction = now;
+        }
+      }
+    });
+
+    // Projectiles logic
+    state.projectiles.forEach((proj, i) => {
+      proj.x += 300 * dt;
+      proj.el.style.left = proj.x + 'px';
+
+      // Collision
+      const hitZombie = state.zombies.find(z => z.r === proj.r && z.x < proj.x + 15 && z.x > proj.x - 40);
+      if (hitZombie || proj.x > 800) {
+        if (hitZombie) {
+          hitZombie.hp -= CONSTANTS.PLANTS.peashooter.dmg;
+        }
+        proj.el.remove();
+        state.projectiles.splice(i, 1);
+      }
+    });
+
+    // Zombies logic
+    state.zombies.forEach((z, i) => {
+      if (z.hp <= 0) {
+        z.el.remove();
+        state.score += 10;
+        if (state.score % 100 === 0) state.wave++;
+        updateHUD();
+        state.zombies.splice(i, 1);
+        return;
+      }
+
+      // Check plant collision
+      const zCol = Math.floor((z.x - 100) / CONSTANTS.CELL_W);
+      const hitPlant = state.plants.find(p => p.r === z.r && p.c === zCol);
+
+      if (hitPlant) {
+        hitPlant.hp -= CONSTANTS.ZOMBIE.dmg * dt;
+        if (hitPlant.hp <= 0) {
+          hitPlant.el.remove();
+          state.plants = state.plants.filter(p => p !== hitPlant);
+        }
+      } else {
+        z.x -= CONSTANTS.ZOMBIE.speed * dt;
+        z.el.style.left = z.x + 'px';
+      }
+
+      if (z.x < 100) {
+        gameOver();
+      }
+    });
+
+    // Suns falling
+    state.suns.forEach(s => {
+      if (s.y < s.targetY) {
+        s.y += 50 * dt;
+        s.el.style.top = s.y + 'px';
+      }
+    });
+
+    if (state.isRunning) requestAnimationFrame(gameLoop);
+  }
+
+  function startGame() {
+    state.sun = 50;
+    state.score = 0;
+    state.wave = 1;
+    state.plants.forEach(p => p.el.remove());
+    state.zombies.forEach(z => z.el.remove());
+    state.projectiles.forEach(p => p.el.remove());
+    state.suns.forEach(s => s.el.remove());
+    state.plants = [];
+    state.zombies = [];
+    state.projectiles = [];
+    state.suns = [];
+    
+    setupBoard();
+    updateHUD();
+
+    els.menuScreen.classList.add('hidden');
+    els.hud.classList.remove('hidden');
+    els.toolbar.classList.remove('hidden');
+    els.board.classList.remove('hidden');
+    els.entities.classList.remove('hidden');
+
+    state.isRunning = true;
+    state.lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+
+    state.spawnInterval = setInterval(() => {
+      if (state.isRunning) spawnZombie();
+    }, 4000);
+
+    state.sunInterval = setInterval(() => {
+      if (state.isRunning) spawnSun(0, 0, true);
+    }, 8000);
+  }
+
+  function gameOver() {
+    state.isRunning = false;
+    clearInterval(state.spawnInterval);
+    clearInterval(state.sunInterval);
+    
+    els.hud.classList.add('hidden');
+    els.toolbar.classList.add('hidden');
+    els.board.classList.add('hidden');
+    els.entities.classList.add('hidden');
+    
+    els.finalScore.textContent = state.score;
+    els.gameOverScreen.classList.remove('hidden');
+  }
+
+  function getLeaderboard() {
+    try {
+      return JSON.parse(localStorage.getItem('pvz_leaderboard')) || [];
+    } catch { return []; }
+  }
+
+  function saveScore() {
+    const name = els.playerName.value.trim() || 'Anonymous';
+    const lb = getLeaderboard();
+    lb.push({ name, score: state.score });
+    lb.sort((a, b) => b.score - a.score);
+    localStorage.setItem('pvz_leaderboard', JSON.stringify(lb.slice(0, 10)));
+    els.gameOverScreen.classList.add('hidden');
+    els.menuScreen.classList.remove('hidden');
+  }
+
+  function showLeaderboard() {
+    els.menuScreen.classList.add('hidden');
+    els.leaderboardScreen.classList.remove('hidden');
+    els.leaderboardList.innerHTML = '';
+    const lb = getLeaderboard();
+    if (lb.length === 0) {
+      els.leaderboardList.innerHTML = '<li>No scores yet</li>';
+    } else {
+      lb.forEach(entry => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${entry.name}</span><span>${entry.score}</span>`;
+        els.leaderboardList.appendChild(li);
+      });
+    }
+  }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Car Parallax</title>
+<style>
+  body, html { margin: 0; padding: 0; overflow: hidden; background: #000; height: 100vh; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  let width, height;
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Draw functions
+  function drawSky(ctx, w, h, time) {
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, '#1a1a2e');
+    gradient.addColorStop(0.5, '#16213e');
+    gradient.addColorStop(1, '#0f3460');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+    
+    // Sun/Moon
+    ctx.fillStyle = '#e94560';
+    ctx.beginPath();
+    ctx.arc(w * 0.8, h * 0.3, h * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawMountains(ctx, w, h, offset, speed) {
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    const xOffset = offset * speed % w;
+    for(let i = 0; i <= 2; i++) {
+      const startX = i * w - xOffset;
+      ctx.moveTo(startX, h);
+      ctx.lineTo(startX + w*0.2, h*0.5);
+      ctx.lineTo(startX + w*0.4, h*0.6);
+      ctx.lineTo(startX + w*0.6, h*0.3);
+      ctx.lineTo(startX + w*0.8, h*0.7);
+      ctx.lineTo(startX + w, h);
+    }
+    ctx.fill();
+  }
+
+  function drawTrees(ctx, w, h, offset, speed) {
+    ctx.fillStyle = '#0f1f15';
+    const xOffset = offset * speed % 200;
+    for(let x = -200 - xOffset; x < w + 200; x += 200) {
+      ctx.fillRect(x + 90, h * 0.6, 20, h * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(x + 100, h * 0.4);
+      ctx.lineTo(x + 50, h * 0.7);
+      ctx.lineTo(x + 150, h * 0.7);
+      ctx.fill();
+    }
+  }
+
+  function drawRoad(ctx, w, h) {
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, h * 0.8, w, h * 0.2);
+  }
+
+  function drawLines(ctx, w, h, offset, speed) {
+    ctx.fillStyle = '#ddd';
+    const xOffset = offset * speed % 100;
+    for(let x = -100 - xOffset; x < w; x += 100) {
+      ctx.fillRect(x, h * 0.88, 50, h * 0.02);
+    }
+  }
+
+  function drawCar(ctx, w, h, time) {
+    const carW = 300;
+    const carH = 100;
+    const carX = w * 0.2;
+    const carY = h * 0.8 - carH - 20 + Math.sin(time * 0.01) * 3;
+
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    // Body
+    ctx.roundRect(carX, carY, carW, carH, 20);
+    ctx.fill();
+    // Cabin
+    ctx.fillStyle = '#2c3e50';
+    ctx.beginPath();
+    ctx.roundRect(carX + 60, carY - 40, 150, 50, 10);
+    ctx.fill();
+
+    // Wheels
+    const drawWheel = (x, y) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(time * 0.05);
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ccc';
+      ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
+      // Spokes
+      ctx.fillStyle = '#333';
+      for(let i=0; i<4; i++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.fillRect(-2, 0, 4, 15);
+      }
+      ctx.restore();
+    };
+
+    drawWheel(carX + 50, carY + carH);
+    drawWheel(carX + 250, carY + carH);
+  }
+
+  let startTime = Date.now();
+  function loop() {
+    const time = Date.now() - startTime;
+    ctx.clearRect(0, 0, width, height);
+
+    drawSky(ctx, width, height, time);
+    drawMountains(ctx, width, height, time, 0.02);
+    drawTrees(ctx, width, height, time, 0.1);
+    drawRoad(ctx, width, height);
+    drawLines(ctx, width, height, time, 0.5);
+    drawCar(ctx, width, height, time);
+
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>

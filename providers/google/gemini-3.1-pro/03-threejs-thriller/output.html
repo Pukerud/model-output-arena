@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three.js Thriller</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #000; }
+  #info { position: absolute; top: 10px; width: 100%; text-align: center; color: white; font-family: sans-serif; pointer-events: none; text-shadow: 0 0 5px #000; }
+</style>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+</head>
+<body>
+<div id="info"><h1>"Thriller" Cinematic Scene</h1><p>Featuring Michael, Pepe, Donald & Elon (Procedural Proxies)</p></div>
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+  // Scene, Camera, Renderer
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+  scene.fog = new THREE.FogExp2(0x0a0a1a, 0.03);
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 5, 20);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  document.body.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.target.set(0, 2, 0);
+
+  // Lighting (Cinematic)
+  const ambientLight = new THREE.AmbientLight(0x222233, 0.5);
+  scene.add(ambientLight);
+
+  const moonLight = new THREE.DirectionalLight(0x88bbff, 1.5);
+  moonLight.position.set(-10, 20, -10);
+  moonLight.castShadow = true;
+  moonLight.shadow.mapSize.width = 2048;
+  moonLight.shadow.mapSize.height = 2048;
+  moonLight.shadow.camera.near = 0.5;
+  moonLight.shadow.camera.far = 50;
+  moonLight.shadow.camera.left = -15;
+  moonLight.shadow.camera.right = 15;
+  moonLight.shadow.camera.top = 15;
+  moonLight.shadow.camera.bottom = -15;
+  scene.add(moonLight);
+
+  const spotLight = new THREE.SpotLight(0xff0000, 5);
+  spotLight.position.set(0, 10, 10);
+  spotLight.angle = Math.PI / 6;
+  spotLight.penumbra = 0.5;
+  spotLight.castShadow = true;
+  scene.add(spotLight);
+
+  const rimLight = new THREE.SpotLight(0x00ffcc, 3);
+  rimLight.position.set(10, 5, -10);
+  rimLight.lookAt(0, 0, 0);
+  scene.add(rimLight);
+
+  // Environment (Graveyard floor)
+  const floorGeo = new THREE.PlaneGeometry(50, 50, 64, 64);
+  const floorMat = new THREE.MeshStandardMaterial({ 
+    color: 0x1a261b, 
+    roughness: 0.9, 
+    metalness: 0.1,
+    wireframe: false
+  });
+  // Displace floor slightly
+  const posAttribute = floorGeo.attributes.position;
+  for (let i = 0; i < posAttribute.count; i++) {
+    posAttribute.setZ(i, (Math.random() - 0.5) * 0.5);
+  }
+  floorGeo.computeVertexNormals();
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Gravestones
+  const graveGeo = new THREE.BoxGeometry(1, 2, 0.2);
+  const graveMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8 });
+  for(let i=0; i<15; i++) {
+    const grave = new THREE.Mesh(graveGeo, graveMat);
+    grave.position.set((Math.random()-0.5)*30, 1, (Math.random()-0.5)*30 - 5);
+    grave.rotation.y = (Math.random()-0.5)*0.5;
+    grave.castShadow = grave.receiveShadow = true;
+    scene.add(grave);
+  }
+
+  // Characters Group
+  const createCharacter = (color, name, xPos) => {
+    const group = new THREE.Group();
+    group.position.set(xPos, 0, 0);
+
+    // Body
+    const bodyGeo = new THREE.CapsuleGeometry(0.5, 1.5, 4, 16);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 1.25;
+    body.castShadow = body.receiveShadow = true;
+    group.add(body);
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.6, 16, 16);
+    const headMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 2.8;
+    head.castShadow = head.receiveShadow = true;
+    group.add(head);
+
+    // Arms
+    const armGeo = new THREE.CapsuleGeometry(0.15, 1, 4, 8);
+    const armMat = new THREE.MeshStandardMaterial({ color: color });
+    
+    const leftArm = new THREE.Mesh(armGeo, armMat);
+    leftArm.position.set(-0.8, 2, 0);
+    leftArm.castShadow = true;
+    group.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeo, armMat);
+    rightArm.position.set(0.8, 2, 0);
+    rightArm.castShadow = true;
+    group.add(rightArm);
+
+    // Name label (simple floating sprite fallback)
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'transparent';
+    ctx.fillRect(0,0,256,64);
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.strokeText(name, 128, 40);
+    ctx.fillText(name, 128, 40);
+    const tex = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({ map: tex });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.position.y = 3.8;
+    sprite.scale.set(3, 0.75, 1);
+    group.add(sprite);
+
+    scene.add(group);
+    return { group, leftArm, rightArm, body, head };
+  };
+
+  const mj = createCharacter(0xff0000, "MJ", -4.5); // Red Jacket
+  const pepe = createCharacter(0x00ff00, "Pepe", -1.5); // Green
+  const trump = createCharacter(0xff8800, "Donald", 1.5); // Orange/Suit
+  const elon = createCharacter(0x333333, "Elon", 4.5); // Black/SpaceX
+
+  const dancers = [mj, pepe, trump, elon];
+
+  // Particle Effects (Fog/Mist)
+  const partGeo = new THREE.BufferGeometry();
+  const partCount = 500;
+  const positions = new Float32Array(partCount * 3);
+  for(let i=0; i<partCount*3; i++) positions[i] = (Math.random()-0.5)*40;
+  partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const partMat = new THREE.PointsMaterial({ color: 0x88bbff, size: 0.1, transparent: true, opacity: 0.4 });
+  const particles = new THREE.Points(partGeo, partMat);
+  scene.add(particles);
+
+  // Animation Loop
+  const clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    controls.update();
+
+    // Cinematic Camera movement
+    camera.position.x = Math.sin(t * 0.2) * 5;
+    camera.position.z = 20 + Math.cos(t * 0.2) * 2;
+    camera.lookAt(0, 2, 0);
+
+    // Disco SpotLight swing
+    spotLight.position.x = Math.sin(t * 1.5) * 8;
+    spotLight.position.z = 10 + Math.cos(t * 1.5) * 5;
+    spotLight.color.setHSL((t*0.1)%1, 1, 0.5);
+
+    // Zombie Dance Choreography
+    dancers.forEach((dancer, index) => {
+      const offset = index * 0.2; // slight delay for wave effect
+      const phase = t * 3 + offset;
+
+      // Bobbing
+      dancer.group.position.y = Math.abs(Math.sin(phase)) * 0.5;
+
+      // Zombie Walk / Thriller Lean
+      dancer.body.rotation.z = Math.sin(phase * 0.5) * 0.2;
+      dancer.head.rotation.y = Math.sin(phase) * 0.3;
+
+      // Zombie Arms Forward (Thriller pose)
+      dancer.leftArm.rotation.x = -Math.PI / 2 + Math.sin(phase * 2) * 0.2;
+      dancer.leftArm.rotation.z = Math.sin(phase) * 0.2;
+
+      dancer.rightArm.rotation.x = -Math.PI / 2 + Math.cos(phase * 2) * 0.2;
+      dancer.rightArm.rotation.z = -Math.sin(phase) * 0.2;
+
+      // Side to side stepping
+      dancer.group.position.x = (-4.5 + index * 3) + Math.sin(phase * 0.5) * 0.5;
+    });
+
+    // Particles drift
+    const positions = particles.geometry.attributes.position.array;
+    for(let i=1; i<partCount*3; i+=3) {
+      positions[i] += 0.01;
+      if(positions[i] > 10) positions[i] = 0;
+    }
+    particles.geometry.attributes.position.needsUpdate = true;
+
+    renderer.render(scene, camera);
+  }
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  animate();
+</script>
+</body>
+</html>

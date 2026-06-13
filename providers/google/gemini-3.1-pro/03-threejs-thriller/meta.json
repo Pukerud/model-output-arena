@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.1-pro",
+  "model_display": "Gemini 3.1 Pro (High)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-06-13T21:00:58Z",
+  "runner": "Gemini 3.1 Pro (High) via Antigravity IDE",
+  "notes": "",
+  "hosting": "api",
+  "weights": "closed"
+}

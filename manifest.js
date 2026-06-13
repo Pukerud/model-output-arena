@@ -176,6 +176,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/z-ai/glm-5.2-native/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/z-ai/glm-5.2-native/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemini-3.1-pro",
+      model_display: "Gemini 3.1 Pro (High)",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/google/gemini-3.1-pro",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemini-3.1-pro/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemini-3.1-pro/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemini-3.1-pro/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
