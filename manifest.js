@@ -90,5 +90,18 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/openai/gpt-5.5/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "qwen",
+      provider_display: "Qwen",
+      model: "qwen3.6-27b-heretic-v2",
+      model_display: "Qwen 3.6 27B Heretic v2",
+      path: "providers/qwen/qwen3.6-27b-heretic-v2",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/qwen/qwen3.6-27b-heretic-v2/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/qwen/qwen3.6-27b-heretic-v2/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/qwen/qwen3.6-27b-heretic-v2/03-threejs-thriller/output.html",
+      },
+    },
   ],
 };

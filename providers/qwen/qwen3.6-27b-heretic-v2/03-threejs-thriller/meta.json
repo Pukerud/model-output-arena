@@ -1,0 +1,11 @@
+{
+  "provider": "qwen",
+  "provider_display": "Qwen",
+  "model": "qwen3.6-27b-heretic-v2",
+  "model_display": "Qwen 3.6 27B Heretic v2",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T12:00:00Z",
+  "runner": "Qwen 3.6 27B Heretic v2 via pi agent",
+  "notes": ""
+}

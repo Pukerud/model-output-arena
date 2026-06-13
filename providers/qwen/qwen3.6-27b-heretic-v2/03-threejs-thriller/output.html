@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller Dance Scene - Three.js</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+canvas { display: block; width: 100vw; height: 100vh; }
+
+#info {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    color: #ffeb3b; font-size: 1.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    z-index: 10; pointer-events: none;
+}
+
+#controls {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 15px; z-index: 10;
+}
+
+.control-btn {
+    padding: 10px 20px; background: rgba(0,0,0,0.7); color: #ffeb3b;
+    border: 2px solid #ffeb3b; border-radius: 8px; cursor: pointer;
+    transition: all 0.3s; font-size: 1em;
+}
+
+.control-btn:hover { background: #ffeb3b; color: #000; }
+</style>
+</head>
+<body>
+
+<div id="info">🎵 Thriller Dance Scene 🕺</div>
+
+<div id="controls">
+    <button class="control-btn" onclick="toggleMusic()">🎶 Toggle Music</button>
+    <button class="control-btn" onclick="changeLighting()">💡 Change Lighting</button>
+    <button class="control-btn" onclick="resetCamera()">📷 Reset Camera</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Scene setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a237e); // Deep blue night sky
+scene.fog = new THREE.FogExp2(0x1a237e, 0.02);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 5, 15);
+camera.lookAt(0, 2, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// Lighting setup
+const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+scene.add(ambientLight);
+
+const mainLight = new THREE.SpotLight(0xffeb3b, 2, 100, Math.PI / 6, 0.5, 1);
+mainLight.position.set(5, 15, 5);
+mainLight.castShadow = true;
+scene.add(mainLight);
+
+const fillLight = new THREE.PointLight(0xff5722, 1, 30);
+fillLight.position.set(-8, 8, -5);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0x4fc3f7, 0.8);
+rimLight.position.set(0, 5, -10);
+scene.add(rimLight);
+
+// Ground plane (dance floor)
+const groundGeometry = new THREE.PlaneGeometry(40, 40);
+const groundMaterial = new THREE.MeshStandardMaterial({ 
+    color: 0x2e3b4e,
+    roughness: 0.7,
+    metalness: 0.3
+});
+const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Create grid pattern on floor for visual interest
+const gridHelper = new THREE.GridHelper(40, 20, 0x37474f, 0x1b5e20);
+gridHelper.position.y = 0.01;
+scene.add(gridHelper);
+
+// Character creation functions
+function createCharacter(name, color, position) {
+    const group = new THREE.Group();
+    
+    // Body (torso)
+    const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 8);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ 
+        color: color,
+        roughness: 0.6,
+        metalness: 0.2
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 1.5;
+    body.castShadow = true;
+    group.add(body);
+    
+    // Head
+    const headGeometry = new THREE.SphereGeometry(0.35, 16, 16);
+    const headMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xffcc80, // Skin tone
+        roughness: 0.7,
+        metalness: 0.1
+    });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = 2.3;
+    head.castShadow = true;
+    group.add(head);
+    
+    // Arms (left and right)
+    const armGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 6);
+    const leftArm = new THREE.Mesh(armGeometry, bodyMaterial);
+    leftArm.position.set(-0.6, 1.7, 0);
+    leftArm.rotation.z = Math.PI / 4;
+    group.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeometry, bodyMaterial);
+    rightArm.position.set(0.6, 1.7, 0);
+    rightArm.rotation.z = -Math.PI / 4;
+    group.add(rightArm);
+    
+    // Legs (left and right)
+    const legGeometry = new THREE.CylinderGeometry(0.12, 0.1, 1.0, 6);
+    const leftLeg = new THREE.Mesh(legGeometry, bodyMaterial);
+    leftLeg.position.set(-0.25, 0.5, 0);
+    group.add(leftLeg);
+    
+    const rightLeg = new THREE.Mesh(legGeometry, bodyMaterial);
+    rightLeg.position.set(0.25, 0.5, 0);
+    group.add(rightLeg);
+    
+    // Name label (floating text above character)
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, 128, 40);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.position.y = 3.0;
+    sprite.scale.set(2, 0.5, 1);
+    group.add(sprite);
+    
+    group.position.copy(position);
+    scene.add(group);
+    
+    return { 
+        group, body, head, leftArm, rightArm, leftLeg, rightLeg, 
+        name, basePosition: position.clone() 
+    };
+}
+
+// Create the four dancers
+const michael = createCharacter('Michael Jackson', 0x1976d2, new THREE.Vector3(-4, 0, -2));
+const pepe = createCharacter('Pepe the Frog', 0x4caf50, new THREE.Vector3(0, 0, -3));
+const donald = createCharacter('Donald Trump', 0xff9800, new THREE.Vector3(4, 0, -2));
+const elon = createCharacter('Elon Musk', 0x7e57c2, new THREE.Vector3(-2, 0, 1));
+
+// Add special features to each character
+function addCharacterDetails() {
+    // Michael Jackson's hat
+    const hatGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 8);
+    const hatMaterial = new THREE.MeshStandardMaterial({ color: 0x212121 });
+    const hat = new THREE.Mesh(hatGeometry, hatMaterial);
+    hat.position.y = 2.5;
+    michael.group.add(hat);
+    
+    // Pepe's big eyes
+    const eyeGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+    const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    leftEye.position.set(-0.15, 2.35, 0.25);
+    pepe.group.add(leftEye);
+    
+    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    rightEye.position.set(0.15, 2.35, 0.25);
+    pepe.group.add(rightEye);
+    
+    // Donald's hair (golden)
+    const hairGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+    const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xffeb3b });
+    const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+    hair.position.y = 2.5;
+    donald.group.add(hair);
+    
+    // Elon's glasses (simple representation)
+    const glassGeometry = new THREE.TorusGeometry(0.15, 0.03, 8, 16);
+    const glassMaterial = new THREE.MeshStandardMaterial({ color: 0x212121 });
+    const leftGlass = new THREE.Mesh(glassGeometry, glassMaterial);
+    leftGlass.position.set(-0.15, 2.35, 0.3);
+    elon.group.add(leftGlass);
+    
+    const rightGlass = new THREE.Mesh(glassGeometry, glassMaterial);
+    rightGlass.position.set(0.15, 2.35, 0.3);
+    elon.group.add(rightGlass);
+}
+
+addCharacterDetails();
+
+// Thriller dance choreography
+const dancers = [michael, pepe, donald, elon];
+let dancePhase = 0;
+let time = 0;
+
+function updateDanceAnimation(deltaTime) {
+    time += deltaTime;
+    
+    // Different dance moves based on phase
+    const moveDuration = 2.0; // Each move lasts 2 seconds
+    const currentMove = Math.floor(time / moveDuration) % 8;
+    const moveProgress = (time % moveDuration) / moveDuration;
+    
+    dancers.forEach((dancer, index) => {
+        const offset = index * Math.PI / 4; // Stagger animations
+        
+        switch(currentMove) {
+            case 0: // Classic Thriller pose - arms forward
+                dancer.leftArm.rotation.z = Math.sin(time * 3 + offset) * 0.5 - Math.PI / 2;
+                dancer.rightArm.rotation.z = Math.cos(time * 3 + offset) * 0.5 + Math.PI / 2;
+                dancer.head.rotation.y = Math.sin(time * 2 + offset) * 0.3;
+                break;
+                
+            case 1: // Side-to-side step
+                dancer.group.position.x = dancer.basePosition.x + Math.sin(time * 4 + offset) * 0.5;
+                dancer.leftLeg.rotation.z = Math.sin(time * 4 + offset) * 0.3;
+                dancer.rightLeg.rotation.z = -Math.sin(time * 4 + offset) * 0.3;
+                break;
+                
+            case 2: // Arm wave
+                const armWave = Math.sin(time * 5 + offset);
+                dancer.leftArm.rotation.x = armWave * 0.8;
+                dancer.rightArm.rotation.x = -armWave * 0.8;
+                break;
+                
+            case 3: // Spin move
+                dancer.group.rotation.y += deltaTime * 2;
+                dancer.leftArm.rotation.z = Math.PI / 3;
+                dancer.rightArm.rotation.z = -Math.PI / 3;
+                break;
+                
+            case 4: // Zombie walk forward
+                dancer.group.position.z = dancer.basePosition.z + Math.sin(time * 2 + offset) * 1.5;
+                dancer.leftLeg.rotation.x = Math.sin(time * 3 + offset) * 0.4;
+                dancer.rightLeg.rotation.x = -Math.sin(time * 3 + offset) * 0.4;
+                break;
+                
+            case 5: // Head bobbing
+                dancer.head.position.y = 2.3 + Math.sin(time * 6 + offset) * 0.1;
+                dancer.body.rotation.z = Math.sin(time * 4 + offset) * 0.1;
+                break;
+                
+            case 6: // Clap move
+                const clapProgress = (Math.sin(time * 8 + offset) + 1) / 2;
+                dancer.leftArm.position.x = -0.6 + clapProgress * 0.4;
+                dancer.rightArm.position.x = 0.6 - clapProgress * 0.4;
+                break;
+                
+            case 7: // Final pose - arms up
+                dancer.leftArm.rotation.z = Math.PI / 2 - Math.sin(time * 2 + offset) * 0.3;
+                dancer.rightArm.rotation.z = -Math.PI / 2 + Math.sin(time * 2 + offset) * 0.3;
+                dancer.head.rotation.x = Math.sin(time * 1.5 + offset) * 0.2;
+                break;
+        }
+        
+        // Subtle body bounce to all moves
+        dancer.body.position.y = 1.5 + Math.abs(Math.sin(time * 4 + offset)) * 0.1;
+    });
+}
+
+// Camera animation for cinematic effect
+let cameraAngle = 0;
+function updateCamera(deltaTime) {
+    cameraAngle += deltaTime * 0.2;
+    
+    // Orbit around the dancers with some vertical movement
+    const radius = 15 + Math.sin(cameraAngle * 0.5) * 3;
+    const height = 5 + Math.cos(cameraAngle * 0.7) * 2;
+    
+    camera.position.x = Math.cos(cameraAngle) * radius;
+    camera.position.z = Math.sin(cameraAngle) * radius;
+    camera.position.y = height;
+    
+    // Look at the center of the dance group
+    const targetX = (michael.group.position.x + pepe.group.position.x + 
+                     donald.group.position.x + elon.group.position.x) / 4;
+    const targetZ = (michael.group.position.z + pepe.group.position.z + 
+                     donald.group.position.z + elon.group.position.z) / 4;
+    
+    camera.lookAt(targetX, 2, targetZ);
+}
+
+// Particle system for atmosphere (dust/sparkles)
+const particleCount = 100;
+const particlesGeometry = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount * 3);
+const colors = new Float32Array(particleCount * 3);
+
+for(let i = 0; i < particleCount; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 30;     // x
+    positions[i * 3 + 1] = Math.random() * 10;          // y
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 30;  // z
+    
+    colors[i * 3] = 1;       // Red
+    colors[i * 3 + 1] = Math.random() * 0.5 + 0.5;      // Green
+    colors[i * 3 + 2] = Math.random() * 0.3;             // Blue
+}
+
+particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+const particlesMaterial = new THREE.PointsMaterial({ 
+    size: 0.1, 
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.6
+});
+
+const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+scene.add(particleSystem);
+
+function updateParticles(deltaTime) {
+    const positions = particleSystem.geometry.attributes.position.array;
+    
+    for(let i = 0; i < particleCount; i++) {
+        // Float upward and drift sideways
+        positions[i * 3 + 1] += deltaTime * 0.5;
+        positions[i * 3] += Math.sin(time + i) * deltaTime * 0.2;
+        
+        // Reset particles that go too high
+        if(positions[i * 3 + 1] > 10) {
+            positions[i * 3 + 1] = 0;
+            positions[i * 3] = (Math.random() - 0.5) * 30;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
+        }
+    }
+    
+    particleSystem.geometry.attributes.position.needsUpdate = true;
+}
+
+// Lighting effects for dramatic atmosphere
+let lightingMode = 0;
+const lightColors = [
+    { main: 0xffeb3b, fill: 0xff5722, rim: 0x4fc3f7 }, // Warm sunset
+    { main: 0x81d4fa, fill: 0x4caf50, rim: 0xff9800 }, // Cool blue-green
+    { main: 0xe91e63, fill: 0x9c27b0, rim: 0x00bcd4 }, // Purple-pink
+];
+
+function changeLighting() {
+    lightingMode = (lightingMode + 1) % lightColors.length;
+    const colors = lightColors[lightingMode];
+    
+    mainLight.color.setHex(colors.main);
+    fillLight.color.setHex(colors.fill);
+    rimLight.color.setHex(colors.rim);
+}
+
+// Camera reset function
+function resetCamera() {
+    cameraAngle = 0;
+    camera.position.set(0, 5, 15);
+    camera.lookAt(0, 2, 0);
+}
+
+// Music toggle (simple audio context for beat)
+let musicPlaying = false;
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+function toggleMusic() {
+    if (!musicPlaying) {
+        // Create a simple beat using oscillators
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 120; // Bass frequency
+        oscillator.type = 'sine';
+        gainNode.gain.value = 0.3;
+        
+        oscillator.start();
+        musicPlaying = true;
+    } else {
+        audioContext.close();
+        musicPlaying = false;
+    }
+}
+
+// Animation loop
+let lastTime = performance.now();
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    const currentTime = performance.now();
+    const deltaTime = (currentTime - lastTime) / 1000;
+    lastTime = currentTime;
+    
+    updateDanceAnimation(deltaTime);
+    updateCamera(deltaTime);
+    updateParticles(deltaTime);
+    
+    renderer.render(scene, camera);
+}
+
+// Handle window resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Start animation
+animate();
+</script>
+</body>
+</html>

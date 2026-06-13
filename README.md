@@ -46,6 +46,7 @@ See the [`providers/`](./providers) tree.
 | Z.AI | GLM 5.1 | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
 | Z.AI | GLM 5 Turbo | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
 | OpenAI | GPT-5.5 | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
+| Qwen | Qwen 3.6 27B Heretic v2 | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
 
 ## For humans
 

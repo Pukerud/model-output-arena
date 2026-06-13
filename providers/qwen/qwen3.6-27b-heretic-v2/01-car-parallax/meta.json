@@ -1,0 +1,11 @@
+{
+  "provider": "qwen",
+  "provider_display": "Qwen",
+  "model": "qwen3.6-27b-heretic-v2",
+  "model_display": "Qwen 3.6 27B Heretic v2",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T12:00:00Z",
+  "runner": "Qwen 3.6 27B Heretic v2 via pi agent",
+  "notes": ""
+}
