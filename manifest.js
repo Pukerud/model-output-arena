@@ -25,5 +25,18 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/z-ai/glm-5.2/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "z-ai",
+      provider_display: "Z.AI",
+      model: "glm-5.1",
+      model_display: "GLM 5.1",
+      path: "providers/z-ai/glm-5.1",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/z-ai/glm-5.1/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/z-ai/glm-5.1/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/z-ai/glm-5.1/03-threejs-thriller/output.html",
+      },
+    },
   ],
 };

@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.1",
+  "model_display": "GLM 5.1",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:8f1e5687419505d78246f3595884e6a38c40307b032cb576a327aeefc5e6d906",
+  "generated_at": "2026-06-13T09:50:00Z",
+  "runner": "GLM-5.1 via pi agent",
+  "notes": "Full mini-game in one HTML file, no libraries. Canvas lawn (5x9 checker grid) + HTML/CSS overlay UI. Sun economy: sky drops + Sunflower production, click to collect (fly-to-counter). Seed bar with 5 plants (Sunflower/Peashooter/Wall-nut/Snow Pea/Cherry Bomb) each with cost + cooldown overlay + select-then-place; dig up by clicking a planted tile. 3 zombies (basic/cone/bucket) with destructible armor + hp bars; peas with collision; Snow Pea applies slow; Cherry Bomb 3x3 AoE + particle burst + screen shake; per-row lawnmowers (last-resort sweep). 10 escalating waves via a wave director, every 3rd = Huge Wave (banner + red tint). Menus: Main / How-to / Leaderboard (localStorage top 5 with name entry) / Pause / Game Over / Victory. Synthesized SFX (Web Audio) muted by default, toggle via 🔊 button or M. Keyboard: 1-5 pick seed, Esc cancel, P pause, M mute."
+}

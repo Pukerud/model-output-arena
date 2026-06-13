@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.1",
+  "model_display": "GLM 5.1",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T09:50:00Z",
+  "runner": "GLM-5.1 via pi agent",
+  "notes": "Single self-contained HTML, no libraries. Full-page DPR-aware canvas. Layered parallax (sunset sky gradient, low sun + atmospheric glow + lens streak, drifting clouds, far mountain ridge, rolling hills, pine/deciduous tree band, roadside poles/bushes/rocks/signs with sagging wires, road wedge with moving lane dashes, foreground grass tufts + wheel-kicked dust). Deterministic mulberry32 PRNG so repeating scenery wraps seamlessly via modulo scroll at per-layer speeds. Procedural side-view car: spinning spoked wheels (angle = dist/radius, no slip), rounded body + cabin + sunset-lit glass, head/tail lights, bumpers, subtle multi-frequency body bob + pitch. Cinematic overlays: warm wash, radial vignette, animated film grain. Hold click/touch/Space to accelerate, release to coast."
+}

@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.1",
+  "model_display": "GLM 5.1",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T09:50:00Z",
+  "runner": "GLM-5.1 via pi agent",
+  "notes": "Three.js r160 via importmap CDN (jsdelivr) + EffectComposer (RenderPass, UnrealBloom, OutputPass) + Reflector mirror floor with dark glossy overlay. Four stylized caricature dancers built from a shared procedural humanoid rig (capsule/cylinder limbs in a hip>spine>chest>head hierarchy with shoulder/elbow/hip/knee pivots): red-jacket pop icon (white glove + black fedora), green frog meme (bulging eyes + wide mouth), gold/navy politician (blonde combover + long red tie), dark-suit tech mogul (glowing chest emblem). Each lit by its own colored spotlight (red/green/gold/cyan). 8-beat keyframed Thriller-inspired choreography (ready, claws-up zombie pose, right lunge, left lunge, hip-pop, forward zombie-reach, turn-and-point, crouch-snap) smoothstep-interpolated and looped at ~120 BPM, synced across the row. Cinematic dusk: shader gradient sky dome, moon + glow, silhouette skyline, ground fog plane, drifting additive motes, glowing stage ring that pulses on each beat, ACES tone mapping, auto-cinematic orbit camera (toggle) + OrbitControls. Optional synthesized kick+hat beat (off by default, toggle button). Letterbox bars + title."
+}
