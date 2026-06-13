@@ -181,7 +181,7 @@ window.ARENA = {
       provider: "google",
       provider_display: "Google",
       model: "gemini-3.1-pro",
-      model_display: "Gemini 3.1 Pro (High)",
+      model_display: "Gemini 3.1 Pro (Native Harness)",
       hosting: "api",
       weights: "closed",
       path: "providers/google/gemini-3.1-pro",

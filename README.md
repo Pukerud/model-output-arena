@@ -74,7 +74,7 @@ Two independent axes are labelled:
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 | Z.AI | GLM 5.2 (Native Harness) | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2-native`](./providers/z-ai/glm-5.2-native) |
-| Google | Gemini 3.1 Pro (High) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
+| Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
 
 ## How outputs were generated
 
@@ -83,6 +83,7 @@ Outputs are produced by pointing an **agent harness** at this repo and giving it
 - **Pi dev** — the Z.AI Pi dev extension, used for most non-Anthropic models.
 - **Claude Code** — the VS Code extension, used for the Anthropic models.
 - **Z.AI native harness** — Z.AI's own agent. Used for the **GLM 5.2 (Native Harness)** entry, which is the *same model* as the existing GLM 5.2 but driven by a different harness — a useful head-to-head on how much the harness shapes the result.
+- **Antigravity IDE** — Google DeepMind's native agentic harness. Used for the **Gemini 3.1 Pro (Native Harness)** entry.
 
 Everything runs inside **VS Code**, with the same prompts and no post-editing — what you see is what the model produced.
 
