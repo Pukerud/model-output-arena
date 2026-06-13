@@ -2,10 +2,10 @@
   "provider": "anthropic",
   "provider_display": "Anthropic",
   "model": "claude-opus-4-8",
-  "model_display": "Claude Opus 4.8",
+  "model_display": "Claude Opus 4.8 (Native Harness)",
   "test_id": "03-threejs-thriller",
   "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
   "generated_at": "2026-06-13T00:00:00Z",
-  "runner": "Claude Opus 4.8 via Claude Code",
-  "notes": "Three.js r0.160 via CDN import map (ESM). Four procedurally-rigged characters (Michael Jackson w/ red jacket + single white glove, Pepe, Trump w/ signature hair, Elon) built from primitive geometry with named joints. Procedural Thriller choreography: head rolls, lurching sway/bounce, side-step shuffle, and a blended cycle between the unison claw-raise and zombie forward-reach, phase-offset per dancer for a wave. Cinematic graveyard: full moon + glow sprite, starfield, gravestones, dead trees, drifting fog sprites, 4 colored disco spotlights sweeping, periodic double-flicker lightning (auto + manual button), ACES tone mapping, soft shadows, and UnrealBloom post-processing. Auto cinematic orbit camera (toggle to free OrbitControls). No external assets; self-contained except the CDN Three.js import."
+  "runner": "Claude Opus 4.8 via Claude Code Desktop (native harness)",
+  "notes": "Harness: Claude Code Desktop — Anthropic's native agent harness, the same native-harness axis as the GLM 5.2 / GPT-5.5 / Gemini 3.1 Pro Native Harness entries. Three.js r0.160 via CDN import map (ESM). Four procedurally-rigged characters (Michael Jackson w/ red jacket + single white glove, Pepe, Trump w/ signature hair, Elon) built from primitive geometry with named joints. Procedural Thriller choreography: head rolls, lurching sway/bounce, side-step shuffle, and a blended cycle between the unison claw-raise and zombie forward-reach, phase-offset per dancer for a wave. Cinematic graveyard: full moon + glow sprite, starfield, gravestones, dead trees, drifting fog sprites, 4 colored disco spotlights sweeping, periodic double-flicker lightning (auto + manual button), ACES tone mapping, soft shadows, and UnrealBloom post-processing. Auto cinematic orbit camera (toggle to free OrbitControls). No external assets; self-contained except the CDN Three.js import."
 }
