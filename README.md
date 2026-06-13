@@ -45,6 +45,7 @@ See the [`providers/`](./providers) tree.
 | Z.AI | GLM 5.2 | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
 | Z.AI | GLM 5.1 | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
 | Z.AI | GLM 5 Turbo | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
+| OpenAI | ChatGPT Coding Agent | [`providers/openai/chatgpt-coding-agent`](./providers/openai/chatgpt-coding-agent) |
 
 ## For humans
 

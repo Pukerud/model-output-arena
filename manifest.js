@@ -77,5 +77,18 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/anthropic/claude-haiku-4-5/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "chatgpt-coding-agent",
+      model_display: "ChatGPT Coding Agent",
+      path: "providers/openai/chatgpt-coding-agent",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/openai/chatgpt-coding-agent/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/chatgpt-coding-agent/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/openai/chatgpt-coding-agent/03-threejs-thriller/output.html",
+      },
+    },
   ],
 };
