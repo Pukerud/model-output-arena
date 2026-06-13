@@ -45,6 +45,12 @@
     background-repeat:no-repeat; background-position:right 9px center;
   }
   select:focus{outline:2px solid var(--accent); outline-offset:1px}
+  .field.group{min-width:0}
+  .field.group .picks{display:flex;gap:8px;align-items:center}
+  .field.group .picks select{min-width:0}
+  .field.group .picks .prov{min-width:130px;max-width:180px}
+  .field.group .picks .mdl{min-width:200px}
+  .field label .tagA,.field label .tagB{margin-left:7px;vertical-align:1px}
   .btns{display:flex;gap:8px;margin-left:auto}
   button{
     background:var(--panel-2); color:var(--txt); border:1px solid var(--line);
@@ -98,13 +104,19 @@
     <label for="testSel">Test</label>
     <select id="testSel"></select>
   </div>
-  <div class="field">
-    <label for="aSel">Model A</label>
-    <select id="aSel"></select>
+  <div class="field group">
+    <label for="aProv">Model A <span class="tagA">A</span></label>
+    <div class="picks">
+      <select id="aProv" class="prov" title="Provider"></select>
+      <select id="aSel" class="mdl"></select>
+    </div>
   </div>
-  <div class="field">
-    <label for="bSel">Model B</label>
-    <select id="bSel"></select>
+  <div class="field group">
+    <label for="bProv">Model B <span class="tagB">B</span></label>
+    <div class="picks">
+      <select id="bProv" class="prov" title="Provider"></select>
+      <select id="bSel" class="mdl"></select>
+    </div>
   </div>
   <div class="btns">
     <button id="swapBtn" title="Swap A &amp; B">⇄ Swap</button>
@@ -151,6 +163,7 @@
 
   const $ = id => document.getElementById(id);
   const testSel = $("testSel"), aSel = $("aSel"), bSel = $("bSel");
+  const aProv = $("aProv"), bProv = $("bProv");
   const aFrame = $("aFrame"), bFrame = $("bFrame");
   const aName = $("aName"), bName = $("bName"), aWho = $("aWho"), bWho = $("bWho");
   const aOpen = $("aOpen"), bOpen = $("bOpen");
@@ -161,14 +174,31 @@
   // Populate tests
   A.tests.forEach(t => testSel.appendChild(opt(t.id, t.title)));
 
-  // Populate models
+  // Models: flat lookup + grouped/sorted providers
   const models = A.models.slice();
-  models.forEach(m => {
-    const label = (m.model_display || m.model) + (m.hosting === "local" ? "  · local" : "");
-    aSel.appendChild(opt(m.model, label));
-    bSel.appendChild(opt(m.model, label));
-  });
-  $("countPill").textContent = models.length + " model" + (models.length===1?"":"s");
+  const providerMap = new Map();
+  for (const m of models){
+    if(!providerMap.has(m.provider))
+      providerMap.set(m.provider, { slug:m.provider, display:(m.provider_display||m.provider), models:[] });
+    providerMap.get(m.provider).models.push(m);
+  }
+  const ci = (a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"});
+  const providers = [...providerMap.values()].sort((p,q)=>ci(p.display,q.display));
+  for (const p of providers) p.models.sort((m,n)=>ci(m.model_display||m.model, n.model_display||n.model));
+
+  function modelLabel(m){ return (m.model_display||m.model) + (m.hosting==="local" ? "  · local" : ""); }
+  function providerBySlug(slug){ return providers.find(p=>p.slug===slug); }
+  function fillProviders(sel){ sel.innerHTML=""; for(const p of providers) sel.appendChild(opt(p.slug, p.display+" ("+p.models.length+")")); }
+  function fillModels(sel, provSlug){
+    const p = providerBySlug(provSlug) || providers[0];
+    sel.innerHTML="";
+    for(const m of p.models) sel.appendChild(opt(m.model, modelLabel(m)));
+    return p.models[0]?.model || "";
+  }
+
+  // Populate provider dropdowns for A and B
+  fillProviders(aProv); fillProviders(bProv);
+  $("countPill").textContent = models.length + " model" + (models.length===1?"":"s") + " · " + providers.length + " providers";
 
   function findModel(slug){ return models.find(m => m.model === slug); }
 
@@ -207,11 +237,16 @@
 
   function render(reloadOnly){
     const testId = testSel.value;
-    // choose sensible defaults if only one model, or invalid selection
-    if(aSel.value === "" || !findModel(aSel.value)) aSel.value = models[0]?.model || "";
-    if(bSel.value === "" || !findModel(bSel.value)){
-      bSel.value = models[1]?.model || models[0]?.model || "";
-    }
+    // Provider A valid? else default to first provider
+    if(!aProv.value || !providerBySlug(aProv.value)) aProv.value = providers[0].slug;
+    // Model A belongs to provider A? else refill + pick first
+    if(!aSel.value || !findModel(aSel.value) || findModel(aSel.value).provider !== aProv.value)
+      aSel.value = fillModels(aSel, aProv.value);
+    // Provider B defaults to second provider (or first if only one)
+    if(!bProv.value || !providerBySlug(bProv.value))
+      bProv.value = providers[Math.min(1, providers.length-1)].slug;
+    if(!bSel.value || !findModel(bSel.value) || findModel(bSel.value).provider !== bProv.value)
+      bSel.value = fillModels(bSel, bProv.value);
     setIframe(aFrame, aOpen, aName, aWho, "A", aSel.value, testId);
     setIframe(bFrame, bOpen, bName, bWho, "B", bSel.value, testId);
   }
@@ -223,10 +258,15 @@
 
   // Events
   testSel.addEventListener("change", ()=>render());
+  aProv.addEventListener("change", ()=>{ aSel.value = fillModels(aSel, aProv.value); render(); });
+  bProv.addEventListener("change", ()=>{ bSel.value = fillModels(bSel, bProv.value); render(); });
   aSel.addEventListener("change", ()=>render());
   bSel.addEventListener("change", ()=>render());
   $("swapBtn").addEventListener("click", ()=>{
-    const a=aSel.value, b=bSel.value; aSel.value=b; bSel.value=a; render(); toast("Swapped A ⇄ B");
+    const ap=aProv.value, am=aSel.value, bp=bProv.value, bm=bSel.value;
+    aProv.value=bp; fillModels(aSel, bp); aSel.value=bm;
+    bProv.value=ap; fillModels(bSel, ap); bSel.value=am;
+    render(); toast("Swapped A ⇄ B");
   });
   $("reloadBtn").addEventListener("click", ()=>{
     const t = Date.now();
