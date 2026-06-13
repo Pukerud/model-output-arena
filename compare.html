@@ -249,6 +249,33 @@
       bSel.value = fillModels(bSel, bProv.value);
     setIframe(aFrame, aOpen, aName, aWho, "A", aSel.value, testId);
     setIframe(bFrame, bOpen, bName, bWho, "B", bSel.value, testId);
+    writeParams();
+  }
+
+  // Deep-linking: encode the current view in the URL hash so a comparison
+  // is shareable (e.g. #test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5).
+  function writeParams(){
+    const p = new URLSearchParams();
+    p.set("test", testSel.value);
+    if(aSel.value) p.set("a", aSel.value);
+    if(bSel.value) p.set("b", bSel.value);
+    try { history.replaceState(null, "", "#" + p.toString()); } catch(e){}
+  }
+  function applyParams(){
+    const raw = location.hash.slice(1) || location.search.slice(1);
+    if(!raw) return;
+    const p = new URLSearchParams(raw);
+    const test = p.get("test");
+    if(test && A.tests.some(t => t.id === test)) testSel.value = test;
+    const setSide = (slug, provSel, mdlSel) => {
+      const m = slug && findModel(slug);
+      if(!m) return;
+      provSel.value = m.provider;
+      fillModels(mdlSel, m.provider);
+      mdlSel.value = slug;
+    };
+    setSide(p.get("a"), aProv, aSel);
+    setSide(p.get("b"), bProv, bSel);
   }
 
   function toast(msg){
@@ -296,8 +323,10 @@
     window.addEventListener("mouseup", ()=>{dragging=false;document.body.style.cursor="";});
   })();
 
-  // Init
+  // Init — honor a deep-link if present, otherwise fall back to defaults
+  applyParams();
   render();
+  window.addEventListener("hashchange", ()=>{ applyParams(); render(); });
 })();
 </script>
 </body>

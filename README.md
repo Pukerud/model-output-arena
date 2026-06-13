@@ -29,10 +29,28 @@ trivial to diff two models head‑to‑head.
 
 ## Compare two models
 
-Open [`compare.html`](./compare.html) in any browser (just double‑click it — **no server needed**).
-It auto‑discovers every model and lets you pick any two to view **side‑by‑side**.
+![Comparing Claude Sonnet 4.6 and GPT-5.5 on the parallax-car test in compare.html](./docs/compare-screenshot.png)
 
-The model list lives in [`manifest.js`](./manifest.js).
+Open [`compare.html`](./compare.html) in any browser (just double‑click it — **no server needed**).
+It auto‑discovers every model and lets you pick a test plus any two models to view **side‑by‑side**.
+
+### Quick start
+
+```bash
+git clone https://github.com/Pukerud/model-output-arena
+cd model-output-arena
+# then open compare.html in your browser:
+start compare.html      # Windows
+open compare.html       # macOS
+xdg-open compare.html   # Linux
+```
+
+No build, no install, no server — it's a single static page that reads [`manifest.js`](./manifest.js).
+
+### Shareable links
+
+The current comparison is encoded in the URL hash, so you can link straight to a matchup —
+e.g. `compare.html#test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5` opens the view above.
 
 ## Models tested
 
