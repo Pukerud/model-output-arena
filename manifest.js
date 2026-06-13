@@ -31,7 +31,7 @@ window.ARENA = {
       provider: "anthropic",
       provider_display: "Anthropic",
       model: "claude-opus-4-8",
-      model_display: "Claude Opus 4.8 (Native Harness)",
+      model_display: "Claude Opus 4.8",
       hosting: "api",
       weights: "closed",
       path: "providers/anthropic/claude-opus-4-8",
