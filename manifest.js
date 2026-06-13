@@ -206,6 +206,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/google/gemini-3.1-pro/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/google/gemini-3.1-pro/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-opus-4-8-native",
+      model_display: "Claude Opus 4.8 (Native Harness)",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/anthropic/claude-opus-4-8-native",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-opus-4-8-native/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-opus-4-8-native/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-opus-4-8-native/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

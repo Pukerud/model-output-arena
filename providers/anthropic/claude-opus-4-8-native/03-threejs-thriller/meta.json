@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-opus-4-8-native",
+  "model_display": "Claude Opus 4.8 (Native Harness)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T22:25:00Z",
+  "runner": "Claude Opus 4.8 via Claude Code Desktop (native harness)",
+  "notes": "Run in Claude Code Desktop (Anthropic's native agent harness); separate native-harness counterpart to the VS Code Claude Code Opus entry. Three.js r0.160 via CDN ESM import map, with OrbitControls and EffectComposer/UnrealBloom post-processing. Four primitive-built, named-joint characters — Michael Jackson (red jacket, black fedora, single white glove), Pepe (green head, big eyes), Trump (navy suit, red tie, swept blond hair) and Elon — perform a looping, phase-offset zombie \"Thriller\" routine: hunched lurch, head rolls, a section LFO that blends the arms-up claw pose with an arms-forward reach, and a shuffling side-step, offset per dancer for a wave. Cinematic foggy graveyard: emissive full moon with glow sprite, starfield, gravestones and crosses, dead trees, drifting fog sprites, four sweeping coloured spotlights, periodic lightning flashes (auto + manual), ACES Filmic tone mapping, soft shadows cast by the moonlight and UnrealBloom. Auto cinematic orbit camera, toggleable to free OrbitControls. Verified rendering in-browser (CDN modules resolved, scene drawn) with no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

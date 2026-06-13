@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-opus-4-8-native",
+  "model_display": "Claude Opus 4.8 (Native Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T22:25:00Z",
+  "runner": "Claude Opus 4.8 via Claude Code Desktop (native harness)",
+  "notes": "Run in Claude Code Desktop — Anthropic's native agent harness — as the separate native-harness counterpart to the existing Claude Opus 4.8 (Claude Code, VS Code extension) entry; same native-harness comparison as the GLM 5.2 and GPT-5.5 pairs. Single self-contained HTML, no libraries. DPR-aware full-page canvas. Infinite, non-tiling procedural parallax: sum-of-sines mountain/hill ridges plus index-hashed clouds, a pine tree band, glowing roadside lamp-posts, moving centre-line road dashes and fast foreground grass tufts, each layer at its own speed for a seamless loop. Side-view car with wheels that roll without slipping (spin tied to scroll distance), spoked rims, sunset body gradient, window reflections, headlight glow, plus suspension bob and pitch. Cinematic sunset sky, sun with soft glow, faint twinkling stars and a radial vignette. Verified running in-browser with no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}
