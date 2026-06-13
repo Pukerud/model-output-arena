@@ -1,11 +1,11 @@
 {
   "provider": "openai",
   "provider_display": "OpenAI",
-  "model": "chatgpt-coding-agent",
-  "model_display": "ChatGPT Coding Agent",
+  "model": "gpt-5.5",
+  "model_display": "GPT-5.5",
   "test_id": "01-car-parallax",
   "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
   "generated_at": "2026-06-13T10:58:19Z",
-  "runner": "OpenAI ChatGPT via pi agent",
+  "runner": "GPT-5.5 via pi agent",
   "notes": ""
 }
