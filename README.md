@@ -53,6 +53,14 @@ Models are either **☁️ API** (served by the vendor) or **🖥️ Local** (op
 | Google | Gemma 4 31B QAT | 🖥️ Local | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Anthropic | Claude Sonnet 4.6 | ☁️ API | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 
+## How outputs were generated
+
+All models were prompted and their outputs captured using the **[Pi dev harness](https://pi.ai/dev)** — a local agent loop that feeds each prompt to the target model's API and writes the raw response to disk, untouched.
+
+The one exception is the Anthropic family: those were run with **[Claude Code](https://claude.ai/code)** inside **VS Code**, acting as the agent. Same prompt, same output contract — just a different harness.
+
+No post-editing. What you see is what the model produced.
+
 ## For humans
 
 - Want to add a model? Open an issue, or follow [`PLAN.md`](./PLAN.md) yourself / point your agent at this repo.
