@@ -88,7 +88,8 @@ Create one per test:
   "generated_at": "2026-06-13T12:00:00Z",
   "runner": "GLM-5.2 via pi agent",
   "notes": "",
-  "hosting": "api"
+  "hosting": "api",
+  "weights": "open"
 }
 ```
 
@@ -100,6 +101,9 @@ Create one per test:
 - `notes`: optional — anything notable (stylization choices, known limitations).
 - `hosting`: **required.** Either `"api"` (served by the vendor over an API) or `"local"` (open weights you run
   yourself). Must match the `hosting` value in `manifest.js`; it drives the **Type** column in the README.
+- `weights`: **required.** Either `"open"` (weights are publicly downloadable) or `"closed"` (proprietary).
+  This is a *separate axis from `hosting`* — e.g. an open-weights model can still be used over an API.
+  Must match the `weights` value in `manifest.js`; it drives the **Weights** column in the README.
 - `runtime`: **required for local models, omitted for API models.** Provenance for reproducibility:
 
   ```json
@@ -117,7 +121,8 @@ Create one per test:
 ## 7. Register in `manifest.js`
 
 Append a new object to `window.ARENA.models` (do **not** delete existing entries). **Set `hosting`**
-to `"api"` or `"local"` — `compare.html` shows it and the README **Type** column is derived from it.
+to `"api"` or `"local"` and **`weights`** to `"open"` or `"closed"` — `compare.html` shows both and the
+README **Type** / **Weights** columns are derived from them.
 
 ```js
 {
@@ -126,6 +131,7 @@ to `"api"` or `"local"` — `compare.html` shows it and the README **Type** colu
   model: "gpt-4o",
   model_display: "GPT-4o",
   hosting: "api",
+  weights: "closed",
   path: "providers/openai/gpt-4o",
   added: "2026-06-14",
   outputs: {
@@ -142,18 +148,21 @@ The **Models tested** table in [`README.md`](./README.md) must stay in sync with
 registering your model, add one row for it (do **not** edit or remove existing rows):
 
 ```markdown
-| <Provider display> | <Model display> | <Type> | [`providers/<provider-slug>/<model-slug>`](./providers/<provider-slug>/<model-slug>) |
+| <Provider display> | <Model display> | <Type> | <Weights> | [`providers/<provider-slug>/<model-slug>`](./providers/<provider-slug>/<model-slug>) |
 ```
 
 Example:
 
 ```markdown
-| OpenAI | GPT-4o | ☁️ API | [`providers/openai/gpt-4o`](./providers/openai/gpt-4o) |
+| OpenAI | GPT-4o | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-4o`](./providers/openai/gpt-4o) |
 ```
 
 Use the same `provider_display` / `model_display` strings you put in `manifest.js` and `meta.json` so the
-table matches. The table has a **Type** column: put `☁️ API` when `hosting` is `"api"`, `🖥️ Local` when
-it's `"local"`. This is the one allowed edit to `README.md`.
+table matches. The table has two derived columns:
+- **Type**: `☁️ API` when `hosting` is `"api"`, `🖥️ Local` when it's `"local"`.
+- **Weights**: `🔓 Open-weights` when `weights` is `"open"`, `🔒 Proprietary` when it's `"closed"`.
+
+This is the one allowed edit to `README.md`.
 
 ## 9. Commit + push
 

@@ -8,5 +8,6 @@
   "generated_at": "2026-06-13T12:00:00Z",
   "runner": "Claude Sonnet 4.6 via Claude Code agent",
   "notes": "Three.js r166 via ESM importmap CDN. Cemetery scene: spooky gravestones, bare trees, moon with halo, fog, volumetric clouds. 4 articulated dancers each with unique style (MJ fedora + moonwalk prep, Pepe frog-crouch, Trump finger-point + MAGA cap, Musk rocket-pin + nerdy flail). ACES filmic tone mapping, PCF soft shadows, 6-light rig (moonlight, ambient, 2 green point, spot, back-red, 2 purple rim). Beat-synced BPM=104 Thriller rhythm, auto-cycling camera modes, floating particle orbs. OrbitControls for manual navigation.",
-  "hosting": "api"
+  "hosting": "api",
+  "weights": "closed"
 }

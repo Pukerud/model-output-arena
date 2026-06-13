@@ -18,6 +18,7 @@ window.ARENA = {
       model: "glm-5-turbo",
       model_display: "GLM 5 Turbo",
       hosting: "api",
+      weights: "closed",
       path: "providers/z-ai/glm-5-turbo",
       added: "2026-06-13",
       outputs: {
@@ -32,6 +33,7 @@ window.ARENA = {
       model: "claude-opus-4-8",
       model_display: "Claude Opus 4.8",
       hosting: "api",
+      weights: "closed",
       path: "providers/anthropic/claude-opus-4-8",
       added: "2026-06-13",
       outputs: {
@@ -46,6 +48,7 @@ window.ARENA = {
       model: "glm-5.2",
       model_display: "GLM 5.2",
       hosting: "api",
+      weights: "open",
       path: "providers/z-ai/glm-5.2",
       added: "2026-06-13",
       outputs: {
@@ -60,6 +63,7 @@ window.ARENA = {
       model: "glm-5.1",
       model_display: "GLM 5.1",
       hosting: "api",
+      weights: "open",
       path: "providers/z-ai/glm-5.1",
       added: "2026-06-13",
       outputs: {
@@ -74,6 +78,7 @@ window.ARENA = {
       model: "claude-haiku-4-5",
       model_display: "Claude Haiku 4.5",
       hosting: "api",
+      weights: "closed",
       path: "providers/anthropic/claude-haiku-4-5",
       added: "2026-06-13",
       outputs: {
@@ -88,6 +93,7 @@ window.ARENA = {
       model: "gpt-5.5",
       model_display: "GPT-5.5",
       hosting: "api",
+      weights: "closed",
       path: "providers/openai/gpt-5.5",
       added: "2026-06-13",
       outputs: {
@@ -102,6 +108,7 @@ window.ARENA = {
       model: "qwen3.6-27b-heretic-v2",
       model_display: "Qwen 3.6 27B Heretic v2",
       hosting: "local",
+      weights: "open",
       path: "providers/qwen/qwen3.6-27b-heretic-v2",
       added: "2026-06-13",
       outputs: {
@@ -116,6 +123,7 @@ window.ARENA = {
       model: "gemma-4-26b-a4b-qat",
       model_display: "Gemma 4 26B A4B QAT",
       hosting: "local",
+      weights: "open",
       path: "providers/google/gemma-4-26b-a4b-qat",
       added: "2026-06-13",
       outputs: {
@@ -130,6 +138,7 @@ window.ARENA = {
       model: "gemma-4-31b-qat",
       model_display: "Gemma 4 31B QAT",
       hosting: "local",
+      weights: "open",
       path: "providers/google/gemma-4-31b-qat",
       added: "2026-06-13",
       outputs: {
@@ -144,6 +153,7 @@ window.ARENA = {
       model: "claude-sonnet-4-6",
       model_display: "Claude Sonnet 4.6",
       hosting: "api",
+      weights: "closed",
       path: "providers/anthropic/claude-sonnet-4-6",
       added: "2026-06-13",
       outputs: {

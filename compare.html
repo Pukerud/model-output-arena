@@ -231,7 +231,13 @@
     // cache-bust on reload by appending t
     frame.src = p;
     nameEl.textContent = m.model_display || m.model;
-    whoEl.textContent = (m.provider_display || m.provider) + " · " + (m.hosting === "local" ? "Local" : "API") + " · " + (m.added||"");
+    const weightsLabel = m.weights === "open" ? "🔓 Open-weights" : m.weights === "closed" ? "🔒 Proprietary" : "";
+    whoEl.textContent = [
+      (m.provider_display || m.provider),
+      (m.hosting === "local" ? "Local" : "API"),
+      weightsLabel,
+      (m.added || "")
+    ].filter(Boolean).join(" · ");
     openLink.href = p;
   }
 

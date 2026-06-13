@@ -56,20 +56,23 @@ e.g. `compare.html#test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5` opens the
 
 See the [`providers/`](./providers) tree.
 
-Models are either **☁️ API** (served by the vendor) or **🖥️ Local** (open weights run on your own hardware — see `runtime` in each model's `meta.json`). Comparing a quantized local model to a frontier API model is useful context, so it's labelled.
+Two independent axes are labelled:
 
-| Provider | Model | Type | Path |
-|----------|-------|------|------|
-| Anthropic | Claude Opus 4.8 | ☁️ API | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
-| Anthropic | Claude Haiku 4.5 | ☁️ API | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
-| Z.AI | GLM 5.2 | ☁️ API | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
-| Z.AI | GLM 5.1 | ☁️ API | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
-| Z.AI | GLM 5 Turbo | ☁️ API | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
-| OpenAI | GPT-5.5 | ☁️ API | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
-| Qwen | Qwen 3.6 27B Heretic v2 | 🖥️ Local | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
-| Google | Gemma 4 26B A4B QAT | 🖥️ Local | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
-| Google | Gemma 4 31B QAT | 🖥️ Local | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
-| Anthropic | Claude Sonnet 4.6 | ☁️ API | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
+- **Type** — **☁️ API** (served by the vendor) or **🖥️ Local** (run on your own hardware — see `runtime` in each model's `meta.json`).
+- **Weights** — **🔓 Open-weights** (weights are publicly downloadable) or **🔒 Proprietary** (closed). These don't always match Type: GLM, for instance, is open-weights but used here over an API.
+
+| Provider | Model | Type | Weights | Path |
+|----------|-------|------|---------|------|
+| Anthropic | Claude Opus 4.8 | ☁️ API | 🔒 Proprietary | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
+| Anthropic | Claude Haiku 4.5 | ☁️ API | 🔒 Proprietary | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
+| Z.AI | GLM 5.2 | ☁️ API | 🔓 Open-weights | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
+| Z.AI | GLM 5.1 | ☁️ API | 🔓 Open-weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
+| Z.AI | GLM 5 Turbo | ☁️ API | 🔒 Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
+| OpenAI | GPT-5.5 | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
+| Qwen | Qwen 3.6 27B Heretic v2 | 🖥️ Local | 🔓 Open-weights | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
+| Google | Gemma 4 26B A4B QAT | 🖥️ Local | 🔓 Open-weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
+| Google | Gemma 4 31B QAT | 🖥️ Local | 🔓 Open-weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
+| Anthropic | Claude Sonnet 4.6 | ☁️ API | 🔒 Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 
 ## How outputs were generated
 

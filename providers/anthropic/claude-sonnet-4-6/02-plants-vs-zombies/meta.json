@@ -8,5 +8,6 @@
   "generated_at": "2026-06-13T12:00:00Z",
   "runner": "Claude Sonnet 4.6 via Claude Code agent",
   "notes": "Single-file game: 5 plants (Sunflower, Peashooter, Wall-nut, Snow Pea, Cherry Bomb), 5 zombie types (Basic, Conehead, Buckethead, Runner, Gargantuar), 5 waves. Features: main menu, pause overlay, localStorage leaderboard with name entry, sun drops, cooldown bars, particle effects, HP bars, house HP. All canvas-drawn sprites.",
-  "hosting": "api"
+  "hosting": "api",
+  "weights": "closed"
 }

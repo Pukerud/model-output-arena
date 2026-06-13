@@ -8,5 +8,6 @@
   "generated_at": "2026-06-13T12:00:00Z",
   "runner": "Claude Sonnet 4.6 via Claude Code agent",
   "notes": "Sunset dusk palette; layered parallax (sky, stars, mountains×2, hills×2, bg-trees, poles, road, fg-trees); procedural car drawn in canvas with spinning spoked wheels, body bounce, sunset glow, headlight/taillight; Mulberry32 PRNG for deterministic scenery; HDPI-aware canvas.",
-  "hosting": "api"
+  "hosting": "api",
+  "weights": "closed"
 }
