@@ -55,9 +55,7 @@ Models are either **☁️ API** (served by the vendor) or **🖥️ Local** (op
 
 ## How outputs were generated
 
-All outputs were generated inside **VS Code**. Non-Anthropic models were run via the **Pi dev harness** — a local agent loop that feeds each prompt to the target model's API and writes the raw response to disk. Anthropic models were run with **Claude Code** (the VS Code extension), acting as the agent. Same editor, same prompt, same output contract — just a different harness per provider.
-
-No post-editing. What you see is what the model produced.
+All outputs were generated inside **VS Code** — non-Anthropic models via the **Pi dev** extension, Anthropic models via **Claude Code**. Same editor, same prompts, no post-editing. What you see is what the model produced.
 
 ## For humans
 
