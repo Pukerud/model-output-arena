@@ -13,6 +13,19 @@ window.ARENA = {
   ],
   models: [
     {
+      provider: "z-ai",
+      provider_display: "Z.AI",
+      model: "glm-5-turbo",
+      model_display: "GLM 5 Turbo",
+      path: "providers/z-ai/glm-5-turbo",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/z-ai/glm-5-turbo/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/z-ai/glm-5-turbo/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/z-ai/glm-5-turbo/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "anthropic",
       provider_display: "Anthropic",
       model: "claude-opus-4-8",

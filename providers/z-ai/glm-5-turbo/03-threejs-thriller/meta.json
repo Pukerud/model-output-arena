@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5-turbo",
+  "model_display": "GLM 5 Turbo",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T10:38:30Z",
+  "runner": "GLM-5-Turbo via pi agent",
+  "notes": "Three.js r128 via CDN. 4 characters (MJ, Pepe, Trump, Elon) with distinct appearances. Multi-light cinematic setup (spotlight + 3 colored point lights + ambient). Stage with tombstones, wet reflective floor, moon with glow. FogExp2 + additive-blend particle fog. Thriller dance animation: zombie reach, T-pose, MJ arm raise, leg shuffle. 4 camera modes (front, side, orbit, close-up). Speed toggle."
+}

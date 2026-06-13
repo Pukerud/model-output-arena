@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5-turbo",
+  "model_display": "GLM 5 Turbo",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T10:38:30Z",
+  "runner": "GLM-5-Turbo via pi agent",
+  "notes": "Single self-contained HTML, no libraries. Full-page canvas with DPR-aware rendering. Layered parallax: stars, sunset sky, clouds, two mountain layers, rolling hills, trees (pine+round), poles, bushes, road with center dashes, dust particles. Car features: body, cabin, windows with reflections, headlight glow, taillight glow, bumper, spinning wheels with hubcaps/spokes. dt-based animation. Body bob + pitch. Vignette overlay."
+}

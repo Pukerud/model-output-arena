@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller Dance Scene</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+canvas{display:block}
+#overlay{position:fixed;top:0;left:0;width:100%;padding:16px 24px;z-index:10;pointer-events:none;display:flex;justify-content:space-between}
+#title{color:#ff4444;font-family:'Creepster',cursive,serif;font-size:32px;text-shadow:0 0 20px rgba(255,0,0,.6),2px 2px 0 #000;letter-spacing:3px}
+#subtitle{color:#aaa;font-family:sans-serif;font-size:13px;margin-top:4px}
+#controls{pointer-events:auto;display:flex;gap:8px}
+#controls button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
+#controls button:hover{background:rgba(255,255,255,.2)}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="overlay">
+  <div><div id="title">THRILLER</div><div id="subtitle">The Ultimate Dance Off</div></div>
+  <div id="controls">
+    <button onclick="toggleCamera()">📷 Camera</button>
+    <button onclick="toggleSpeed()">⏩ Speed</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════
+//  THRILLER DANCE SCENE — Three.js
+// ═══════════════════════════════════════════
+
+let scene, camera, renderer, clock;
+let dancers = [];
+let fogParticles = [];
+let speedMul = 1;
+let cameraMode = 0;
+const CAMERA_MODES = ['front', 'side', 'orbit', 'close'];
+
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x050510);
+  scene.fog = new THREE.FogExp2(0x050510, 0.025);
+
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 3, 12);
+  camera.lookAt(0, 1.5, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  document.body.appendChild(renderer.domElement);
+
+  clock = new THREE.Clock();
+
+  setupLights();
+  createStage();
+  createDancers();
+  createFog();
+  createMoon();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+function setupLights() {
+  // Ambient
+  scene.add(new THREE.AmbientLight(0x1a1a3e, 0.4));
+
+  // Main spotlight from above-front
+  const spot = new THREE.SpotLight(0xccccff, 2, 40, Math.PI / 5, 0.5, 1);
+  spot.position.set(0, 12, 6);
+  spot.castShadow = true;
+  spot.shadow.mapSize.set(1024, 1024);
+  scene.add(spot);
+  spot.target.position.set(0, 0, 0);
+  scene.add(spot.target);
+
+  // Colored backlights
+  const blue = new THREE.PointLight(0x2244ff, 1.5, 20);
+  blue.position.set(-6, 5, -4);
+  scene.add(blue);
+
+  const red = new THREE.PointLight(0xff2222, 1.5, 20);
+  red.position.set(6, 5, -4);
+  scene.add(red);
+
+  // Purple rim light
+  const purple = new THREE.PointLight(0x8822cc, 1, 25);
+  purple.position.set(0, 8, -8);
+  scene.add(purple);
+
+  // Ground bounce
+  const bounce = new THREE.PointLight(0x2244ff, 0.3, 10);
+  bounce.position.set(0, -0.5, 0);
+  scene.add(bounce);
+}
+
+function createStage() {
+  // Ground plane
+  const groundGeo = new THREE.PlaneGeometry(30, 20, 1, 1);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x111122, roughness: 0.8, metalness: 0.2
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Reflective wet floor overlay
+  const wetGeo = new THREE.PlaneGeometry(30, 20);
+  const wetMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a20, roughness: 0.3, metalness: 0.7, transparent: true, opacity: 0.4
+  });
+  const wet = new THREE.Mesh(wetGeo, wetMat);
+  wet.rotation.x = -Math.PI / 2;
+  wet.position.y = 0.01;
+  scene.add(wet);
+
+  // Back wall
+  const wallGeo = new THREE.PlaneGeometry(30, 12);
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x0a0a15, roughness: 0.95 });
+  const wall = new THREE.Mesh(wallGeo, wallMat);
+  wall.position.set(0, 6, -5);
+  wall.receiveShadow = true;
+  scene.add(wall);
+
+  // Tombstones
+  const tombGeo = new THREE.BoxGeometry(0.6, 1, 0.2);
+  const tombMat = new THREE.MeshStandardMaterial({ color: 0x444455, roughness: 0.9 });
+  for (let i = 0; i < 6; i++) {
+    const tomb = new THREE.Mesh(tombGeo, tombMat);
+    tomb.position.set(-8 + i * 3.2, 0.5, -4.7);
+    tomb.castShadow = true;
+    scene.add(tomb);
+    // Cross on top
+    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, 0.06), tombMat);
+    crossV.position.set(tomb.position.x, 1.15, tomb.position.z);
+    scene.add(crossV);
+    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.06), tombMat);
+    crossH.position.set(tomb.position.x, 1.1, tomb.position.z);
+    scene.add(crossH);
+  }
+}
+
+function createMoon() {
+  const moonGeo = new THREE.SphereGeometry(1.5, 32, 32);
+  const moonMat = new THREE.MeshBasicMaterial({ color: 0xffeedd });
+  const moon = new THREE.Mesh(moonGeo, moonMat);
+  moon.position.set(8, 14, -15);
+  scene.add(moon);
+
+  // Moon glow
+  const glowGeo = new THREE.SphereGeometry(3, 16, 16);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x4466aa, transparent: true, opacity: 0.15
+  });
+  const glow = new THREE.Mesh(glowGeo, glowMat);
+  glow.position.copy(moon.position);
+  scene.add(glow);
+}
+
+/* ── Character Builder ── */
+function createCharacter(config) {
+  const group = new THREE.Group();
+  const mat = (color) => new THREE.MeshStandardMaterial({
+    color, roughness: 0.7, metalness: 0.1
+  });
+
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(config.headR || 0.28, 16, 16), mat(config.skinColor));
+  head.position.y = config.height + (config.headR || 0.28);
+  head.castShadow = true;
+  group.add(head);
+  group.userData.head = head;
+
+  // Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
+  const eyeMat = new THREE.MeshBasicMaterial({ color: config.eyeColor || 0xffffff });
+  const pupilGeo = new THREE.SphereGeometry(0.025, 8, 8);
+  const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  [-1, 1].forEach(side => {
+    const eye = new THREE.Mesh(eyeGeo, eyeMat);
+    eye.position.set(side * 0.1, head.position.y + 0.05, 0.22);
+    group.add(eye);
+    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+    pupil.position.set(side * 0.1, head.position.y + 0.05, 0.26);
+    group.add(pupil);
+  });
+
+  // Mouth
+  const mouthGeo = new THREE.BoxGeometry(0.15, 0.03, 0.05);
+  const mouthMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+  mouth.position.set(0, head.position.y - 0.1, 0.24);
+  group.add(mouth);
+
+  // Hair / hat (config-specific)
+  if (config.hat) {
+    const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.04, 16), mat(config.hatColor));
+    hatBrim.position.set(0, head.position.y + 0.22, 0);
+    group.add(hatBrim);
+    const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.2, 16), mat(config.hatColor));
+    hatTop.position.set(0, head.position.y + 0.35, 0);
+    group.add(hatTop);
+  }
+  if (config.hair) {
+    const hairGeo = new THREE.SphereGeometry(0.3, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+    const hair = new THREE.Mesh(hairGeo, mat(config.hairColor));
+    hair.position.set(0, head.position.y + 0.05, 0);
+    group.add(hair);
+  }
+
+  // Torso
+  const torso = new THREE.Mesh(
+    new THREE.BoxGeometry(config.torsoW || 0.5, config.torsoH || 0.7, config.torsoD || 0.3),
+    mat(config.torsoColor)
+  );
+  torso.position.y = config.height - 0.1;
+  torso.castShadow = true;
+  group.add(torso);
+
+  // Arms
+  const armGeo = new THREE.BoxGeometry(0.12, 0.55, 0.12);
+  [-1, 1].forEach(side => {
+    const arm = new THREE.Mesh(armGeo, mat(config.torsoColor));
+    arm.position.set(side * (config.torsoW / 2 + 0.1), config.height - 0.2, 0);
+    arm.castShadow = true;
+    group.add(arm);
+    if (side === -1) group.userData.leftArm = arm;
+    else group.userData.rightArm = arm;
+  });
+
+  // Hands
+  const handGeo = new THREE.SphereGeometry(0.07, 8, 8);
+  [-1, 1].forEach(side => {
+    const hand = new THREE.Mesh(handGeo, mat(config.skinColor));
+    hand.position.set(side * (config.torsoW / 2 + 0.1), config.height - 0.55, 0);
+    group.add(hand);
+  });
+
+  // Legs
+  const legGeo = new THREE.BoxGeometry(0.16, 0.55, 0.16);
+  [-1, 1].forEach(side => {
+    const leg = new THREE.Mesh(legGeo, mat(config.legColor));
+    leg.position.set(side * 0.13, 0.3, 0);
+    leg.castShadow = true;
+    group.add(leg);
+    if (side === -1) group.userData.leftLeg = leg;
+    else group.userData.rightLeg = leg;
+
+    // Shoe
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.25), mat(config.shoeColor));
+    shoe.position.set(side * 0.13, 0.05, 0.04);
+    group.add(shoe);
+  });
+
+  group.position.x = config.x || 0;
+  group.position.z = config.z || 0;
+  return group;
+}
+
+function createDancers() {
+  // Michael Jackson
+  const mj = createCharacter({
+    x: -2.5, z: 0, height: 1.6, skinColor: 0x8B5E3C, headR: 0.26,
+    torsoColor: 0x111111, torsoW: 0.45, torsoH: 0.65,
+    legColor: 0x111111, shoeColor: 0xff4444, eyeColor: 0xffffff,
+    hair: true, hairColor: 0x111111, name: 'MJ'
+  });
+  dancers.push({ group: mj, baseX: -2.5, phase: 0, type: 'thriller' });
+
+  // Pepe the Frog
+  const pepe = createCharacter({
+    x: -0.8, z: 0, height: 1.1, skinColor: 0x44aa44, headR: 0.35,
+    torsoColor: 0x338833, torsoW: 0.4, torsoH: 0.5,
+    legColor: 0x338833, shoeColor: 0x225522, eyeColor: 0xffffff,
+    name: 'Pepe'
+  });
+  dancers.push({ group: pepe, baseX: -0.8, phase: 1.5, type: 'thriller' });
+
+  // Donald Trump
+  const trump = createCharacter({
+    x: 0.8, z: 0, height: 1.5, skinColor: 0xFFCC99, headR: 0.3,
+    torsoColor: 0x000088, torsoW: 0.55, torsoH: 0.65,
+    legColor: 0x111111, shoeColor: 0x111111, eyeColor: 0xffffff,
+    hair: true, hairColor: 0xFFCC66, name: 'Trump'
+  });
+  dancers.push({ group: trump, baseX: 0.8, phase: 3, type: 'thriller' });
+
+  // Elon Musk
+  const elon = createCharacter({
+    x: 2.5, z: 0, height: 1.7, skinColor: 0xEEBB88, headR: 0.27,
+    torsoColor: 0x111111, torsoW: 0.48, torsoH: 0.7,
+    legColor: 0x222222, shoeColor: 0x111111, eyeColor: 0xffffff,
+    name: 'Elon'
+  });
+  dancers.push({ group: elon, baseX: 2.5, phase: 4.5, type: 'thriller' });
+
+  dancers.forEach(d => scene.add(d.group));
+}
+
+/* ── Thriller Dance Animation ── */
+function animateThriller(dancer, t) {
+  const g = dancer.group;
+  const p = dancer.phase;
+  const tt = (t * speedMul + p) * 2.5;
+
+  // Body bob
+  g.position.y = Math.abs(Math.sin(tt * 2)) * 0.15;
+
+  // Head tilt
+  const head = g.userData.head;
+  if (head) {
+    head.rotation.z = Math.sin(tt * 2) * 0.2;
+    head.rotation.x = Math.sin(tt * 4) * 0.05;
+  }
+
+  // Arm animation — iconic thriller pose cycle
+  const la = g.userData.leftArm;
+  const ra = g.userData.rightArm;
+  const ll = g.userData.leftLeg;
+  const rl = g.userData.rightLeg;
+
+  if (la && ra) {
+    // Phase 1: Both arms forward (zombie reach)
+    // Phase 2: Arms out to sides
+    // Phase 3: One arm up, one down (classic MJ)
+    const cycle = (tt % (Math.PI * 2)) / (Math.PI * 2);
+
+    if (cycle < 0.25) {
+      // Zombie reach forward
+      const f = cycle / 0.25;
+      la.rotation.x = -Math.PI * 0.6 * f;
+      la.rotation.z = 0;
+      ra.rotation.x = -Math.PI * 0.6 * f;
+      ra.rotation.z = 0;
+    } else if (cycle < 0.5) {
+      // Arms out to sides (T-pose style)
+      const f = (cycle - 0.25) / 0.25;
+      la.rotation.x = -Math.PI * 0.6 * (1 - f);
+      la.rotation.z = -Math.PI * 0.15 * f;
+      ra.rotation.x = -Math.PI * 0.6 * (1 - f);
+      ra.rotation.z = Math.PI * 0.15 * f;
+    } else if (cycle < 0.75) {
+      // Classic MJ: right arm up, left arm to side
+      const f = (cycle - 0.5) / 0.25;
+      la.rotation.z = -Math.PI * 0.15 * (1 - f) - Math.PI * 0.1 * f;
+      ra.rotation.z = Math.PI * 0.15 * (1 - f) + Math.PI * 0.5 * f;
+      ra.rotation.x = -Math.PI * 0.3 * f;
+      la.rotation.x = Math.PI * 0.1 * f;
+    } else {
+      // Return to neutral
+      const f = (cycle - 0.75) / 0.25;
+      la.rotation.z = -Math.PI * 0.1 * (1 - f);
+      la.rotation.x = Math.PI * 0.1 * (1 - f);
+      ra.rotation.z = Math.PI * 0.5 * (1 - f);
+      ra.rotation.x = -Math.PI * 0.3 * (1 - f);
+    }
+
+    // Subtle shoulder sway
+    la.position.y = g.position.y + (1.6 - 0.2) + Math.sin(tt * 3) * 0.03;
+    ra.position.y = g.position.y + (1.6 - 0.2) - Math.sin(tt * 3) * 0.03;
+  }
+
+  // Leg shuffle
+  if (ll && rl) {
+    const legCycle = Math.sin(tt * 3);
+    ll.position.z = legCycle * 0.08;
+    rl.position.z = -legCycle * 0.08;
+    ll.rotation.x = legCycle > 0 ? legCycle * 0.15 : 0;
+    rl.rotation.x = legCycle < 0 ? -legCycle * 0.15 : 0;
+  }
+
+  // Subtle body sway
+  g.rotation.y = Math.sin(tt * 1.5) * 0.15;
+  g.position.x = dancer.baseX + Math.sin(tt * 1.2) * 0.2;
+}
+
+function createFog() {
+  const fogGeo = new THREE.BufferGeometry();
+  const count = 200;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 30;
+    positions[i * 3 + 1] = Math.random() * 2;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+  }
+  fogGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const fogMat = new THREE.PointsMaterial({
+    color: 0x4466aa, size: 0.3, transparent: true, opacity: 0.25,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const fog = new THREE.Points(fogGeo, fogMat);
+  scene.add(fog);
+  fogParticles.push(fog);
+}
+
+/* ── Camera modes ── */
+function toggleCamera() {
+  cameraMode = (cameraMode + 1) % CAMERA_MODES.length;
+}
+
+function toggleSpeed() {
+  speedMul = speedMul === 1 ? 1.5 : speedMul === 1.5 ? 2 : 0.5;
+}
+
+function updateCamera(t) {
+  const mode = CAMERA_MODES[cameraMode];
+  const tt = t * speedMul * 0.3;
+
+  if (mode === 'front') {
+    camera.position.set(Math.sin(tt * 0.5) * 1, 3 + Math.sin(tt) * 0.3, 12);
+    camera.lookAt(0, 1.5, 0);
+  } else if (mode === 'side') {
+    camera.position.set(10, 2.5 + Math.sin(tt) * 0.3, Math.sin(tt) * 2);
+    camera.lookAt(0, 1.3, 0);
+  } else if (mode === 'orbit') {
+    const r = 10;
+    camera.position.set(Math.sin(tt) * r, 4 + Math.sin(tt * 2) * 1, Math.cos(tt) * r);
+    camera.lookAt(0, 1.5, 0);
+  } else if (mode === 'close') {
+    const idx = Math.floor(t * 0.5 * speedMul) % dancers.length;
+    const d = dancers[idx].group;
+    camera.position.set(
+      d.position.x + Math.sin(tt * 2) * 2,
+      2,
+      d.position.z + 3
+    );
+    camera.lookAt(d.position.x, 1.5, 0);
+  }
+}
+
+/* ── Main Loop ── */
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  dancers.forEach(d => animateThriller(d, t));
+  updateCamera(t);
+
+  // Animate fog
+  fogParticles.forEach(fog => {
+    const pos = fog.geometry.attributes.position.array;
+    for (let i = 0; i < pos.length; i += 3) {
+      pos[i] += 0.005;
+      if (pos[i] > 15) pos[i] = -15;
+      pos[i + 1] += Math.sin(t + i) * 0.002;
+    }
+    fog.geometry.attributes.position.needsUpdate = true;
+  });
+
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>
