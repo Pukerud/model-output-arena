@@ -87,7 +87,8 @@ Create one per test:
   "prompt_hash": "sha256:abc123...",
   "generated_at": "2026-06-13T12:00:00Z",
   "runner": "GLM-5.2 via pi agent",
-  "notes": ""
+  "notes": "",
+  "hosting": "api"
 }
 ```
 
@@ -97,10 +98,26 @@ Create one per test:
 - `generated_at`: ISO‑8601 UTC timestamp of generation.
 - `runner`: a short human‑readable string saying what generated this.
 - `notes`: optional — anything notable (stylization choices, known limitations).
+- `hosting`: **required.** Either `"api"` (served by the vendor over an API) or `"local"` (open weights you run
+  yourself). Must match the `hosting` value in `manifest.js`; it drives the **Type** column in the README.
+- `runtime`: **required for local models, omitted for API models.** Provenance for reproducibility:
+
+  ```json
+  "runtime": {
+    "weights": "open",          // "open" always, for local models
+    "quant": "QAT",             // quantization, e.g. "QAT", "GGUF Q4_K_M", "FP16"; "" if unknown
+    "variant": "A4B",           // optional sub-variant / fine-tune family, e.g. "Heretic v2"
+    "engine": "llama.cpp",      // inference engine, e.g. "llama.cpp", "vLLM", "Ollama"
+    "gpu": "RTX 4090"           // hardware it ran on
+  }
+  ```
+
+  Fill what you know; leave unknowns as `""`. API/hosted models omit `runtime` entirely.
 
 ## 7. Register in `manifest.js`
 
-Append a new object to `window.ARENA.models` (do **not** delete existing entries):
+Append a new object to `window.ARENA.models` (do **not** delete existing entries). **Set `hosting`**
+to `"api"` or `"local"` — `compare.html` shows it and the README **Type** column is derived from it.
 
 ```js
 {
@@ -108,6 +125,7 @@ Append a new object to `window.ARENA.models` (do **not** delete existing entries
   provider_display: "OpenAI",
   model: "gpt-4o",
   model_display: "GPT-4o",
+  hosting: "api",
   path: "providers/openai/gpt-4o",
   added: "2026-06-14",
   outputs: {
@@ -124,17 +142,18 @@ The **Models tested** table in [`README.md`](./README.md) must stay in sync with
 registering your model, add one row for it (do **not** edit or remove existing rows):
 
 ```markdown
-| <Provider display> | <Model display> | [`providers/<provider-slug>/<model-slug>`](./providers/<provider-slug>/<model-slug>) |
+| <Provider display> | <Model display> | <Type> | [`providers/<provider-slug>/<model-slug>`](./providers/<provider-slug>/<model-slug>) |
 ```
 
 Example:
 
 ```markdown
-| OpenAI | GPT-4o | [`providers/openai/gpt-4o`](./providers/openai/gpt-4o) |
+| OpenAI | GPT-4o | ☁️ API | [`providers/openai/gpt-4o`](./providers/openai/gpt-4o) |
 ```
 
 Use the same `provider_display` / `model_display` strings you put in `manifest.js` and `meta.json` so the
-table matches. This is the one allowed edit to `README.md`.
+table matches. The table has a **Type** column: put `☁️ API` when `hosting` is `"api"`, `🖥️ Local` when
+it's `"local"`. This is the one allowed edit to `README.md`.
 
 ## 9. Commit + push
 

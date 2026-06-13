@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-06-13T15:05:00Z",
+  "model": "gemma-4-31b-qat",
+  "model_display": "Gemma 4 31B QAT",
+  "notes": "A polished PvZ clone with grid-based placement, multiple plant types, and a simple leaderboard.",
+  "prompt_hash": "sha256:a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7",
+  "provider": "google",
+  "provider_display": "Google",
+  "runner": "Gemma 4 via pi agent",
+  "test_id": "02-plants-vs-zombies",
+  "hosting": "local",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "",
+    "engine": "",
+    "gpu": ""
+  }
+}

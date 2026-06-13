@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-06-13T15:00:00Z",
+  "model": "gemma-4-31b-qat",
+  "model_display": "Gemma 4 31B QAT",
+  "notes": "High-fidelity parallax simulation with atmospheric lighting and dynamic layering.",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "provider": "google",
+  "provider_display": "Google",
+  "runner": "Gemma 4 via pi agent",
+  "test_id": "01-car-parallax",
+  "hosting": "local",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "",
+    "engine": "",
+    "gpu": ""
+  }
+}

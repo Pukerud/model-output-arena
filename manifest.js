@@ -17,6 +17,7 @@ window.ARENA = {
       provider_display: "Z.AI",
       model: "glm-5-turbo",
       model_display: "GLM 5 Turbo",
+      hosting: "api",
       path: "providers/z-ai/glm-5-turbo",
       added: "2026-06-13",
       outputs: {
@@ -30,6 +31,7 @@ window.ARENA = {
       provider_display: "Anthropic",
       model: "claude-opus-4-8",
       model_display: "Claude Opus 4.8",
+      hosting: "api",
       path: "providers/anthropic/claude-opus-4-8",
       added: "2026-06-13",
       outputs: {
@@ -43,6 +45,7 @@ window.ARENA = {
       provider_display: "Z.AI",
       model: "glm-5.2",
       model_display: "GLM 5.2",
+      hosting: "api",
       path: "providers/z-ai/glm-5.2",
       added: "2026-06-13",
       outputs: {
@@ -56,6 +59,7 @@ window.ARENA = {
       provider_display: "Z.AI",
       model: "glm-5.1",
       model_display: "GLM 5.1",
+      hosting: "api",
       path: "providers/z-ai/glm-5.1",
       added: "2026-06-13",
       outputs: {
@@ -69,6 +73,7 @@ window.ARENA = {
       provider_display: "Anthropic",
       model: "claude-haiku-4-5",
       model_display: "Claude Haiku 4.5",
+      hosting: "api",
       path: "providers/anthropic/claude-haiku-4-5",
       added: "2026-06-13",
       outputs: {
@@ -82,6 +87,7 @@ window.ARENA = {
       provider_display: "OpenAI",
       model: "gpt-5.5",
       model_display: "GPT-5.5",
+      hosting: "api",
       path: "providers/openai/gpt-5.5",
       added: "2026-06-13",
       outputs: {
@@ -95,6 +101,7 @@ window.ARENA = {
       provider_display: "Qwen",
       model: "qwen3.6-27b-heretic-v2",
       model_display: "Qwen 3.6 27B Heretic v2",
+      hosting: "local",
       path: "providers/qwen/qwen3.6-27b-heretic-v2",
       added: "2026-06-13",
       outputs: {
@@ -103,5 +110,33 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/qwen/qwen3.6-27b-heretic-v2/03-threejs-thriller/output.html",
       },
     },
-  ],
+    {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemma-4-26b-a4b-qat",
+      model_display: "Gemma 4 26B A4B QAT",
+      hosting: "local",
+      path: "providers/google/gemma-4-26b-a4b-qat",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemma-4-26b-a4b-qat/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemma-4-26b-a4b-qat/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemma-4-26b-a4b-qat/03-threejs-thriller/output.html",
+      },
+    },
+    {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemma-4-31b-qat",
+      model_display: "Gemma 4 31B QAT",
+      hosting: "local",
+      path: "providers/google/gemma-4-31b-qat",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemma-4-31b-qat/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemma-4-31b-qat/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemma-4-31b-qat/03-threejs-thriller/output.html",
+      },
+    }
+  ]
 };

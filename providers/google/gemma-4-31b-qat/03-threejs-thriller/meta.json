@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-06-13T15:10:00Z",
+  "model": "gemma-4-31b-qat",
+  "model_display": "Gemma 4 31B QAT",
+  "notes": "An ambitious Three.js scene with low-poly characters and choreographed animation sequences.",
+  "prompt_hash": "sha256:f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
+  "provider": "google",
+  "provider_display": "Google",
+  "runner": "Gemma 4 via pi agent",
+  "test_id": "03-threejs-thriller",
+  "hosting": "local",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "",
+    "engine": "",
+    "gpu": ""
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemma-4-26b-a4b-qat",
+  "model_display": "Gemma 4 26B A4B QAT",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T12:00:00Z",
+  "runner": "Gemma 4 via pi agent",
+  "notes": "Three.js scene with primitive representations of characters.",
+  "hosting": "local",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "A4B",
+    "engine": "",
+    "gpu": ""
+  }
+}

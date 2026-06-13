@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Car Parallax</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let width, height;
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const SKY_TOP = '#1a2a6c';
+const SKY_BOTTOM = '#b21f1f';
+const GROUND_COLOR = '#2d5a27';
+const ROAD_COLOR = '#333';
+
+class ParallaxLayer {
+    constructor(speed, color, baseHeight, amplitude, roughness) {
+        this.speed = speed;
+        this.color = color;
+        this.baseHeight = baseHeight;
+        this.amplitude = amplitude;
+        this.roughness = roughness;
+        this.offset = 0;
+    }
+
+    update() {
+        this.offset += this.speed;
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(0, height);
+        
+        for (let x = 0; x <= width + 20; x += 10) {
+            const nx = x + (this.offset % 10);
+            const ny = height * this.baseHeight + Math.sin(nx * 0.01 + this.roughness) * this.amplitude + Math.sin(nx * 0.05 + this.roughness * 2) * (this.amplitude * 0.3);
+            ctx.lineTo(x, ny);
+        }
+        
+        ctx.lineTo(width, height);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+class RoadSideObject {
+    constructor(type) {
+        this.type = type; // 'pole' or 'tree'
+        this.reset(Math.random() * -width);
+    }
+    reset(x) {
+        this.x = x;
+        this.speed = 5;
+    }
+    update() {
+        this.x -= this.speed;
+        if (this.x < -100) {
+            this.reset(width + 100);
+        }
+    }
+    draw() {
+        if (this.type === 'pole') {
+            ctx.fillStyle = '#555';
+            ctx.fillRect(this.x, height * 0.75, 6, 60);
+            ctx.fillStyle = '#eee';
+            ctx.fillRect(this.x + 6, height * 0.75 + 10, 30, 20);
+        }
+    }
+}
+
+const car = {
+    x: 150,
+    y: 0,
+    w: 120,
+    h: 50,
+    wheelRotation: 0,
+    bodyYOffset: 0,
+    draw() {
+        const carY = height * 0.8 - 40 + this.bodyYOffset;
+        const carX = this.x;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(carX + 60, height * 0.8 - 5, 70, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Car Body
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.moveTo(carX, carY + 20);
+        ctx.lineTo(carX + 110, carY + 20);
+        ctx.lineTo(carX + 100, carY);
+        ctx.lineTo(carX + 60, carY - 25);
+        ctx.lineTo(carX + 20, carY - 20);
+        ctx.lineTo(carX, carY + 20);
+        ctx.closePath();
+        ctx.fill();
+
+        // Windows
+        ctx.fillStyle = '#3498db';
+        ctx.beginPath();
+        ctx.moveTo(carX + 25, carY - 15);
+        ctx.lineTo(carX + 55, carY - 15);
+        ctx.lineTo(carX + 55, carY + 5);
+        ctx.lineTo(carX + 20, carY + 5);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(carX + 60, carY - 15);
+        ctx.lineTo(carX + 90, carY - 15);
+        ctx.lineTo(carX + 100, carY + 5);
+        ctx.lineTo(carX + 60, carY + 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Wheels
+        this.drawWheel(carX + 25, carY + 20);
+        this.drawWheel(carX + 85, carY + 20);
+    },
+    drawWheel(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(this.wheelRotation);
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -12); ctx.lineTo(0, 12);
+        ctx.moveTo(-12, 0); ctx.lineTo(12, 0);
+        ctx.stroke();
+        ctx.restore();
+    },
+    update() {
+        this.wheelRotation += 0.2;
+        this.bodyYOffset = Math.sin(Date.now() * 0.05) * 2;
+    }
+};
+
+let layer1, layer2, layer3;
+let roadsideObjects = [];
+
+function init() {
+    layer1 = new ParallaxLayer(0.2, '#4a5d6e', 0.5, 50, 1);
+    layer2 = new ParallaxLayer(0.5, '#3d5a3d', 0.7, 30, 5);
+    layer3 = new ParallaxLayer(1.0, '#2d5a27', 0.8, 15, 10);
+    for (let i = 0; i < 10; i++) {
+        roadsideObjects.push(new RoadSideObject('pole'));
+    }
+}
+
+function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Sky
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, SKY_TOP);
+    gradient.addColorStop(1, SKY_BOTTOM);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Mountains
+    layer1.update();
+    layer1.draw();
+
+    // Hills
+    layer2.update();
+    layer2.draw();
+
+    // Road
+    ctx.fillStyle = ROAD_COLOR;
+    ctx.fillRect(0, height * 0.8, width, height * 0.2);
+    
+    ctx.setLineDash([80, 80]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, height * 0.85);
+    ctx.lineTo(width, height * 0.85);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Roadside
+    roadsideObjects.forEach(obj => {
+        obj.update();
+        obj.draw();
+    });
+
+    // Foreground
+    layer3.update();
+    layer3.draw();
+
+    // Car
+    car.update();
+    car.draw();
+
+    requestAnimationFrame(animate);
+}
+
+init();
+animate();
+</script>
+</body>
+</html>

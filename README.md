@@ -38,15 +38,19 @@ The model list lives in [`manifest.js`](./manifest.js).
 
 See the [`providers/`](./providers) tree.
 
-| Provider | Model | Path |
-|----------|-------|------|
-| Anthropic | Claude Opus 4.8 | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
-| Anthropic | Claude Haiku 4.5 | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
-| Z.AI | GLM 5.2 | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
-| Z.AI | GLM 5.1 | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
-| Z.AI | GLM 5 Turbo | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
-| OpenAI | GPT-5.5 | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
-| Qwen | Qwen 3.6 27B Heretic v2 | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
+Models are either **☁️ API** (served by the vendor) or **🖥️ Local** (open weights run on your own hardware — see `runtime` in each model's `meta.json`). Comparing a quantized local model to a frontier API model is useful context, so it's labelled.
+
+| Provider | Model | Type | Path |
+|----------|-------|------|------|
+| Anthropic | Claude Opus 4.8 | ☁️ API | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
+| Anthropic | Claude Haiku 4.5 | ☁️ API | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
+| Z.AI | GLM 5.2 | ☁️ API | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
+| Z.AI | GLM 5.1 | ☁️ API | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
+| Z.AI | GLM 5 Turbo | ☁️ API | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
+| OpenAI | GPT-5.5 | ☁️ API | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
+| Qwen | Qwen 3.6 27B Heretic v2 | 🖥️ Local | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
+| Google | Gemma 4 26B A4B QAT | 🖥️ Local | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
+| Google | Gemma 4 31B QAT | 🖥️ Local | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 
 ## For humans
 
