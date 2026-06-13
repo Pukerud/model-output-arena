@@ -69,6 +69,7 @@ Two independent axes are labelled:
 | Z.AI | GLM 5.1 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
 | Z.AI | GLM 5 Turbo | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
 | OpenAI | GPT-5.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
+| OpenAI | GPT-5.5 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5-native`](./providers/openai/gpt-5.5-native) |
 | Qwen | Qwen 3.6 27B Heretic v2 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
 | Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
@@ -84,8 +85,9 @@ Outputs are produced by pointing an **agent harness** at this repo and giving it
 - **Claude Code** — the VS Code extension, used for the Anthropic models.
 - **Z.AI native harness** — Z.AI's own agent. Used for the **GLM 5.2 (Native Harness)** entry, which is the *same model* as the existing GLM 5.2 but driven by a different harness — a useful head-to-head on how much the harness shapes the result.
 - **Antigravity IDE** — Google DeepMind's native agentic harness. Used for the **Gemini 3.1 Pro (Native Harness)** entry.
+- **Codex Desktop native harness** — OpenAI's Codex Desktop app. Used for the **GPT-5.5 (Native Harness)** entry, which is the *same model* as the existing GPT-5.5 entry but generated in Codex Desktop instead of pi.dev.
 
-Everything runs inside **VS Code**, with the same prompts and no post-editing — what you see is what the model produced.
+Runs use the listed harness environment, with the same prompts and no post-editing — what you see is what the model produced.
 
 > **A note on fairness.** Harnesses don't behave identically. The Z.AI native harness asked clarifying questions before the Plants vs Zombies build (answered: *Endless survival* + *Cartoon vector*) and its first attempt didn't run — it took two more fix prompts to get a playable result. The single-prompt harnesses got one shot. Per-run details live in each test's `meta.json`.
 

@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-5.5-native",
+  "model_display": "GPT-5.5 (Native Harness)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-06-13T21:12:58Z",
+  "runner": "GPT-5.5 via Codex Desktop native harness",
+  "notes": "Same underlying GPT-5.5 model as the existing GPT-5.5 entry, but run through Codex Desktop's native harness instead of pi.dev.",
+  "hosting": "api",
+  "weights": "closed"
+}

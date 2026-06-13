@@ -103,6 +103,21 @@ window.ARENA = {
       },
     },
     {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-5.5-native",
+      model_display: "GPT-5.5 (Native Harness)",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-5.5-native",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/openai/gpt-5.5-native/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-5.5-native/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/openai/gpt-5.5-native/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "qwen",
       provider_display: "Qwen",
       model: "qwen3.6-27b-heretic-v2",

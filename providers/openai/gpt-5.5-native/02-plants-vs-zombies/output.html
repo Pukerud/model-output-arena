@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Garden Guard</title>
+  <!--
+    Plan followed:
+    1. Build a small lane-defense game in one file.
+    2. Include polished menus, plant selection, waves, scoring, pause and game over states.
+    3. Add a local leaderboard with persistent scores.
+    4. Draw all art with canvas so the file has no external assets.
+  -->
+  <style>
+    :root {
+      color-scheme: dark;
+      --panel: rgba(13, 29, 28, 0.86);
+      --line: rgba(255, 255, 255, 0.16);
+      --gold: #ffd76b;
+      --leaf: #65c96a;
+      --rose: #ff7b75;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #071313;
+      color: #f6f0db;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      overflow: hidden;
+    }
+    body {
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    #shell {
+      width: min(1180px, 100vw - 24px);
+      height: min(720px, 100vh - 24px);
+      min-height: 560px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 12px;
+    }
+    #side {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(24, 58, 48, 0.94), rgba(13, 24, 27, 0.96));
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .small {
+      margin: 0;
+      color: #bfd2bf;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.18);
+      padding: 8px;
+      min-height: 54px;
+    }
+    .stat span {
+      display: block;
+      color: #acc8b2;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    .stat strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 18px;
+    }
+    #plants {
+      display: grid;
+      gap: 8px;
+    }
+    .plant-btn, .menu-btn {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: #f8f4e5;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 9px 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      font: inherit;
+    }
+    .plant-btn:hover, .menu-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.36);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .plant-btn.active {
+      border-color: var(--gold);
+      background: rgba(255, 215, 107, 0.18);
+    }
+    .plant-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .plant-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .plant-name {
+      font-weight: 750;
+      font-size: 14px;
+    }
+    .cost {
+      color: var(--gold);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .plant-desc {
+      display: block;
+      margin-top: 3px;
+      color: #b8c9be;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+    #board-wrap {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #16352d;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #1e5037;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: radial-gradient(circle at 50% 40%, rgba(24, 62, 52, 0.86), rgba(5, 12, 14, 0.94));
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
+    }
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      width: min(470px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(8, 20, 20, 0.92);
+      padding: 22px;
+      box-shadow: 0 25px 90px rgba(0, 0, 0, 0.5);
+    }
+    .modal h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+    .modal p {
+      margin: 0 0 14px;
+      color: #cfe0cf;
+      line-height: 1.45;
+    }
+    .actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.24);
+      color: #fff7df;
+      font: inherit;
+      padding: 10px;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--gold);
+    }
+    ol {
+      margin: 8px 0 0;
+      padding-left: 24px;
+      color: #f5eed8;
+    }
+    li {
+      margin: 6px 0;
+    }
+    @media (max-width: 840px) {
+      body {
+        padding: 8px;
+        overflow: auto;
+      }
+      #shell {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        grid-template-columns: 1fr;
+      }
+      #side {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      #plants {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      #board-wrap {
+        aspect-ratio: 16 / 9;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="shell">
+    <aside id="side">
+      <div>
+        <h1>Garden Guard</h1>
+        <p class="small">Hold five lanes through the night.</p>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><span>Sun</span><strong id="sun">150</strong></div>
+        <div class="stat"><span>Score</span><strong id="score">0</strong></div>
+        <div class="stat"><span>Wave</span><strong id="wave">1</strong></div>
+        <div class="stat"><span>Fence</span><strong id="fence">5</strong></div>
+      </div>
+      <section id="plants" aria-label="Plant selection"></section>
+      <button class="menu-btn" id="pauseBtn">Pause</button>
+      <button class="menu-btn" id="menuBtn">Menu</button>
+    </aside>
+    <section id="board-wrap">
+      <canvas id="game" width="960" height="560"></canvas>
+      <div class="overlay show" id="menuOverlay">
+        <div class="modal">
+          <h2>Garden Guard</h2>
+          <p>Place plants, collect falling sun, and keep the fence standing through escalating waves.</p>
+          <input id="playerName" maxlength="18" value="Codex" aria-label="Player name" />
+          <div class="actions">
+            <button class="menu-btn" id="startBtn">Start Game</button>
+            <button class="menu-btn" id="scoresBtn">Leaderboards</button>
+          </div>
+        </div>
+      </div>
+      <div class="overlay" id="leaderOverlay">
+        <div class="modal">
+          <h2>Leaderboards</h2>
+          <ol id="leaders"></ol>
+          <div class="actions">
+            <button class="menu-btn" id="clearScoresBtn">Reset Scores</button>
+            <button class="menu-btn" id="backBtn">Back</button>
+          </div>
+        </div>
+      </div>
+      <div class="overlay" id="endOverlay">
+        <div class="modal">
+          <h2 id="endTitle">Game Over</h2>
+          <p id="endText"></p>
+          <div class="actions">
+            <button class="menu-btn" id="againBtn">Play Again</button>
+            <button class="menu-btn" id="endScoresBtn">Leaderboards</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width;
+  const H = canvas.height;
+  const ui = {
+    sun: document.getElementById("sun"),
+    score: document.getElementById("score"),
+    wave: document.getElementById("wave"),
+    fence: document.getElementById("fence"),
+    plants: document.getElementById("plants"),
+    pauseBtn: document.getElementById("pauseBtn"),
+    menuBtn: document.getElementById("menuBtn"),
+    menu: document.getElementById("menuOverlay"),
+    leaders: document.getElementById("leaderOverlay"),
+    end: document.getElementById("endOverlay"),
+    leadersList: document.getElementById("leaders"),
+    endTitle: document.getElementById("endTitle"),
+    endText: document.getElementById("endText"),
+    name: document.getElementById("playerName")
+  };
+
+  const board = { x: 170, y: 88, cols: 9, rows: 5, cw: 78, ch: 78 };
+  const plantDefs = {
+    pea: { name: "Peashooter", cost: 100, hp: 135, cool: 1.0, desc: "Reliable lane damage." },
+    sun: { name: "Sunflower", cost: 50, hp: 95, cool: 6.0, desc: "Grows extra sun." },
+    nut: { name: "Wall-Nut", cost: 75, hp: 430, cool: 0, desc: "Strong blocker." },
+    frost: { name: "Snow Pea", cost: 125, hp: 120, cool: 1.55, desc: "Slows zombies." }
+  };
+  const zombieDefs = {
+    walker: { hp: 95, speed: 18, reward: 20, color: "#8ab47d" },
+    cone: { hp: 155, speed: 16, reward: 35, color: "#a2b980" },
+    brute: { hp: 250, speed: 12, reward: 60, color: "#77936d" },
+    sprinter: { hp: 70, speed: 30, reward: 30, color: "#9dcc92" }
+  };
+
+  let state;
+  let last = performance.now();
+  let selected = "pea";
+  let buttons = {};
+
+  function newState() {
+    return {
+      mode: "menu",
+      sun: 150,
+      score: 0,
+      wave: 1,
+      fence: 5,
+      plants: [],
+      zombies: [],
+      bullets: [],
+      suns: [],
+      particles: [],
+      spawnTimer: 2.2,
+      sunTimer: 3.5,
+      waveTimer: 0,
+      spawnedInWave: 0,
+      targetInWave: 9,
+      time: 0,
+      shake: 0
+    };
+  }
+
+  state = newState();
+
+  function storageRead() {
+    try {
+      return JSON.parse(localStorage.getItem("garden-guard-leaders") || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function storageWrite(scores) {
+    try {
+      localStorage.setItem("garden-guard-leaders", JSON.stringify(scores.slice(0, 10)));
+    } catch {}
+  }
+
+  function saveScore() {
+    const name = (ui.name.value || "Player").trim().slice(0, 18) || "Player";
+    const scores = storageRead();
+    scores.push({ name, score: state.score, wave: state.wave, date: new Date().toLocaleDateString() });
+    scores.sort((a, b) => b.score - a.score || b.wave - a.wave);
+    storageWrite(scores);
+  }
+
+  function renderLeaderboard() {
+    const scores = storageRead();
+    ui.leadersList.innerHTML = "";
+    if (!scores.length) {
+      const li = document.createElement("li");
+      li.textContent = "No scores yet.";
+      ui.leadersList.appendChild(li);
+      return;
+    }
+    scores.slice(0, 10).forEach(s => {
+      const li = document.createElement("li");
+      li.textContent = `${s.name}: ${s.score} pts, wave ${s.wave} (${s.date})`;
+      ui.leadersList.appendChild(li);
+    });
+  }
+
+  function setOverlay(which) {
+    ui.menu.classList.toggle("show", which === "menu");
+    ui.leaders.classList.toggle("show", which === "leaders");
+    ui.end.classList.toggle("show", which === "end");
+  }
+
+  function startGame() {
+    const keepName = ui.name.value;
+    state = newState();
+    ui.name.value = keepName;
+    state.mode = "playing";
+    setOverlay(null);
+    updateUi();
+  }
+
+  function endGame(victory) {
+    state.mode = "gameover";
+    saveScore();
+    ui.endTitle.textContent = victory ? "Garden Saved" : "Game Over";
+    ui.endText.textContent = `${ui.name.value || "Player"} scored ${state.score} and reached wave ${state.wave}.`;
+    setOverlay("end");
+  }
+
+  function showMenu() {
+    state.mode = "menu";
+    setOverlay("menu");
+  }
+
+  function showLeaders() {
+    renderLeaderboard();
+    setOverlay("leaders");
+  }
+
+  function updateUi() {
+    ui.sun.textContent = Math.floor(state.sun);
+    ui.score.textContent = state.score;
+    ui.wave.textContent = state.wave;
+    ui.fence.textContent = state.fence;
+    Object.entries(buttons).forEach(([key, btn]) => {
+      btn.classList.toggle("active", selected === key);
+      btn.disabled = state.sun < plantDefs[key].cost;
+    });
+  }
+
+  function buildPlantButtons() {
+    ui.plants.innerHTML = "";
+    Object.entries(plantDefs).forEach(([key, def]) => {
+      const btn = document.createElement("button");
+      btn.className = "plant-btn";
+      btn.innerHTML = `<span class="plant-row"><span class="plant-name">${def.name}</span><span class="cost">${def.cost} sun</span></span><span class="plant-desc">${def.desc}</span>`;
+      btn.addEventListener("click", () => {
+        selected = key;
+        updateUi();
+      });
+      ui.plants.appendChild(btn);
+      buttons[key] = btn;
+    });
+    updateUi();
+  }
+
+  function plantAt(row, col) {
+    return state.plants.find(p => p.row === row && p.col === col);
+  }
+
+  function placePlant(row, col) {
+    const def = plantDefs[selected];
+    if (!def || state.sun < def.cost || plantAt(row, col)) return;
+    state.sun -= def.cost;
+    state.plants.push({ type: selected, row, col, hp: def.hp, maxHp: def.hp, cool: 0, pulse: 0 });
+    burst(board.x + col * board.cw + board.cw / 2, board.y + row * board.ch + board.ch / 2, "#fff3aa", 10);
+    updateUi();
+  }
+
+  function spawnZombie() {
+    const wave = state.wave;
+    const roll = Math.random();
+    let type = "walker";
+    if (wave > 2 && roll > 0.68) type = "cone";
+    if (wave > 4 && roll > 0.82) type = "brute";
+    if (wave > 3 && roll < 0.18) type = "sprinter";
+    const def = zombieDefs[type];
+    const row = Math.floor(Math.random() * board.rows);
+    state.zombies.push({
+      type,
+      row,
+      x: W + 40,
+      hp: def.hp + wave * 8,
+      maxHp: def.hp + wave * 8,
+      speed: def.speed + wave * 0.8,
+      bite: 0,
+      slow: 0,
+      wobble: Math.random() * 10
+    });
+    state.spawnedInWave++;
+  }
+
+  function addSun(x, y, value, falling) {
+    state.suns.push({ x, y, value, vy: falling ? 28 + Math.random() * 18 : -18, life: 9, r: 20, falling });
+  }
+
+  function burst(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 30 + Math.random() * 80;
+      state.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.55 + Math.random() * 0.35, color });
+    }
+  }
+
+  function update(dt) {
+    if (state.mode !== "playing") return;
+    state.time += dt;
+    state.shake = Math.max(0, state.shake - dt * 18);
+
+    state.sunTimer -= dt;
+    if (state.sunTimer <= 0) {
+      state.sunTimer = 5.2 + Math.random() * 2.6;
+      addSun(board.x + Math.random() * board.cw * board.cols, 22, 25, true);
+    }
+
+    const livingZombies = state.zombies.length;
+    if (state.spawnedInWave < state.targetInWave) {
+      state.spawnTimer -= dt;
+      if (state.spawnTimer <= 0) {
+        spawnZombie();
+        state.spawnTimer = Math.max(0.55, 2.3 - state.wave * 0.16 + Math.random() * 1.2);
+      }
+    } else if (livingZombies === 0) {
+      state.waveTimer += dt;
+      if (state.waveTimer > 2.5) {
+        state.wave++;
+        state.targetInWave = 8 + state.wave * 3;
+        state.spawnedInWave = 0;
+        state.spawnTimer = 1.8;
+        state.waveTimer = 0;
+        state.sun += 60;
+        burst(W / 2, 70, "#ffd76b", 30);
+      }
+    }
+
+    state.plants.forEach(p => {
+      p.pulse = Math.max(0, p.pulse - dt);
+      p.cool -= dt;
+      const cx = board.x + p.col * board.cw + board.cw / 2;
+      const cy = board.y + p.row * board.ch + board.ch / 2;
+      if (p.type === "sun" && p.cool <= 0) {
+        p.cool = plantDefs.sun.cool;
+        addSun(cx, cy - 20, 25, false);
+        p.pulse = 0.35;
+      }
+      if ((p.type === "pea" || p.type === "frost") && p.cool <= 0) {
+        const target = state.zombies.some(z => z.row === p.row && z.x > cx - 10);
+        if (target) {
+          p.cool = plantDefs[p.type].cool;
+          state.bullets.push({ x: cx + 24, y: cy - 8, row: p.row, vx: 265, damage: p.type === "pea" ? 26 : 18, frost: p.type === "frost" });
+          p.pulse = 0.15;
+        }
+      }
+    });
+
+    state.bullets.forEach(b => {
+      b.x += b.vx * dt;
+      const hit = state.zombies.find(z => z.row === b.row && Math.abs(z.x - b.x) < 24);
+      if (hit) {
+        hit.hp -= b.damage;
+        if (b.frost) hit.slow = 2.5;
+        b.dead = true;
+        burst(b.x, b.y, b.frost ? "#b8f1ff" : "#b7ff80", 5);
+      }
+      if (b.x > W + 50) b.dead = true;
+    });
+    state.bullets = state.bullets.filter(b => !b.dead);
+
+    state.zombies.forEach(z => {
+      z.slow = Math.max(0, z.slow - dt);
+      const laneY = board.y + z.row * board.ch + board.ch / 2;
+      const frontCol = Math.floor((z.x - board.x - 20) / board.cw);
+      const plant = state.plants.find(p => p.row === z.row && p.col === frontCol);
+      if (plant && z.x < board.x + (plant.col + 1) * board.cw + 20) {
+        z.bite -= dt;
+        if (z.bite <= 0) {
+          z.bite = 0.62;
+          plant.hp -= z.type === "brute" ? 34 : 22;
+          plant.pulse = 0.18;
+          state.shake = 3;
+          burst(board.x + plant.col * board.cw + board.cw / 2, laneY, "#cbe68a", 4);
+        }
+      } else {
+        z.x -= z.speed * (z.slow > 0 ? 0.48 : 1) * dt;
+      }
+      if (z.hp <= 0) {
+        z.dead = true;
+        const reward = zombieDefs[z.type].reward;
+        state.score += reward;
+        state.sun += Math.floor(reward / 4);
+        burst(z.x, laneY, "#9ccc7b", 16);
+      }
+      if (z.x < board.x - 46) {
+        z.dead = true;
+        state.fence--;
+        state.shake = 10;
+        burst(board.x - 20, laneY, "#ff8078", 22);
+        if (state.fence <= 0) endGame(false);
+      }
+    });
+    state.zombies = state.zombies.filter(z => !z.dead);
+    state.plants = state.plants.filter(p => {
+      if (p.hp > 0) return true;
+      const cx = board.x + p.col * board.cw + board.cw / 2;
+      const cy = board.y + p.row * board.ch + board.ch / 2;
+      burst(cx, cy, "#d6c07a", 14);
+      return false;
+    });
+
+    state.suns.forEach(s => {
+      s.life -= dt;
+      if (s.falling) {
+        s.y = Math.min(board.y + board.rows * board.ch - 25, s.y + s.vy * dt);
+      } else {
+        s.vy += 45 * dt;
+        s.y += s.vy * dt;
+      }
+      s.r = 17 + Math.sin(state.time * 5 + s.x) * 2;
+      if (s.life <= 0) s.dead = true;
+    });
+    state.suns = state.suns.filter(s => !s.dead);
+
+    state.particles.forEach(p => {
+      p.life -= dt;
+      p.vy += 160 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+    });
+    state.particles = state.particles.filter(p => p.life > 0);
+    updateUi();
+  }
+
+  function draw() {
+    const shakeX = (Math.random() - 0.5) * state.shake;
+    const shakeY = (Math.random() - 0.5) * state.shake;
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+    drawBackdrop();
+    drawGrid();
+    drawEntities();
+    drawParticles();
+    drawWaveBanner();
+    ctx.restore();
+  }
+
+  function drawBackdrop() {
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, "#153448");
+    sky.addColorStop(0.38, "#1c5a44");
+    sky.addColorStop(1, "#102017");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "rgba(255, 230, 160, 0.8)";
+    ctx.beginPath();
+    ctx.arc(790, 78, 36, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(5, 19, 18, 0.32)";
+    for (let x = 0; x < W; x += 78) {
+      ctx.beginPath();
+      ctx.ellipse(x + 18, 68 + Math.sin(x) * 8, 62, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#315730";
+    ctx.fillRect(0, board.y + board.rows * board.ch, W, H);
+    ctx.fillStyle = "#193326";
+    ctx.fillRect(0, board.y + board.rows * board.ch + 8, W, H);
+
+    ctx.fillStyle = "rgba(10, 18, 16, 0.36)";
+    ctx.fillRect(0, 0, 142, H);
+    for (let r = 0; r < board.rows; r++) {
+      const y = board.y + r * board.ch + board.ch / 2;
+      ctx.fillStyle = "#4f3626";
+      ctx.fillRect(124, y - 26, 16, 52);
+      ctx.fillStyle = "#8a6342";
+      ctx.fillRect(114, y - 20, 28, 9);
+      ctx.fillRect(114, y + 11, 28, 9);
+    }
+  }
+
+  function drawGrid() {
+    for (let r = 0; r < board.rows; r++) {
+      for (let c = 0; c < board.cols; c++) {
+        const x = board.x + c * board.cw;
+        const y = board.y + r * board.ch;
+        ctx.fillStyle = (r + c) % 2 ? "#3d8c4f" : "#46995a";
+        ctx.fillRect(x, y, board.cw, board.ch);
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fillRect(x + 4, y + 4, board.cw - 8, board.ch - 8);
+      }
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(board.x, board.y, board.cw * board.cols, board.ch * board.rows);
+  }
+
+  function drawEntities() {
+    state.suns.forEach(drawSun);
+
+    const actors = [
+      ...state.plants.map(p => ({ kind: "plant", row: p.row, x: board.x + p.col * board.cw + board.cw / 2, item: p })),
+      ...state.zombies.map(z => ({ kind: "zombie", row: z.row, x: z.x, item: z }))
+    ].sort((a, b) => a.row - b.row || a.x - b.x);
+
+    actors.forEach(a => {
+      const y = board.y + a.row * board.ch + board.ch / 2;
+      if (a.kind === "plant") drawPlant(a.item, a.x, y);
+      else drawZombie(a.item, a.x, y);
+    });
+    state.bullets.forEach(drawBullet);
+  }
+
+  function hpBar(x, y, w, hp, maxHp) {
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillRect(x - w / 2, y, w, 5);
+    ctx.fillStyle = hp / maxHp > 0.45 ? "#9df26c" : "#ff8e70";
+    ctx.fillRect(x - w / 2, y, w * Math.max(0, hp / maxHp), 5);
+  }
+
+  function drawPlant(p, x, y) {
+    const pulse = 1 + p.pulse * 0.35;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(pulse, pulse);
+    ctx.fillStyle = "rgba(0,0,0,0.24)";
+    ctx.beginPath();
+    ctx.ellipse(0, 25, 28, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#23653a";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, 22);
+    ctx.quadraticCurveTo(-4, 2, 2, -16);
+    ctx.stroke();
+    if (p.type === "sun") {
+      ctx.fillStyle = "#ffd75d";
+      for (let i = 0; i < 12; i++) {
+        ctx.rotate(Math.PI / 6);
+        ctx.fillRect(14, -3, 13, 6);
+      }
+      ctx.fillStyle = "#f3a63e";
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#69451b";
+      ctx.beginPath();
+      ctx.arc(-6, -3, 2, 0, Math.PI * 2);
+      ctx.arc(7, -3, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.type === "nut") {
+      ctx.fillStyle = "#b8844c";
+      ctx.beginPath();
+      ctx.ellipse(0, -2, 26, 34, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#3f2517";
+      ctx.beginPath();
+      ctx.arc(-8, -9, 3, 0, Math.PI * 2);
+      ctx.arc(8, -9, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#3f2517";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 4, 8, 0.15, Math.PI - 0.15);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = p.type === "frost" ? "#83d9f3" : "#7bd65c";
+      ctx.beginPath();
+      ctx.arc(-5, -3, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = p.type === "frost" ? "#b8f5ff" : "#afea73";
+      ctx.beginPath();
+      ctx.ellipse(12, -6, 19, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#15351e";
+      ctx.beginPath();
+      ctx.arc(-10, -9, 2.5, 0, Math.PI * 2);
+      ctx.arc(-1, -9, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    hpBar(x, y + 34, 44, p.hp, p.maxHp);
+  }
+
+  function drawZombie(z, x, y) {
+    const def = zombieDefs[z.type];
+    const step = Math.sin(state.time * 6 + z.wobble) * 5;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = "rgba(0,0,0,0.26)";
+    ctx.beginPath();
+    ctx.ellipse(0, 28, 28, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#405646";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-8, 17);
+    ctx.lineTo(-16, 34 + step);
+    ctx.moveTo(10, 17);
+    ctx.lineTo(20, 34 - step);
+    ctx.stroke();
+    ctx.strokeStyle = z.slow > 0 ? "#a9efff" : "#56604d";
+    ctx.beginPath();
+    ctx.moveTo(-12, -4);
+    ctx.lineTo(-30, 5 + step * 0.25);
+    ctx.moveTo(13, -2);
+    ctx.lineTo(34, 0 - step * 0.2);
+    ctx.stroke();
+    ctx.fillStyle = def.color;
+    ctx.fillRect(-17, -15, 34, 38);
+    ctx.fillStyle = z.slow > 0 ? "#bcefff" : "#a8c999";
+    ctx.beginPath();
+    ctx.arc(0, -30, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#152018";
+    ctx.beginPath();
+    ctx.arc(-6, -34, 2.8, 0, Math.PI * 2);
+    ctx.arc(7, -34, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#152018";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -23);
+    ctx.lineTo(8, -22);
+    ctx.stroke();
+    if (z.type === "cone") {
+      ctx.fillStyle = "#f18b33";
+      ctx.beginPath();
+      ctx.moveTo(-17, -44);
+      ctx.lineTo(0, -72);
+      ctx.lineTo(18, -44);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#ffe0a0";
+      ctx.beginPath();
+      ctx.moveTo(-8, -54);
+      ctx.lineTo(8, -54);
+      ctx.stroke();
+    }
+    if (z.type === "brute") {
+      ctx.strokeStyle = "#594636";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(22, -1);
+      ctx.lineTo(43, -16);
+      ctx.stroke();
+    }
+    ctx.restore();
+    hpBar(x, y + 38, 48, z.hp, z.maxHp);
+  }
+
+  function drawBullet(b) {
+    ctx.fillStyle = b.frost ? "#bdf5ff" : "#a6ee67";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.frost ? 8 : 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = b.frost ? "rgba(255,255,255,0.9)" : "rgba(25,80,20,0.8)";
+    ctx.stroke();
+  }
+
+  function drawSun(s) {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(state.time * 1.8);
+    ctx.fillStyle = "rgba(255, 216, 75, 0.32)";
+    for (let i = 0; i < 10; i++) {
+      ctx.rotate(Math.PI / 5);
+      ctx.fillRect(s.r * 0.6, -3, s.r * 0.55, 6);
+    }
+    ctx.fillStyle = "#ffdc5e";
+    ctx.beginPath();
+    ctx.arc(0, 0, s.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8d5a19";
+    ctx.font = "700 12px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(s.value, 0, 1);
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    state.particles.forEach(p => {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3 + p.life * 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function drawWaveBanner() {
+    if (state.mode === "playing" && state.waveTimer > 0 && state.zombies.length === 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, state.waveTimer);
+      ctx.fillStyle = "rgba(0,0,0,0.38)";
+      ctx.fillRect(0, 28, W, 54);
+      ctx.fillStyle = "#fff0ba";
+      ctx.font = "800 24px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Wave cleared", W / 2, 63);
+      ctx.restore();
+    }
+  }
+
+  function canvasPoint(evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (evt.clientX - rect.left) * W / rect.width,
+      y: (evt.clientY - rect.top) * H / rect.height
+    };
+  }
+
+  canvas.addEventListener("click", evt => {
+    if (state.mode !== "playing") return;
+    const p = canvasPoint(evt);
+    const sun = state.suns.find(s => Math.hypot(s.x - p.x, s.y - p.y) < s.r + 10);
+    if (sun) {
+      state.sun += sun.value;
+      sun.dead = true;
+      burst(sun.x, sun.y, "#ffdf65", 12);
+      updateUi();
+      return;
+    }
+    const col = Math.floor((p.x - board.x) / board.cw);
+    const row = Math.floor((p.y - board.y) / board.ch);
+    if (row >= 0 && row < board.rows && col >= 0 && col < board.cols) {
+      placePlant(row, col);
+    }
+  });
+
+  document.getElementById("startBtn").addEventListener("click", startGame);
+  document.getElementById("againBtn").addEventListener("click", startGame);
+  document.getElementById("scoresBtn").addEventListener("click", showLeaders);
+  document.getElementById("endScoresBtn").addEventListener("click", showLeaders);
+  document.getElementById("backBtn").addEventListener("click", () => setOverlay(state.mode === "gameover" ? "end" : "menu"));
+  document.getElementById("clearScoresBtn").addEventListener("click", () => {
+    storageWrite([]);
+    renderLeaderboard();
+  });
+  ui.pauseBtn.addEventListener("click", () => {
+    if (state.mode === "playing") {
+      state.mode = "paused";
+      ui.pauseBtn.textContent = "Resume";
+    } else if (state.mode === "paused") {
+      state.mode = "playing";
+      ui.pauseBtn.textContent = "Pause";
+    }
+  });
+  ui.menuBtn.addEventListener("click", showMenu);
+  window.addEventListener("keydown", evt => {
+    if (evt.code === "Space") {
+      evt.preventDefault();
+      ui.pauseBtn.click();
+    }
+    if (evt.key >= "1" && evt.key <= "4") {
+      selected = Object.keys(plantDefs)[Number(evt.key) - 1];
+      updateUi();
+    }
+  });
+
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000 || 0);
+    last = now;
+    update(dt);
+    draw();
+    if (state.mode === "paused") {
+      ctx.fillStyle = "rgba(0,0,0,0.42)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#fff2c2";
+      ctx.font = "800 34px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Paused", W / 2, H / 2);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  buildPlantButtons();
+  draw();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

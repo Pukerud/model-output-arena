@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parallax Road Car</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111927;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+<canvas id="scene" aria-label="Animated side-view car with parallax landscape"></canvas>
+<script>
+(() => {
+  const canvas = document.getElementById("scene");
+  const ctx = canvas.getContext("2d");
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+  let last = performance.now();
+  let elapsed = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = Math.floor(window.innerWidth);
+    height = Math.floor(window.innerHeight);
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener("resize", resize, { passive: true });
+  resize();
+
+  function fract(v) {
+    return v - Math.floor(v);
+  }
+
+  function rand(seed) {
+    return fract(Math.sin(seed * 127.1 + 311.7) * 43758.5453);
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function clamp(v, a, b) {
+    return Math.max(a, Math.min(b, v));
+  }
+
+  function roundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawSky(t) {
+    const horizon = height * 0.62;
+    const sky = ctx.createLinearGradient(0, 0, 0, horizon);
+    sky.addColorStop(0, "#1c2948");
+    sky.addColorStop(0.42, "#7c5176");
+    sky.addColorStop(0.78, "#e1845f");
+    sky.addColorStop(1, "#f4bd78");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, width, horizon);
+
+    const glow = ctx.createRadialGradient(width * 0.77, horizon * 0.72, 10, width * 0.77, horizon * 0.72, Math.max(width, height) * 0.45);
+    glow.addColorStop(0, "rgba(255, 220, 150, 0.75)");
+    glow.addColorStop(0.24, "rgba(255, 145, 105, 0.28)");
+    glow.addColorStop(1, "rgba(255, 145, 105, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, horizon);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.fillStyle = "rgba(255, 228, 167, 0.92)";
+    ctx.beginPath();
+    ctx.arc(width * 0.77, horizon * 0.72, Math.max(32, height * 0.055), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    drawCloudLayer(t, 0.14, height * 0.16, "#fff1df", 0.35);
+    drawCloudLayer(t, 0.25, height * 0.24, "#ffe0c4", 0.25);
+  }
+
+  function drawCloudLayer(t, speed, baseY, color, alpha) {
+    const gap = 360;
+    const offset = (t * speed * 30) % gap;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    for (let i = -2; i < Math.ceil(width / gap) + 3; i++) {
+      const seed = i + Math.floor(t * speed * 30 / gap) * 19;
+      const x = i * gap - offset + rand(seed) * 130;
+      const y = baseY + rand(seed + 4) * 42;
+      const s = 0.65 + rand(seed + 9) * 0.55;
+      blobCloud(x, y, s);
+    }
+    ctx.restore();
+  }
+
+  function blobCloud(x, y, s) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, 66 * s, 18 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 46 * s, y + 3 * s, 58 * s, 16 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(x - 42 * s, y + 6 * s, 45 * s, 13 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 4 * s, y - 13 * s, 34 * s, 20 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawHills(t) {
+    drawHillLayer(t, 12, height * 0.49, height * 0.13, "#4b5c72", 0.9);
+    drawHillLayer(t, 25, height * 0.55, height * 0.10, "#33485a", 0.95);
+    drawHillLayer(t, 42, height * 0.59, height * 0.08, "#233847", 1);
+  }
+
+  function drawHillLayer(t, speed, baseY, amp, color, alpha) {
+    const period = 260;
+    const offset = (t * speed) % period;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-period, height);
+    for (let x = -period; x <= width + period; x += 24) {
+      const world = x + offset;
+      const y = baseY - Math.sin(world * 0.012) * amp * 0.42 - Math.sin(world * 0.026 + 1.7) * amp * 0.28 - Math.sin(world * 0.006 + 4.2) * amp * 0.45;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(width + period, height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGround(t) {
+    const roadTop = height * 0.68;
+    const groundTop = height * 0.62;
+    const ground = ctx.createLinearGradient(0, groundTop, 0, height);
+    ground.addColorStop(0, "#263e2f");
+    ground.addColorStop(0.45, "#182a25");
+    ground.addColorStop(1, "#111820");
+    ctx.fillStyle = ground;
+    ctx.fillRect(0, groundTop, width, height - groundTop);
+
+    drawRoadside(t, 92, groundTop, roadTop, 0.55);
+    drawRoad(roadTop);
+    drawRoadMarks(t, roadTop);
+    drawForegroundStreaks(t, roadTop);
+  }
+
+  function drawRoad(roadTop) {
+    const road = ctx.createLinearGradient(0, roadTop, 0, height);
+    road.addColorStop(0, "#343741");
+    road.addColorStop(0.62, "#1f232b");
+    road.addColorStop(1, "#11141a");
+    ctx.fillStyle = road;
+    ctx.beginPath();
+    ctx.moveTo(0, roadTop);
+    ctx.lineTo(width, roadTop);
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, roadTop + 2);
+    ctx.lineTo(width, roadTop + 2);
+    ctx.stroke();
+  }
+
+  function drawRoadMarks(t, roadTop) {
+    const y = lerp(roadTop, height, 0.56);
+    const dashW = 110;
+    const gap = 90;
+    const total = dashW + gap;
+    const offset = (t * 360) % total;
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 226, 160, 0.78)";
+    for (let x = -total; x < width + total; x += total) {
+      const sx = x - offset;
+      roundRect(sx, y, dashW, 7, 4);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawRoadside(t, speed, groundTop, roadTop, alpha) {
+    const spacing = 150;
+    const offset = (t * speed) % spacing;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    for (let i = -3; i < width / spacing + 4; i++) {
+      const id = i + Math.floor(t * speed / spacing) * 31;
+      const x = i * spacing - offset + rand(id) * 80;
+      const y = lerp(groundTop, roadTop, 0.46 + rand(id + 1) * 0.35);
+      const kind = rand(id + 2);
+      if (kind < 0.46) drawTree(x, y, 0.48 + rand(id + 3) * 0.42, true);
+      else if (kind < 0.72) drawPole(x, y, 0.7 + rand(id + 4) * 0.35);
+      else drawShrub(x, y, 0.7 + rand(id + 5) * 0.5);
+    }
+    ctx.restore();
+  }
+
+  function drawForegroundStreaks(t, roadTop) {
+    const spacing = 76;
+    const offset = (t * 530) % spacing;
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    ctx.strokeStyle = "#6b5947";
+    ctx.lineWidth = 2;
+    for (let i = -2; i < width / spacing + 4; i++) {
+      const id = i + Math.floor(t * 530 / spacing) * 17;
+      const x = i * spacing - offset;
+      const y = lerp(roadTop, height, 0.76 + rand(id) * 0.2);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 20 + rand(id + 1) * 34, y + 1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawTree(x, y, s, far) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = far ? "#162a26" : "#10231d";
+    ctx.fillRect(-4, -56, 8, 56);
+    ctx.fillStyle = far ? "#234531" : "#1f5b35";
+    ctx.beginPath();
+    ctx.moveTo(0, -96);
+    ctx.lineTo(34, -36);
+    ctx.lineTo(-34, -36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = far ? "#1d3a2b" : "#15452d";
+    ctx.beginPath();
+    ctx.moveTo(0, -122);
+    ctx.lineTo(28, -62);
+    ctx.lineTo(-28, -62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPole(x, y, s) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.strokeStyle = "#3a302c";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -105);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-28, -96);
+    ctx.lineTo(28, -96);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(31, 28, 30, 0.45)";
+    ctx.beginPath();
+    ctx.moveTo(-28, -96);
+    ctx.quadraticCurveTo(-2, -83, 28, -96);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawShrub(x, y, s) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.fillStyle = "#1c4f32";
+    ctx.beginPath();
+    ctx.ellipse(-22, -8, 24, 14, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -16, 30, 19, 0, 0, Math.PI * 2);
+    ctx.ellipse(25, -7, 25, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCar(t) {
+    const scale = clamp(width / 1100, 0.72, 1.22);
+    const carW = 360 * scale;
+    const carH = 112 * scale;
+    const x = width * 0.43;
+    const roadTop = height * 0.68;
+    const groundY = lerp(roadTop, height, 0.57);
+    const bob = Math.sin(t * 8.5) * 2.2 * scale + Math.sin(t * 15.0) * 0.7 * scale;
+    const pitch = Math.sin(t * 5.2) * 0.008;
+
+    ctx.save();
+    ctx.translate(x, groundY + bob);
+    ctx.rotate(pitch);
+
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    const shadow = ctx.createRadialGradient(0, carH * 0.27, 20 * scale, 0, carH * 0.27, 205 * scale);
+    shadow.addColorStop(0, "rgba(0,0,0,0.55)");
+    shadow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = shadow;
+    ctx.beginPath();
+    ctx.ellipse(0, carH * 0.3, carW * 0.56, carH * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const wheelR = 42 * scale;
+    const rearX = -carW * 0.28;
+    const frontX = carW * 0.29;
+    const wheelY = carH * 0.09;
+    drawWheel(rearX, wheelY, wheelR, t);
+    drawWheel(frontX, wheelY, wheelR, t);
+
+    const body = ctx.createLinearGradient(0, -carH * 0.75, 0, carH * 0.22);
+    body.addColorStop(0, "#e8eff7");
+    body.addColorStop(0.35, "#b9c7d7");
+    body.addColorStop(0.5, "#7890ab");
+    body.addColorStop(1, "#263a50");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(-carW * 0.47, -carH * 0.08);
+    ctx.bezierCurveTo(-carW * 0.43, -carH * 0.37, -carW * 0.32, -carH * 0.51, -carW * 0.19, -carH * 0.53);
+    ctx.lineTo(carW * 0.12, -carH * 0.54);
+    ctx.bezierCurveTo(carW * 0.28, -carH * 0.52, carW * 0.42, -carH * 0.33, carW * 0.49, -carH * 0.08);
+    ctx.lineTo(carW * 0.5, carH * 0.07);
+    ctx.bezierCurveTo(carW * 0.34, carH * 0.19, -carW * 0.35, carH * 0.2, -carW * 0.51, carH * 0.06);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.24)";
+    ctx.lineWidth = 2 * scale;
+    ctx.stroke();
+
+    const cabin = ctx.createLinearGradient(0, -carH * 0.75, 0, -carH * 0.22);
+    cabin.addColorStop(0, "#dbeeff");
+    cabin.addColorStop(0.52, "#7fa3c2");
+    cabin.addColorStop(1, "#1d3348");
+    ctx.fillStyle = cabin;
+    ctx.beginPath();
+    ctx.moveTo(-carW * 0.18, -carH * 0.48);
+    ctx.lineTo(carW * 0.09, -carH * 0.48);
+    ctx.bezierCurveTo(carW * 0.2, -carH * 0.46, carW * 0.29, -carH * 0.32, carW * 0.33, -carH * 0.19);
+    ctx.lineTo(-carW * 0.31, -carH * 0.19);
+    ctx.bezierCurveTo(-carW * 0.29, -carH * 0.32, -carW * 0.25, -carH * 0.43, -carW * 0.18, -carH * 0.48);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(10, 20, 30, 0.58)";
+    ctx.lineWidth = 3 * scale;
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.32)";
+    ctx.lineWidth = 1.5 * scale;
+    ctx.beginPath();
+    ctx.moveTo(-carW * 0.01, -carH * 0.48);
+    ctx.lineTo(-carW * 0.04, -carH * 0.19);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255, 240, 200, 0.92)";
+    ctx.beginPath();
+    ctx.ellipse(carW * 0.49, -carH * 0.03, 13 * scale, 8 * scale, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 45, 42, 0.78)";
+    ctx.beginPath();
+    ctx.ellipse(-carW * 0.5, -carH * 0.02, 10 * scale, 6 * scale, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,0.32)";
+    roundRect(-carW * 0.12, -carH * 0.05, carW * 0.17, 4 * scale, 2 * scale);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawWheel(x, y, r, t) {
+    const spin = t * 9.8;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = "#0b0d12";
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#222936";
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#aab6c2";
+    ctx.lineWidth = r * 0.08;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.44, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.rotate(spin);
+    ctx.strokeStyle = "rgba(235,242,248,0.9)";
+    ctx.lineWidth = r * 0.06;
+    for (let i = 0; i < 8; i++) {
+      ctx.rotate(Math.PI / 4);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(r * 0.58, 0);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#d7e1ea";
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function vignette() {
+    const v = ctx.createRadialGradient(width * 0.5, height * 0.55, Math.min(width, height) * 0.2, width * 0.5, height * 0.55, Math.max(width, height) * 0.72);
+    v.addColorStop(0, "rgba(0,0,0,0)");
+    v.addColorStop(0.7, "rgba(0,0,0,0.08)");
+    v.addColorStop(1, "rgba(0,0,0,0.38)");
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.04);
+    last = now;
+    elapsed += dt;
+
+    ctx.clearRect(0, 0, width, height);
+    drawSky(elapsed);
+    drawHills(elapsed);
+    drawGround(elapsed);
+    drawCar(elapsed);
+    vignette();
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

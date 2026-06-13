@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thriller Formation - Three.js</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #050608;
+      color: #f6efe3;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    #stage {
+      position: fixed;
+      inset: 0;
+    }
+    #hud {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      max-width: min(460px, calc(100vw - 36px));
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(8, 10, 16, 0.58);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.38);
+    }
+    #hud h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    #hud p {
+      margin: 5px 0 0;
+      color: #d6cbbd;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <aside id="hud">
+    <h1>Thriller Formation</h1>
+    <p>Michael Jackson, Pepe the Frog, Donald Trump, and Elon Musk perform synchronized cinematic choreography.</p>
+  </aside>
+
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+
+const host = document.getElementById("stage");
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05070d);
+scene.fog = new THREE.FogExp2(0x060811, 0.04);
+
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 120);
+camera.position.set(0, 4.2, 10.8);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.25;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+
+const clock = new THREE.Clock();
+const dancers = [];
+const pointer = { x: 0, y: 0 };
+
+window.addEventListener("pointermove", event => {
+  pointer.x = (event.clientX / innerWidth - 0.5) * 2;
+  pointer.y = (event.clientY / innerHeight - 0.5) * 2;
+}, { passive: true });
+
+window.addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function mat(color, roughness = 0.72, metalness = 0.02) {
+  return new THREE.MeshStandardMaterial({ color, roughness, metalness });
+}
+
+const mats = {
+  black: mat(0x08090c, 0.82),
+  white: mat(0xf3f0e8, 0.45),
+  red: mat(0xbd1e2d, 0.55),
+  gold: mat(0xffc857, 0.4, 0.08),
+  green: mat(0x66b85f, 0.74),
+  frogDark: mat(0x2c7f3f, 0.78),
+  suit: mat(0x141b32, 0.62),
+  blue: mat(0x276ca3, 0.66),
+  skin: mat(0xf0c49a, 0.7),
+  pale: mat(0xf5d6bb, 0.68),
+  tan: mat(0xd79a6a, 0.7),
+  hairGold: mat(0xf2c052, 0.58),
+  hairDark: mat(0x18120f, 0.75),
+  tech: mat(0x101820, 0.5),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0x9fdcff, roughness: 0.12, metalness: 0, transmission: 0.15, transparent: true, opacity: 0.55 })
+};
+
+function mesh(geometry, material, parent, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
+  const m = new THREE.Mesh(geometry, material);
+  m.position.set(...position);
+  m.rotation.set(...rotation);
+  m.scale.set(...scale);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+
+const geo = {
+  sphere: new THREE.SphereGeometry(1, 32, 24),
+  body: new THREE.CapsuleGeometry(0.34, 0.82, 8, 22),
+  limb: new THREE.CapsuleGeometry(0.105, 0.72, 6, 14),
+  hand: new THREE.SphereGeometry(0.12, 20, 14),
+  shoe: new THREE.BoxGeometry(0.34, 0.15, 0.55),
+  cone: new THREE.ConeGeometry(0.25, 0.42, 24),
+  cyl: new THREE.CylinderGeometry(1, 1, 1, 32)
+};
+
+function createLabel(text) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const c = canvas.getContext("2d");
+  c.clearRect(0, 0, canvas.width, canvas.height);
+  c.fillStyle = "rgba(8, 10, 16, 0.72)";
+  rounded(c, 16, 22, 480, 72, 22);
+  c.fill();
+  c.strokeStyle = "rgba(255, 255, 255, 0.28)";
+  c.lineWidth = 3;
+  c.stroke();
+  c.fillStyle = "#fff1d8";
+  c.font = "700 34px system-ui, sans-serif";
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText(text, 256, 59);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+  sprite.scale.set(1.75, 0.44, 1);
+  return sprite;
+}
+
+function rounded(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+function makeLimb(material, length = 0.78, radius = 0.105) {
+  const group = new THREE.Group();
+  const capsule = new THREE.CapsuleGeometry(radius, length, 6, 14);
+  const m = mesh(capsule, material, group, [0, -length / 2, 0]);
+  m.castShadow = true;
+  return group;
+}
+
+function createHumanoid(options) {
+  const root = new THREE.Group();
+  root.position.copy(options.position);
+  scene.add(root);
+
+  const rig = {
+    root,
+    base: options.position.clone(),
+    label: createLabel(options.label),
+    arms: {},
+    legs: {},
+    head: null,
+    torso: null,
+    lean: new THREE.Group(),
+    options
+  };
+  root.add(rig.lean);
+
+  rig.torso = mesh(geo.body, options.jacket, rig.lean, [0, 1.58, 0], [0, 0, 0], [0.92, 1.08, 0.78]);
+  mesh(new THREE.BoxGeometry(0.12, 0.86, 0.03), options.trim || mats.black, rig.torso, [0, 0.08, -0.33]);
+
+  const neck = mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.2, 20), options.skin, rig.lean, [0, 2.18, 0]);
+  neck.castShadow = true;
+  rig.head = mesh(geo.sphere, options.skin, rig.lean, [0, 2.48, 0], [0, 0, 0], [0.35, 0.42, 0.35]);
+
+  mesh(geo.sphere, mats.black, rig.head, [-0.12, 0.02, 0.32], [0, 0, 0], [0.035, 0.035, 0.035]);
+  mesh(geo.sphere, mats.black, rig.head, [0.12, 0.02, 0.32], [0, 0, 0], [0.035, 0.035, 0.035]);
+
+  const smile = mesh(new THREE.TorusGeometry(0.12, 0.01, 8, 24, Math.PI), mats.black, rig.head, [0, -0.12, 0.33], [Math.PI, 0, 0], [1, 0.5, 1]);
+  smile.castShadow = false;
+
+  rig.arms.left = makeLimb(options.sleeve || options.jacket);
+  rig.arms.right = makeLimb(options.sleeve || options.jacket);
+  rig.arms.left.position.set(-0.43, 1.96, 0);
+  rig.arms.right.position.set(0.43, 1.96, 0);
+  rig.lean.add(rig.arms.left, rig.arms.right);
+  rig.hands = {
+    left: mesh(geo.hand, options.leftHand || options.skin, rig.arms.left, [0, -0.88, 0]),
+    right: mesh(geo.hand, options.rightHand || options.skin, rig.arms.right, [0, -0.88, 0])
+  };
+
+  rig.legs.left = makeLimb(options.pants || mats.black, 0.82, 0.12);
+  rig.legs.right = makeLimb(options.pants || mats.black, 0.82, 0.12);
+  rig.legs.left.position.set(-0.18, 1.06, 0);
+  rig.legs.right.position.set(0.18, 1.06, 0);
+  rig.lean.add(rig.legs.left, rig.legs.right);
+  rig.shoes = {
+    left: mesh(geo.shoe, options.shoe || mats.black, rig.legs.left, [0, -0.88, 0.08]),
+    right: mesh(geo.shoe, options.shoe || mats.black, rig.legs.right, [0, -0.88, 0.08])
+  };
+
+  rig.label.position.set(0, 3.25, 0);
+  root.add(rig.label);
+
+  options.decorate?.(rig);
+  dancers.push(rig);
+  return rig;
+}
+
+function createPepe(options) {
+  const root = new THREE.Group();
+  root.position.copy(options.position);
+  scene.add(root);
+  const rig = {
+    root,
+    base: options.position.clone(),
+    label: createLabel("Pepe the Frog"),
+    arms: {},
+    legs: {},
+    lean: new THREE.Group(),
+    options
+  };
+  root.add(rig.lean);
+
+  rig.torso = mesh(geo.body, mats.blue, rig.lean, [0, 1.5, 0], [0, 0, 0], [0.95, 0.88, 0.82]);
+  rig.head = mesh(geo.sphere, mats.green, rig.lean, [0, 2.32, 0], [0, 0, 0], [0.5, 0.42, 0.42]);
+  mesh(geo.sphere, mats.white, rig.head, [-0.18, 0.16, 0.32], [0, 0, 0], [0.17, 0.22, 0.12]);
+  mesh(geo.sphere, mats.white, rig.head, [0.18, 0.16, 0.32], [0, 0, 0], [0.17, 0.22, 0.12]);
+  mesh(geo.sphere, mats.black, rig.head, [-0.15, 0.12, 0.42], [0, 0, 0], [0.045, 0.06, 0.035]);
+  mesh(geo.sphere, mats.black, rig.head, [0.15, 0.12, 0.42], [0, 0, 0], [0.045, 0.06, 0.035]);
+  mesh(new THREE.TorusGeometry(0.23, 0.018, 8, 36, Math.PI), mats.frogDark, rig.head, [0, -0.12, 0.36], [Math.PI, 0, 0], [1.2, 0.5, 1]);
+
+  rig.arms.left = makeLimb(mats.green, 0.72, 0.11);
+  rig.arms.right = makeLimb(mats.green, 0.72, 0.11);
+  rig.arms.left.position.set(-0.44, 1.86, 0);
+  rig.arms.right.position.set(0.44, 1.86, 0);
+  rig.lean.add(rig.arms.left, rig.arms.right);
+  rig.hands = {
+    left: mesh(geo.hand, mats.green, rig.arms.left, [0, -0.82, 0], [0, 0, 0], [1.2, 0.72, 1]),
+    right: mesh(geo.hand, mats.green, rig.arms.right, [0, -0.82, 0], [0, 0, 0], [1.2, 0.72, 1])
+  };
+  rig.legs.left = makeLimb(mats.frogDark, 0.72, 0.12);
+  rig.legs.right = makeLimb(mats.frogDark, 0.72, 0.12);
+  rig.legs.left.position.set(-0.2, 1.0, 0);
+  rig.legs.right.position.set(0.2, 1.0, 0);
+  rig.lean.add(rig.legs.left, rig.legs.right);
+  rig.shoes = {
+    left: mesh(geo.shoe, mats.green, rig.legs.left, [0, -0.76, 0.08], [0, 0, 0], [1.1, 0.9, 1.05]),
+    right: mesh(geo.shoe, mats.green, rig.legs.right, [0, -0.76, 0.08], [0, 0, 0], [1.1, 0.9, 1.05])
+  };
+  rig.label.position.set(0, 3.14, 0);
+  root.add(rig.label);
+  dancers.push(rig);
+  return rig;
+}
+
+function decorateMichael(rig) {
+  mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.045, 40), mats.black, rig.head, [0, 0.39, 0], [0, 0, 0]);
+  mesh(new THREE.CylinderGeometry(0.21, 0.24, 0.18, 36), mats.black, rig.head, [0, 0.49, 0], [0, 0, 0]);
+  mesh(new THREE.BoxGeometry(0.68, 0.04, 0.08), mats.gold, rig.torso, [0, 0.26, -0.35]);
+  mesh(new THREE.BoxGeometry(0.68, 0.04, 0.08), mats.gold, rig.torso, [0, 0.06, -0.35]);
+  mesh(new THREE.SphereGeometry(0.045, 14, 10), mats.gold, rig.torso, [-0.12, 0.42, -0.35]);
+  mesh(new THREE.SphereGeometry(0.045, 14, 10), mats.gold, rig.torso, [0.12, 0.42, -0.35]);
+}
+
+function decorateTrump(rig) {
+  mesh(new THREE.SphereGeometry(0.24, 24, 12), mats.hairGold, rig.head, [-0.03, 0.29, 0.06], [0, 0, 0], [1.2, 0.35, 0.95]);
+  mesh(new THREE.SphereGeometry(0.19, 24, 12), mats.hairGold, rig.head, [0.16, 0.23, 0.2], [0, 0.4, -0.25], [1.1, 0.32, 0.75]);
+  mesh(new THREE.BoxGeometry(0.13, 0.72, 0.04), mats.red, rig.torso, [0, 0.01, -0.36], [0, 0, 0.05]);
+}
+
+function decorateElon(rig) {
+  mesh(new THREE.SphereGeometry(0.24, 24, 12), mats.hairDark, rig.head, [0, 0.3, 0.03], [0, 0, 0], [1, 0.32, 0.9]);
+  mesh(new THREE.ConeGeometry(0.055, 0.16, 16), mats.white, rig.torso, [0.18, 0.27, -0.36], [0, 0, -0.35]);
+  mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.16, 12), mats.red, rig.torso, [0.18, 0.18, -0.36], [0, 0, 0]);
+  mesh(new THREE.BoxGeometry(0.54, 0.04, 0.04), mats.glass, rig.torso, [0, 0.43, -0.36]);
+}
+
+const michael = createHumanoid({
+  label: "Michael Jackson",
+  position: new THREE.Vector3(-2.85, 0, 0.1),
+  skin: mats.pale,
+  jacket: mats.red,
+  sleeve: mats.red,
+  pants: mats.black,
+  shoe: mats.white,
+  leftHand: mats.white,
+  rightHand: mats.pale,
+  trim: mats.black,
+  decorate: decorateMichael
+});
+
+const pepe = createPepe({ position: new THREE.Vector3(-0.95, 0, -0.15) });
+
+const trump = createHumanoid({
+  label: "Donald Trump",
+  position: new THREE.Vector3(0.95, 0, -0.15),
+  skin: mats.tan,
+  jacket: mats.suit,
+  sleeve: mats.suit,
+  pants: mats.suit,
+  shoe: mats.black,
+  trim: mats.white,
+  decorate: decorateTrump
+});
+
+const elon = createHumanoid({
+  label: "Elon Musk",
+  position: new THREE.Vector3(2.85, 0, 0.1),
+  skin: mats.pale,
+  jacket: mats.tech,
+  sleeve: mats.tech,
+  pants: mats.black,
+  shoe: mats.black,
+  trim: mats.blue,
+  decorate: decorateElon
+});
+
+function buildStage() {
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x14171d, roughness: 0.6, metalness: 0.08 });
+  const floor = mesh(new THREE.PlaneGeometry(28, 18, 1, 1), floorMat, scene, [0, 0, -1.6], [-Math.PI / 2, 0, 0]);
+  floor.receiveShadow = true;
+
+  const grid = new THREE.GridHelper(28, 28, 0x9b6f42, 0x28252c);
+  grid.position.y = 0.012;
+  grid.position.z = -1.6;
+  scene.add(grid);
+
+  const moon = mesh(new THREE.SphereGeometry(1.2, 48, 32), mat(0xf1dec1, 0.4), scene, [5.7, 6.4, -10], [0, 0, 0]);
+  moon.castShadow = false;
+  const moonGlow = new THREE.PointLight(0xf5d5aa, 1.0, 24);
+  moonGlow.position.copy(moon.position);
+  scene.add(moonGlow);
+
+  const backWall = mesh(new THREE.PlaneGeometry(26, 10), new THREE.MeshStandardMaterial({ color: 0x090b12, roughness: 0.9 }), scene, [0, 4, -9.5], [0, 0, 0]);
+  backWall.receiveShadow = true;
+
+  for (let i = 0; i < 13; i++) {
+    const x = -12 + i * 2 + Math.sin(i * 7) * 0.55;
+    const h = 0.7 + Math.random() * 0.55;
+    const stone = mesh(new THREE.BoxGeometry(0.52, h, 0.15), mat(0x5c6070, 0.86), scene, [x, h / 2, -6.4 - Math.random() * 1.9], [0, Math.random() * 0.4 - 0.2, 0]);
+    stone.castShadow = true;
+    mesh(new THREE.SphereGeometry(0.28, 20, 10), mat(0x5c6070, 0.86), stone, [0, h / 2, 0], [0, 0, 0], [1, 0.42, 0.28]);
+  }
+
+  for (let i = 0; i < 7; i++) {
+    const x = -9 + i * 3.1;
+    const trunk = mesh(new THREE.CylinderGeometry(0.09, 0.14, 2.8, 9), mat(0x19100d, 0.9), scene, [x, 1.35, -7.7], [0.15 * Math.sin(i), 0, 0.1 * Math.cos(i)]);
+    mesh(new THREE.ConeGeometry(0.85, 1.8, 9), mat(0x111b15, 0.85), trunk, [0, 1.65, 0], [0, 0, 0]);
+  }
+
+  addSpot(-4.2, 6.4, 4.5, 0xff3e5e, michael.root);
+  addSpot(-1.2, 6.2, 4.3, 0x6ce06b, pepe.root);
+  addSpot(1.2, 6.2, 4.3, 0xffcf66, trump.root);
+  addSpot(4.2, 6.4, 4.5, 0x64b8ff, elon.root);
+  addBeam(-4.2, 4.9, 3.2, 0xff3e5e);
+  addBeam(-1.2, 4.8, 3.0, 0x6ce06b);
+  addBeam(1.2, 4.8, 3.0, 0xffcf66);
+  addBeam(4.2, 4.9, 3.2, 0x64b8ff);
+
+  const ambient = new THREE.HemisphereLight(0x909dff, 0x14100b, 1.35);
+  scene.add(ambient);
+  const rim = new THREE.DirectionalLight(0xb9d7ff, 1.2);
+  rim.position.set(-4, 6, -5);
+  rim.castShadow = true;
+  rim.shadow.mapSize.set(2048, 2048);
+  rim.shadow.camera.near = 1;
+  rim.shadow.camera.far = 20;
+  rim.shadow.camera.left = -8;
+  rim.shadow.camera.right = 8;
+  rim.shadow.camera.top = 8;
+  rim.shadow.camera.bottom = -4;
+  scene.add(rim);
+}
+
+function addSpot(x, y, z, color, target) {
+  const light = new THREE.SpotLight(color, 6.5, 18, Math.PI / 6, 0.65, 1.4);
+  light.position.set(x, y, z);
+  light.target = target;
+  light.castShadow = true;
+  light.shadow.mapSize.set(1024, 1024);
+  scene.add(light, light.target);
+}
+
+function addBeam(x, y, z, color) {
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.105,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const beam = mesh(new THREE.ConeGeometry(1.1, 6.2, 36, 1, true), material, scene, [x, y - 1.6, z - 1.8], [Math.PI, 0, 0]);
+  beam.castShadow = false;
+  beam.receiveShadow = false;
+}
+
+buildStage();
+
+function animateRig(rig, t, index) {
+  const offset = index * 0.42;
+  const beat = t * 2.25 + offset;
+  const snap = Math.sin(beat);
+  const double = Math.sin(beat * 2.0);
+  const segment = Math.floor((t * 0.42 + index * 0.06) % 4);
+  const side = Math.sin(t * 1.12 + index) * 0.22;
+  const forward = Math.cos(t * 0.75 + index * 0.4) * 0.16;
+
+  rig.root.position.x = rig.base.x + side;
+  rig.root.position.z = rig.base.z + forward;
+  rig.root.position.y = Math.abs(snap) * 0.055;
+  rig.root.rotation.y = Math.sin(t * 0.85 + index * 0.8) * 0.18;
+  rig.lean.rotation.z = double * 0.06;
+  rig.lean.rotation.x = Math.sin(beat + 0.8) * 0.05;
+  rig.head.rotation.y = Math.sin(beat * 0.5) * 0.24;
+  rig.head.rotation.z = Math.sin(beat + 1.3) * 0.08;
+
+  const claw = segment === 0 ? 1 : 0.38;
+  const slide = segment === 1 ? 1 : 0;
+  const lean = segment === 2 ? 1 : 0;
+  const spin = segment === 3 ? 1 : 0;
+
+  rig.arms.left.rotation.set(
+    -0.55 - claw * 0.6 + Math.max(0, snap) * 0.28,
+    0.22 + lean * 0.55,
+    0.92 + double * 0.2 + slide * 0.25
+  );
+  rig.arms.right.rotation.set(
+    -0.55 - claw * 0.6 + Math.max(0, -snap) * 0.28,
+    -0.22 - lean * 0.55,
+    -0.92 + double * 0.2 - slide * 0.25
+  );
+  rig.legs.left.rotation.set(0.22 * snap + slide * 0.36, 0, 0.14 * double);
+  rig.legs.right.rotation.set(-0.22 * snap - slide * 0.36, 0, -0.14 * double);
+  rig.shoes.left.rotation.x = 0.28 * Math.max(0, -snap);
+  rig.shoes.right.rotation.x = 0.28 * Math.max(0, snap);
+  rig.root.rotation.y += spin * Math.sin((t * 3 + index) % (Math.PI * 2)) * 0.42;
+}
+
+function addAtmosphere(t) {
+  const count = 22;
+  for (let i = 0; i < count; i++) {
+    const sprite = dustSprites[i];
+    const a = i * 12.989 + t * 0.12;
+    sprite.position.set(
+      Math.sin(a * 1.7) * 7.8,
+      0.7 + (i % 7) * 0.52 + Math.sin(t + i) * 0.08,
+      -2.5 + Math.cos(a) * 5.3
+    );
+    sprite.material.opacity = 0.13 + Math.sin(t * 0.8 + i) * 0.04;
+  }
+}
+
+function createDust() {
+  const dust = [];
+  const mapCanvas = document.createElement("canvas");
+  mapCanvas.width = 64;
+  mapCanvas.height = 64;
+  const c = mapCanvas.getContext("2d");
+  const grad = c.createRadialGradient(32, 32, 0, 32, 32, 30);
+  grad.addColorStop(0, "rgba(255,255,255,0.65)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  c.fillStyle = grad;
+  c.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(mapCanvas);
+  for (let i = 0; i < 22; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.12, depthWrite: false }));
+    s.scale.setScalar(0.4 + Math.random() * 1.2);
+    scene.add(s);
+    dust.push(s);
+  }
+  return dust;
+}
+
+const dustSprites = createDust();
+
+function render() {
+  const t = clock.getElapsedTime();
+  dancers.forEach((rig, i) => animateRig(rig, t, i));
+  addAtmosphere(t);
+
+  const orbit = Math.sin(t * 0.18) * 0.9;
+  camera.position.x = orbit + pointer.x * 0.35;
+  camera.position.y = 4.1 + Math.sin(t * 0.3) * 0.22 - pointer.y * 0.18;
+  camera.position.z = 10.5 + Math.cos(t * 0.16) * 0.45;
+  camera.lookAt(0, 1.55, -0.6);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(render);
+}
+
+render();
+</script>
+</body>
+</html>
