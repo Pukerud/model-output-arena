@@ -161,6 +161,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/anthropic/claude-sonnet-4-6/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/anthropic/claude-sonnet-4-6/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "z-ai",
+      provider_display: "Z.AI",
+      model: "glm-5.2-native",
+      model_display: "GLM 5.2 (Native Harness)",
+      hosting: "api",
+      weights: "open",
+      path: "providers/z-ai/glm-5.2-native",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/z-ai/glm-5.2-native/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/z-ai/glm-5.2-native/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/z-ai/glm-5.2-native/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

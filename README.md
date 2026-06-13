@@ -73,10 +73,19 @@ Two independent axes are labelled:
 | Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
+| Z.AI | GLM 5.2 (Native Harness) | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2-native`](./providers/z-ai/glm-5.2-native) |
 
 ## How outputs were generated
 
-All outputs were generated inside **VS Code** — non-Anthropic models via the **Pi dev** extension, Anthropic models via **Claude Code**. Same editor, same prompts, no post-editing. What you see is what the model produced.
+Outputs are produced by pointing an **agent harness** at this repo and giving it the prompts. The harness is the loop around the model (it reads files, runs the model, writes the result). So far three harnesses have been used:
+
+- **Pi dev** — the Z.AI Pi dev extension, used for most non-Anthropic models.
+- **Claude Code** — the VS Code extension, used for the Anthropic models.
+- **Z.AI native harness** — Z.AI's own agent. Used for the **GLM 5.2 (Native Harness)** entry, which is the *same model* as the existing GLM 5.2 but driven by a different harness — a useful head-to-head on how much the harness shapes the result.
+
+Everything runs inside **VS Code**, with the same prompts and no post-editing — what you see is what the model produced.
+
+> **A note on fairness.** Harnesses don't behave identically. The Z.AI native harness asked clarifying questions before the Plants vs Zombies build (answered: *Endless survival* + *Cartoon vector*) and its first attempt didn't run — it took two more fix prompts to get a playable result. The single-prompt harnesses got one shot. Per-run details live in each test's `meta.json`.
 
 ## For humans
 

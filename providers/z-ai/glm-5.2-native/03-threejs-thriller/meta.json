@@ -1,0 +1,13 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.2-native",
+  "model_display": "GLM 5.2 (Native Harness)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T20:05:00Z",
+  "runner": "GLM 5.2 via Z.AI native harness (zcode)",
+  "notes": "Same model as the existing GLM 5.2 entry, but run through Z.AI's own native agent harness instead of the Pi dev extension. Single-shot: no clarifying questions, worked on first run.",
+  "hosting": "api",
+  "weights": "open"
+}

@@ -1,0 +1,13 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.2-native",
+  "model_display": "GLM 5.2 (Native Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T19:56:00Z",
+  "runner": "GLM 5.2 via Z.AI native harness (zcode)",
+  "notes": "Same model as the existing GLM 5.2 entry, but run through Z.AI's own native agent harness instead of the Pi dev extension. Single-shot: no clarifying questions, worked on first run.",
+  "hosting": "api",
+  "weights": "open"
+}

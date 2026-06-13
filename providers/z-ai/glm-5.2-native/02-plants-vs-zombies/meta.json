@@ -1,0 +1,13 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.2-native",
+  "model_display": "GLM 5.2 (Native Harness)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:8f1e5687419505d78246f3595884e6a38c40307b032cb576a327aeefc5e6d906",
+  "generated_at": "2026-06-13T20:39:00Z",
+  "runner": "GLM 5.2 via Z.AI native harness (zcode)",
+  "notes": "NOT single-shot. The native harness asked two clarifying questions before building, answered by the human: game structure -> 'Endless survival'; visual style -> 'Cartoon vector'. The harness then over-complicated the build and it did NOT work on first run (rendered only some green and a sun, no menu, no way to play). Two further fix prompts were required: (1) 'dont work at all only some green and a sun no menu no way to play'; (2) 'i see menu reached now and a big click to play button clean up the menu and when the zombie is set to spawn it crahseh syntax error line 806, 759, 1225,1389.' output.html is the result after these three total generations.",
+  "hosting": "api",
+  "weights": "open"
+}
