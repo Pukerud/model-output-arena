@@ -13,6 +13,19 @@ window.ARENA = {
   ],
   models: [
     {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-opus-4-8",
+      model_display: "Claude Opus 4.8",
+      path: "providers/anthropic/claude-opus-4-8",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-opus-4-8/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-opus-4-8/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-opus-4-8/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "z-ai",
       provider_display: "Z.AI",
       model: "glm-5.2",

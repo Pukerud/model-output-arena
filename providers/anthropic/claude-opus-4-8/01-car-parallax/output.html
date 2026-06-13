@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sunset Drive — Parallax</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1a1024; }
+  #scene { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("scene");
+  const ctx = canvas.getContext("2d");
+
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ---- deterministic pseudo-random for repeatable scenery ----
+  function rng(seed) {
+    let s = seed >>> 0;
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  // Horizon line is a fraction of the viewport so it scales.
+  function horizon() { return H * 0.70; }
+
+  // Master scroll position in "world" pixels. Speed in px/sec.
+  let scroll = 0;
+  const SPEED = 240;
+
+  // Generic layer renderer: tiles content of width `tile` at parallax `factor`.
+  function layerOffset(factor, tile) {
+    const o = (scroll * factor) % tile;
+    return o < 0 ? o + tile : o;
+  }
+
+  // ---------- SKY ----------
+  function drawSky() {
+    const hz = horizon();
+    const g = ctx.createLinearGradient(0, 0, 0, hz + H * 0.05);
+    g.addColorStop(0.00, "#2a1a4a");
+    g.addColorStop(0.35, "#6d3b6e");
+    g.addColorStop(0.62, "#c75b54");
+    g.addColorStop(0.82, "#f2a14e");
+    g.addColorStop(1.00, "#ffd98a");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, hz + 2);
+
+    // Sun — fixed, sitting on the horizon for that cinematic glow.
+    const sunX = W * 0.74, sunY = hz - H * 0.16, sunR = Math.min(W, H) * 0.10;
+    const halo = ctx.createRadialGradient(sunX, sunY, sunR * 0.2, sunX, sunY, sunR * 4);
+    halo.addColorStop(0, "rgba(255,230,170,0.55)");
+    halo.addColorStop(1, "rgba(255,200,120,0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, W, hz);
+    const sun = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR);
+    sun.addColorStop(0, "#fff6d8");
+    sun.addColorStop(0.6, "#ffd877");
+    sun.addColorStop(1, "#ff9d52");
+    ctx.fillStyle = sun;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ---------- STARS (faint, upper sky) ----------
+  const stars = (() => {
+    const r = rng(7), arr = [];
+    for (let i = 0; i < 70; i++) arr.push({ x: r(), y: r() * 0.45, s: 0.5 + r() * 1.2, t: r() * 6.28 });
+    return arr;
+  })();
+  function drawStars(time) {
+    ctx.save();
+    for (const st of stars) {
+      const a = 0.35 + 0.35 * Math.sin(time * 1.5 + st.t);
+      ctx.fillStyle = "rgba(255,250,235," + (a * 0.6).toFixed(3) + ")";
+      ctx.fillRect(st.x * W, st.y * H, st.s, st.s);
+    }
+    ctx.restore();
+  }
+
+  // ---------- CLOUDS ----------
+  function cloud(cx, cy, s, alpha) {
+    ctx.fillStyle = "rgba(255,210,180," + alpha + ")";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, s * 1.0, s * 0.42, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + s * 0.8, cy + s * 0.08, s * 0.7, s * 0.34, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx - s * 0.8, cy + s * 0.10, s * 0.6, s * 0.30, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + s * 0.1, cy - s * 0.22, s * 0.55, s * 0.30, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const clouds = (() => {
+    const r = rng(21), arr = [];
+    for (let i = 0; i < 6; i++) arr.push({ x: r(), y: 0.08 + r() * 0.30, s: 26 + r() * 34, a: 0.10 + r() * 0.14 });
+    return arr;
+  })();
+  function drawClouds() {
+    const tile = W * 1.4;
+    const off = layerOffset(0.06, tile);
+    for (const c of clouds) {
+      let base = c.x * tile - off;
+      for (let k = -1; k <= 1; k++) {
+        const x = base + k * tile;
+        if (x > -120 && x < W + 120) cloud(x, c.y * H, c.s, c.a);
+      }
+    }
+  }
+
+  // ---------- FAR MOUNTAINS ----------
+  function drawMountains() {
+    const hz = horizon();
+    const tile = 900;
+    const off = layerOffset(0.10, tile);
+    ctx.fillStyle = "#5b3a63";
+    for (let base = -tile; base < W + tile; base += tile) {
+      const x0 = base - off;
+      const r = rng(101 + Math.round((base) / tile));
+      ctx.beginPath();
+      ctx.moveTo(x0, hz);
+      let x = x0;
+      while (x < x0 + tile) {
+        const peakW = 160 + r() * 160;
+        const peakH = 90 + r() * 130;
+        ctx.lineTo(x + peakW * 0.5, hz - peakH);
+        ctx.lineTo(x + peakW, hz);
+        x += peakW;
+      }
+      ctx.lineTo(x0 + tile, hz);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // ---------- NEAR HILLS ----------
+  function drawHills() {
+    const hz = horizon();
+    const tile = 620;
+    const off = layerOffset(0.20, tile);
+    const g = ctx.createLinearGradient(0, hz - 80, 0, hz + 40);
+    g.addColorStop(0, "#7a4a4f");
+    g.addColorStop(1, "#53343f");
+    ctx.fillStyle = g;
+    for (let base = -tile; base < W + tile; base += tile) {
+      const x0 = base - off;
+      ctx.beginPath();
+      ctx.moveTo(x0, hz + 30);
+      for (let t = 0; t <= 1.0001; t += 0.1) {
+        const x = x0 + t * tile;
+        const y = hz - 36 * Math.sin(t * Math.PI) - 10 * Math.sin(t * Math.PI * 3 + base);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(x0 + tile, hz + 30);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // ---------- TREE BAND (mid distance) ----------
+  function tree(x, groundY, h, hue) {
+    ctx.fillStyle = "#2c1d2a";
+    ctx.fillRect(x - 2, groundY - h * 0.32, 4, h * 0.32);
+    ctx.fillStyle = hue;
+    ctx.beginPath();
+    ctx.moveTo(x, groundY - h);
+    ctx.lineTo(x - h * 0.30, groundY - h * 0.28);
+    ctx.lineTo(x + h * 0.30, groundY - h * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x, groundY - h * 1.18);
+    ctx.lineTo(x - h * 0.24, groundY - h * 0.55);
+    ctx.lineTo(x + h * 0.24, groundY - h * 0.55);
+    ctx.closePath();
+    ctx.fill();
+  }
+  function drawTrees() {
+    const hz = horizon();
+    const tile = 360;
+    const off = layerOffset(0.36, tile);
+    for (let base = -tile; base < W + tile; base += tile) {
+      const x0 = base - off;
+      const r = rng(303 + Math.round(base / tile));
+      const n = 3 + Math.floor(r() * 3);
+      for (let i = 0; i < n; i++) {
+        const x = x0 + r() * tile;
+        const h = 46 + r() * 40;
+        const shade = r() > 0.5 ? "#3a3326" : "#34402c";
+        tree(x, hz + 6, h, shade);
+      }
+    }
+  }
+
+  // ---------- ROAD ----------
+  function drawRoad() {
+    const hz = horizon();
+    const roadTop = hz + 4;
+    // grass/verge gradient down to bottom
+    const vg = ctx.createLinearGradient(0, roadTop, 0, H);
+    vg.addColorStop(0, "#3b4a2a");
+    vg.addColorStop(1, "#27331d");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, roadTop, W, H - roadTop);
+
+    // asphalt
+    const roadY = H * 0.80;
+    const rg = ctx.createLinearGradient(0, roadY, 0, H);
+    rg.addColorStop(0, "#3a3540");
+    rg.addColorStop(1, "#211d28");
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, roadY, W, H - roadY);
+
+    // top edge highlight (sunlit)
+    ctx.fillStyle = "rgba(255,180,120,0.25)";
+    ctx.fillRect(0, roadY, W, 2);
+
+    // center dashes
+    const tile = 90;
+    const off = layerOffset(1.0, tile);
+    const dashY = (roadY + H) / 2;
+    ctx.fillStyle = "rgba(245,225,150,0.85)";
+    for (let base = -tile; base < W + tile; base += tile) {
+      const x = base - off;
+      ctx.fillRect(x, dashY - 3, 46, 6);
+    }
+    return roadY;
+  }
+
+  // ---------- ROADSIDE POLES + SIGNS (fast, near) ----------
+  function drawPoles(roadY) {
+    const tile = 280;
+    const off = layerOffset(0.78, tile);
+    for (let base = -tile; base < W + tile; base += tile) {
+      const x = base - off;
+      const r = rng(909 + Math.round(base / tile));
+      const baseY = roadY - 2;
+      const h = 70 + r() * 30;
+      // pole
+      ctx.fillStyle = "#15121b";
+      ctx.fillRect(x - 2, baseY - h, 4, h);
+      // lamp head catching sunset
+      ctx.fillStyle = "rgba(255,150,90,0.9)";
+      ctx.fillRect(x - 10, baseY - h - 4, 18, 5);
+      // occasional sign
+      if (r() > 0.6) {
+        ctx.fillStyle = "#1b2630";
+        ctx.fillRect(x + 6, baseY - h * 0.7, 22, 16);
+        ctx.fillStyle = "rgba(255,210,150,0.7)";
+        ctx.fillRect(x + 9, baseY - h * 0.7 + 4, 16, 3);
+      }
+    }
+  }
+
+  // ---------- FOREGROUND GRASS TUFTS (fastest) ----------
+  function drawForeground() {
+    const tile = 130;
+    const off = layerOffset(1.35, tile);
+    ctx.fillStyle = "#1a2414";
+    for (let base = -tile; base < W + tile; base += tile) {
+      const x0 = base - off;
+      const r = rng(555 + Math.round(base / tile));
+      const n = 5 + Math.floor(r() * 5);
+      for (let i = 0; i < n; i++) {
+        const x = x0 + r() * tile;
+        const bl = 8 + r() * 14;
+        const y = H - 4 - r() * 10;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + 2, y - bl * 0.6, x + (r() - 0.5) * 6, y - bl);
+        ctx.lineTo(x + 2, y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  // ---------- THE CAR ----------
+  // Drawn in its own local coordinate space, centered, then placed in foreground.
+  function drawCar(cx, cy, scale, time) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // subtle body bob + pitch tied to a gentle road rhythm
+    const bob = Math.sin(time * 6.0) * 1.6 + Math.sin(time * 2.3) * 1.0;
+    const pitch = Math.sin(time * 6.0 + 0.6) * 0.012;
+    ctx.translate(0, bob);
+    ctx.rotate(pitch);
+    ctx.scale(scale, scale);
+
+    const wheelR = 26;
+    const wheelBaseY = 34;        // wheels sit below body center
+    const frontX = 70, rearX = -68;
+
+    // ground contact shadow
+    const sh = ctx.createRadialGradient(0, wheelBaseY + 18, 4, 0, wheelBaseY + 18, 150);
+    sh.addColorStop(0, "rgba(0,0,0,0.45)");
+    sh.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.ellipse(0, wheelBaseY + 20, 150, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ---- wheels (draw behind body) ----
+    function wheel(wx) {
+      ctx.save();
+      ctx.translate(wx, wheelBaseY);
+      // tyre
+      ctx.fillStyle = "#0c0c10";
+      ctx.beginPath();
+      ctx.arc(0, 0, wheelR, 0, Math.PI * 2);
+      ctx.fill();
+      // hub
+      ctx.fillStyle = "#2b2b33";
+      ctx.beginPath();
+      ctx.arc(0, 0, wheelR * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      // spinning spokes (angle from scroll => realistic ground speed link)
+      const ang = (scroll / wheelR) * scale;  // rolling without slipping-ish
+      ctx.rotate(ang);
+      ctx.strokeStyle = "#5a5a66";
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 5; i++) {
+        ctx.rotate(Math.PI * 2 / 5);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -wheelR * 0.5);
+        ctx.stroke();
+      }
+      // hub cap
+      ctx.fillStyle = "#c9ccd6";
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    wheel(frontX);
+    wheel(rearX);
+
+    // ---- body ----
+    // lower body
+    const bodyGrad = ctx.createLinearGradient(0, -40, 0, 36);
+    bodyGrad.addColorStop(0, "#e0584f");
+    bodyGrad.addColorStop(0.5, "#c23b3e");
+    bodyGrad.addColorStop(1, "#7e2230");
+    ctx.fillStyle = bodyGrad;
+    roundedBody();
+
+    function roundedBody() {
+      ctx.beginPath();
+      ctx.moveTo(-104, 18);
+      ctx.lineTo(-96, -8);
+      ctx.quadraticCurveTo(-92, -16, -78, -18);
+      // cabin/roof rise
+      ctx.lineTo(-46, -20);
+      ctx.quadraticCurveTo(-34, -52, -2, -54);
+      ctx.lineTo(34, -54);
+      ctx.quadraticCurveTo(58, -52, 70, -22);
+      ctx.lineTo(96, -18);
+      ctx.quadraticCurveTo(108, -14, 108, 6);
+      ctx.lineTo(106, 18);
+      ctx.quadraticCurveTo(106, 26, 96, 26);
+      ctx.lineTo(-96, 26);
+      ctx.quadraticCurveTo(-106, 26, -104, 18);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // windows
+    ctx.fillStyle = "rgba(180,225,245,0.85)";
+    ctx.beginPath();
+    ctx.moveTo(-42, -20);
+    ctx.quadraticCurveTo(-32, -46, -4, -48);
+    ctx.lineTo(-2, -22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(6, -22);
+    ctx.lineTo(8, -48);
+    ctx.lineTo(32, -48);
+    ctx.quadraticCurveTo(52, -46, 62, -22);
+    ctx.closePath();
+    ctx.fill();
+    // window reflection sweep
+    ctx.fillStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(-30, -22);
+    ctx.lineTo(-20, -44);
+    ctx.lineTo(-14, -44);
+    ctx.lineTo(-22, -22);
+    ctx.closePath();
+    ctx.fill();
+
+    // side highlight strip (sunset reflection)
+    ctx.strokeStyle = "rgba(255,220,160,0.6)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-96, 2);
+    ctx.lineTo(96, -2);
+    ctx.stroke();
+
+    // door line + handle
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(2, -20);
+    ctx.lineTo(4, 22);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(20,20,24,0.7)";
+    ctx.fillRect(-26, 2, 12, 3);
+    ctx.fillRect(18, 2, 12, 3);
+
+    // headlight glow (front = right)
+    const hl = ctx.createRadialGradient(106, 8, 1, 106, 8, 26);
+    hl.addColorStop(0, "rgba(255,245,200,0.95)");
+    hl.addColorStop(1, "rgba(255,245,200,0)");
+    ctx.fillStyle = hl;
+    ctx.beginPath();
+    ctx.arc(106, 8, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff4c8";
+    ctx.fillRect(102, 4, 6, 8);
+
+    // tail light (rear = left)
+    ctx.fillStyle = "#ff5a5a";
+    ctx.fillRect(-106, 4, 5, 9);
+
+    // wheel arches (drawn over body to frame wheels)
+    ctx.fillStyle = "rgba(0,0,0,0)";
+    ctx.strokeStyle = "rgba(30,12,18,0.9)";
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(frontX, wheelBaseY, wheelR + 6, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rearX, wheelBaseY, wheelR + 6, Math.PI, 0); ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ---------- VIGNETTE + GRAIN OVERLAY ----------
+  function drawVignette() {
+    const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(10,4,18,0.55)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ---------- MAIN LOOP ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    const time = now / 1000;
+
+    scroll += SPEED * dt;
+
+    ctx.clearRect(0, 0, W, H);
+    drawSky();
+    drawStars(time);
+    drawClouds();
+    drawMountains();
+    drawHills();
+    drawTrees();
+    const roadY = drawRoad();
+    drawPoles(roadY);
+
+    // car planted on the road, slightly left of center
+    const carScale = Math.min(W, H) / 520 * 1.15;
+    drawCar(W * 0.42, H * 0.80, carScale, time);
+
+    drawForeground();
+    drawVignette();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

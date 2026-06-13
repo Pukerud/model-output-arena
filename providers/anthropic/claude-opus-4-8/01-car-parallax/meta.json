@@ -1,0 +1,11 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-opus-4-8",
+  "model_display": "Claude Opus 4.8",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T00:00:00Z",
+  "runner": "Claude Opus 4.8 via Claude Code",
+  "notes": "Single self-contained HTML, no libraries. DPR-aware full-page canvas with horizon scaled to viewport. Layered parallax via modulo scroll: stars/sun, drifting clouds, far mountains (seeded jagged peaks), near hills, mid tree band, asphalt road with moving center dashes, near lamp poles + signs, and fastest foreground grass tufts. Hand-drawn side-view car with rolling-without-slipping wheel spin tied to scroll, spokes, hubcaps, sunset body gradient, window reflections, head/tail lights, plus subtle body bob and pitch. Cinematic sunset gradient sky and radial vignette."
+}
