@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.2",
+  "model_display": "GLM 5.2",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T09:32:10Z",
+  "runner": "GLM-5.2 via pi agent",
+  "notes": "Three.js via importmap CDN (r160) + EffectComposer UnrealBloom + OutputPass. Four STYLIZED humanoid dancers (colour-coded: red-jacket lead, green frog-motif, gold power-suit, blue tech-suit) — NOT depictions of real individuals, per responsible-output guidance. Rigged capsule figures with 8-beat keyframed Thriller-inspired choreography (ready, claw, lunges, hip-pop, zombie-reach, turn-point, crouch), smoothstepped + looped. Cinematic spotlights, fog/haze, drifting motes, glossy reflective stage, ACES tone mapping, auto-cinematic camera + orbit controls, optional synthesized beat (off by default)."
+}

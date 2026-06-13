@@ -1,0 +1,12 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/
+
+# Node (if anyone adds tooling later)
+node_modules/
+npm-debug.log*
+yarn-error.log*

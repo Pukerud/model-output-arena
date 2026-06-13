@@ -1,0 +1,11 @@
+{
+  "provider": "z-ai",
+  "provider_display": "Z.AI",
+  "model": "glm-5.2",
+  "model_display": "GLM 5.2",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T09:32:10Z",
+  "runner": "GLM-5.2 via pi agent",
+  "notes": "Single self-contained HTML, no libraries. Layered parallax (sky/sun, clouds, mountains, hills, tree band, roadside poles/bushes/signs, road + dashes, foreground tufts + dust) with continuous modulo scroll for a seamless loop. dt-based timing; DPR-aware full-page canvas; spinning wheels tied to speed; subtle body bob + pitch; cinematic sunset palette + vignette."
+}
