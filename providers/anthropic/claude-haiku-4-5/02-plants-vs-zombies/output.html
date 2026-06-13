@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plants vs Zombies</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #gameContainer {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .gameHeader {
+            background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .gameHeader h1 { font-size: 32px; margin-bottom: 5px; }
+        .gameHeader p { opacity: 0.9; }
+
+        .menuScreen, .gameScreen, .leaderboardScreen {
+            display: none;
+            padding: 30px;
+        }
+
+        .menuScreen.active, .gameScreen.active, .leaderboardScreen.active {
+            display: block;
+        }
+
+        .menuScreen {
+            text-align: center;
+        }
+
+        .menuScreen h2 { font-size: 28px; margin-bottom: 30px; color: #333; }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover { background: #45a049; }
+        .btn.secondary { background: #2196F3; }
+        .btn.secondary:hover { background: #0b7dda; }
+
+        .gameBoard {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 80px);
+            gap: 10px;
+            margin: 20px 0;
+            background: #90EE90;
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px solid #228B22;
+        }
+
+        .cell {
+            background: #70DD70;
+            border: 2px solid #228B22;
+            border-radius: 8px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .cell:hover { background: #60CD60; }
+
+        .plant {
+            width: 90%;
+            height: 90%;
+            background: radial-gradient(circle at 30% 30%, #90EE90, #228B22);
+            border-radius: 50%;
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            animation: pulse 1s infinite;
+        }
+
+        .zombie {
+            width: 90%;
+            height: 90%;
+            background: linear-gradient(180deg, #666 0%, #333 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            animation: shuffle 0.5s infinite;
+            color: #FFF;
+        }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes shuffle { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+
+        .gameInfo {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .gameInfo div { color: #333; }
+
+        .plantSelector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .plantBtn {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #4CAF50;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.2s;
+        }
+
+        .plantBtn:hover { transform: scale(1.1); background: #f0f0f0; }
+        .plantBtn.active { background: #4CAF50; }
+
+        .leaderboardScreen table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .leaderboardScreen th, .leaderboardScreen td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .leaderboardScreen th {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .leaderboardScreen tr:hover { background: #f5f5f5; }
+
+        .gameControls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="gameHeader">
+            <h1>🌱 Plants vs Zombies 🧟</h1>
+            <p>Defend your garden!</p>
+        </div>
+
+        <!-- Menu Screen -->
+        <div id="menuScreen" class="menuScreen active">
+            <h2>Welcome to the Garden</h2>
+            <p style="margin-bottom: 30px; color: #666;">Plant strategically to defend against the zombie horde!</p>
+            <button class="btn" onclick="startGame()">Start Game</button>
+            <button class="btn secondary" onclick="showLeaderboard()">Leaderboard</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="gameScreen">
+            <div class="gameInfo">
+                <div>⭐ Score: <span id="score">0</span></div>
+                <div>🧟 Waves: <span id="waves">1</span></div>
+                <div>🌱 Health: <span id="health">100</span></div>
+            </div>
+
+            <div class="plantSelector">
+                <button class="plantBtn active" onclick="selectPlant('sunflower')" title="Sunflower">☀️</button>
+                <button class="plantBtn" onclick="selectPlant('peashooter')" title="Peashooter">🌿</button>
+                <button class="plantBtn" onclick="selectPlant('walnut')" title="Walnut">🥜</button>
+                <button class="plantBtn" onclick="selectPlant('cherry')" title="Cherry Bomb">💣</button>
+            </div>
+
+            <div class="gameBoard" id="gameBoard"></div>
+
+            <div class="gameControls">
+                <button class="btn" onclick="pauseGame()">Pause</button>
+                <button class="btn secondary" onclick="mainMenu()">Menu</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboardScreen" class="leaderboardScreen">
+            <h2>Leaderboard</h2>
+            <table id="leaderboardTable">
+                <thead>
+                    <tr><th>Rank</th><th>Player</th><th>Score</th><th>Date</th></tr>
+                </thead>
+                <tbody id="leaderboardBody"></tbody>
+            </table>
+            <div class="gameControls">
+                <button class="btn" onclick="mainMenu()">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            board: [],
+            score: 0,
+            health: 100,
+            waves: 1,
+            selectedPlant: 'sunflower',
+            gameActive: false,
+            gamePaused: false,
+            zombies: [],
+            gameTime: 0
+        };
+
+        const plants = {
+            sunflower: { health: 30, cost: 50, emoji: '☀️', rarity: 'common' },
+            peashooter: { health: 30, cost: 100, emoji: '🌿', rarity: 'common' },
+            walnut: { health: 100, cost: 150, emoji: '🥜', rarity: 'rare' },
+            cherry: { health: 20, cost: 300, emoji: '💣', rarity: 'epic' }
+        };
+
+        const zombies = {
+            basic: { health: 20, emoji: '🧟', rarity: 'common' },
+            tough: { health: 40, emoji: '👹', rarity: 'uncommon' },
+            fast: { health: 15, emoji: '🏃‍♂️', rarity: 'uncommon' }
+        };
+
+        function initGame() {
+            gameState.board = Array(30).fill(null);
+            gameState.health = 100;
+            gameState.score = 0;
+            gameState.waves = 1;
+            gameState.gameActive = true;
+            gameState.zombies = [];
+            renderBoard();
+            startWave();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            for (let i = 0; i < 30; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => plantOnCell(i);
+
+                if (gameState.board[i]) {
+                    const plant = gameState.board[i];
+                    const plantDiv = document.createElement('div');
+                    plantDiv.className = 'plant';
+                    plantDiv.textContent = plants[plant].emoji;
+                    cell.appendChild(plantDiv);
+                }
+
+                board.appendChild(cell);
+            }
+        }
+
+        function plantOnCell(index) {
+            if (!gameState.gameActive || gameState.board[index]) return;
+
+            gameState.board[index] = gameState.selectedPlant;
+            gameState.score += 10;
+            renderBoard();
+            updateInfo();
+        }
+
+        function selectPlant(plant) {
+            gameState.selectedPlant = plant;
+            document.querySelectorAll('.plantBtn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function startWave() {
+            if (!gameState.gameActive) return;
+
+            setTimeout(() => {
+                const zombieCount = Math.min(2 + gameState.waves, 6);
+                for (let i = 0; i < zombieCount; i++) {
+                    spawnZombie();
+                }
+                gameState.waves++;
+            }, 2000);
+        }
+
+        function spawnZombie() {
+            const lane = Math.floor(Math.random() * 5);
+            const zombieType = Math.random() > 0.7 ? 'tough' : Math.random() > 0.5 ? 'fast' : 'basic';
+            gameState.zombies.push({
+                id: Math.random(),
+                lane: lane,
+                type: zombieType,
+                position: 5,
+                health: zombies[zombieType].health
+            });
+        }
+
+        function updateInfo() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('health').textContent = gameState.health;
+            document.getElementById('waves').textContent = gameState.waves;
+        }
+
+        function pauseGame() {
+            gameState.gamePaused = !gameState.gamePaused;
+            event.target.textContent = gameState.gamePaused ? 'Resume' : 'Pause';
+        }
+
+        function startGame() {
+            document.getElementById('menuScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            initGame();
+            gameLoop();
+        }
+
+        function mainMenu() {
+            gameState.gameActive = false;
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('leaderboardScreen').classList.remove('active');
+            document.getElementById('menuScreen').classList.add('active');
+            saveScore(gameState.score);
+        }
+
+        function showLeaderboard() {
+            loadLeaderboard();
+            document.getElementById('menuScreen').classList.remove('active');
+            document.getElementById('leaderboardScreen').classList.add('active');
+        }
+
+        function saveScore(score) {
+            let leaderboard = JSON.parse(localStorage.getItem('pvz_leaderboard') || '[]');
+            leaderboard.push({
+                player: 'Player ' + Math.floor(Math.random() * 1000),
+                score: score,
+                date: new Date().toLocaleDateString()
+            });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            localStorage.setItem('pvz_leaderboard', JSON.stringify(leaderboard));
+        }
+
+        function loadLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('pvz_leaderboard') || '[]');
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = '';
+
+            leaderboard.slice(0, 10).forEach((entry, i) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${entry.player}</td>
+                    <td>${entry.score}</td>
+                    <td>${entry.date}</td>
+                `;
+            });
+        }
+
+        function gameLoop() {
+            if (!gameState.gameActive) return;
+
+            if (!gameState.gamePaused) {
+                gameState.gameTime++;
+
+                // Move zombies
+                gameState.zombies.forEach(zombie => {
+                    zombie.position -= 0.1;
+
+                    if (zombie.position <= 0) {
+                        gameState.health -= 10;
+                        gameState.zombies = gameState.zombies.filter(z => z.id !== zombie.id);
+                    }
+                });
+
+                // Plants attack randomly
+                gameState.board.forEach((plant, idx) => {
+                    if (plant && Math.random() > 0.99) {
+                        gameState.zombies.forEach(zombie => {
+                            if (zombie.position < 2) {
+                                zombie.health -= 10;
+                                gameState.score += 5;
+                            }
+                        });
+                    }
+                });
+
+                // Remove dead zombies
+                gameState.zombies = gameState.zombies.filter(z => z.health > 0);
+
+                // Add new zombies periodically
+                if (gameState.gameTime % 100 === 0 && gameState.zombies.length < 2 + gameState.waves) {
+                    startWave();
+                }
+
+                // Game over check
+                if (gameState.health <= 0) {
+                    gameState.gameActive = false;
+                    alert('Game Over! Final Score: ' + gameState.score);
+                    saveScore(gameState.score);
+                    mainMenu();
+                    return;
+                }
+            }
+
+            updateInfo();
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>

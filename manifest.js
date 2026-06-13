@@ -51,5 +51,18 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/z-ai/glm-5.1/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-haiku-4-5",
+      model_display: "Claude Haiku 4.5",
+      path: "providers/anthropic/claude-haiku-4-5",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-haiku-4-5/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-haiku-4-5/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-haiku-4-5/03-threejs-thriller/output.html",
+      },
+    },
   ],
 };

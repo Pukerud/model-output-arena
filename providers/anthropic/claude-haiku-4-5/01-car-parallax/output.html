@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Car with Parallax</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { width: 100%; height: 100vh; overflow: hidden; }
+        canvas { display: block; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Animation variables
+        let scrollOffset = 0;
+        const scrollSpeed = 2;
+        let time = 0;
+
+        // Car object
+        const car = {
+            x: canvas.width * 0.3,
+            y: canvas.height * 0.55,
+            width: 120,
+            height: 60,
+            wheelRadius: 12,
+            wheelOffset: 0
+        };
+
+        // Parallax layers
+        const layers = [
+            { speed: 0.2, color: '#87CEEB', height: 0.3, type: 'sky' },
+            { speed: 0.3, color: '#E0A86B', height: 0.15, type: 'mountain' },
+            { speed: 0.5, color: '#8B7355', height: 0.15, type: 'hill' },
+            { speed: 0.7, color: '#228B22', height: 0.15, type: 'grass' },
+            { speed: 0.85, color: '#666666', height: 0.1, type: 'road' },
+            { speed: 1, color: '#444444', height: 0.05, type: 'foreground' }
+        ];
+
+        // Pole and tree data
+        const poles = [];
+        const trees = [];
+
+        function generateScenery() {
+            for (let i = 0; i < 50; i++) {
+                poles.push({
+                    x: i * 200,
+                    y: canvas.height * 0.65,
+                    width: 8,
+                    height: 60
+                });
+
+                trees.push({
+                    x: i * 250 + 120,
+                    y: canvas.height * 0.50,
+                    trunkWidth: 15,
+                    trunkHeight: 40,
+                    foliageRadius: 35
+                });
+            }
+        }
+
+        function drawSky() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#FF9933');
+            gradient.addColorStop(0.5, '#FF6B6B');
+            gradient.addColorStop(1, '#FFA366');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawMountains() {
+            ctx.fillStyle = '#8B5A3C';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.35);
+            for (let x = 0; x <= canvas.width + 600; x += 100) {
+                const offset = scrollOffset * 0.3;
+                const height = Math.sin((x + offset) * 0.01) * 30 + 50;
+                ctx.lineTo((x - offset) % (canvas.width + 600), canvas.height * 0.35 - height);
+            }
+            ctx.lineTo(canvas.width, canvas.height * 0.3);
+            ctx.lineTo(0, canvas.height * 0.3);
+            ctx.fill();
+        }
+
+        function drawHills() {
+            ctx.fillStyle = '#90EE90';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.5);
+            for (let x = 0; x <= canvas.width + 400; x += 80) {
+                const offset = scrollOffset * 0.5;
+                const height = Math.sin((x + offset) * 0.015) * 25 + 40;
+                ctx.lineTo((x - offset) % (canvas.width + 400), canvas.height * 0.5 - height);
+            }
+            ctx.lineTo(canvas.width, canvas.height * 0.45);
+            ctx.lineTo(0, canvas.height * 0.45);
+            ctx.fill();
+        }
+
+        function drawTrees() {
+            ctx.fillStyle = '#654321';
+            for (let tree of trees) {
+                const offset = scrollOffset * 0.7;
+                const x = (tree.x - offset) % (canvas.width + 600);
+
+                // Trunk
+                ctx.fillRect(x - tree.trunkWidth / 2, tree.y - tree.trunkHeight, tree.trunkWidth, tree.trunkHeight);
+
+                // Foliage
+                ctx.fillStyle = '#228B22';
+                ctx.beginPath();
+                ctx.arc(x, tree.y - tree.trunkHeight - 20, tree.foliageRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#654321';
+            }
+        }
+
+        function drawPoles() {
+            ctx.fillStyle = '#8B4513';
+            for (let pole of poles) {
+                const offset = scrollOffset * 0.85;
+                const x = (pole.x - offset) % (canvas.width + 600);
+                ctx.fillRect(x - pole.width / 2, pole.y - pole.height, pole.width, pole.height);
+            }
+        }
+
+        function drawRoad() {
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(0, canvas.height * 0.65, canvas.width, canvas.height * 0.35);
+
+            // Road markings
+            ctx.strokeStyle = '#FFFF00';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([40, 20]);
+            ctx.beginPath();
+            ctx.moveTo(0 - scrollOffset * 1, canvas.height * 0.72);
+            ctx.lineTo(canvas.width - scrollOffset * 1, canvas.height * 0.72);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawCar() {
+            const x = car.x;
+            const y = car.y;
+
+            // Car body
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(x, y, car.width, car.height);
+
+            // Car windows
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(x + 20, y + 8, 25, 20);
+            ctx.fillRect(x + 60, y + 8, 25, 20);
+
+            // Car headlights
+            ctx.fillStyle = '#FFFF00';
+            ctx.beginPath();
+            ctx.arc(x + car.width, y + 15, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wheels
+            ctx.fillStyle = '#000000';
+            // Front wheel
+            ctx.beginPath();
+            ctx.arc(x + 30, y + car.height, car.wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Back wheel
+            ctx.beginPath();
+            ctx.arc(x + 90, y + car.height, car.wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wheel rims with rotation
+            ctx.strokeStyle = '#555555';
+            ctx.lineWidth = 2;
+            for (let wheelX of [30, 90]) {
+                ctx.beginPath();
+                ctx.arc(x + wheelX, y + car.height, car.wheelRadius - 3, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Spoke pattern
+                const angle = (car.wheelOffset * 0.1) % (Math.PI * 2);
+                for (let i = 0; i < 4; i++) {
+                    const a = angle + (Math.PI * i / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(x + wheelX, y + car.height);
+                    ctx.lineTo(
+                        x + wheelX + Math.cos(a) * (car.wheelRadius - 3),
+                        y + car.height + Math.sin(a) * (car.wheelRadius - 3)
+                    );
+                    ctx.stroke();
+                }
+            }
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(x + car.width / 2, y + car.height + 15, car.width / 2, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function animate() {
+            drawSky();
+            drawMountains();
+            drawHills();
+            drawTrees();
+            drawPoles();
+            drawRoad();
+            drawCar();
+
+            // Update scroll and wheel rotation
+            scrollOffset += scrollSpeed;
+            car.wheelOffset += scrollSpeed * 2;
+            time += 0.016;
+
+            // Subtle body motion (bobbing)
+            car.y = canvas.height * 0.55 + Math.sin(time * 3) * 2;
+
+            requestAnimationFrame(animate);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        generateScenery();
+        animate();
+    </script>
+</body>
+</html>

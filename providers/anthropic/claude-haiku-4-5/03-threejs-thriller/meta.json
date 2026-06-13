@@ -1,0 +1,11 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-haiku-4-5",
+  "model_display": "Claude Haiku 4.5",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T12:35:00Z",
+  "runner": "Claude Haiku 4.5 via Claude Code",
+  "notes": "Three.js implementation with cinematic lighting (key, fill, back lights), dynamic camera movement, animated character models performing Thriller choreography, shadow mapping, and atmospheric stage with tombstones"
+}
