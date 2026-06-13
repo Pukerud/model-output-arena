@@ -137,6 +137,20 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/google/gemma-4-31b-qat/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/google/gemma-4-31b-qat/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-sonnet-4-6",
+      model_display: "Claude Sonnet 4.6",
+      hosting: "api",
+      path: "providers/anthropic/claude-sonnet-4-6",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-sonnet-4-6/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-sonnet-4-6/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-sonnet-4-6/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

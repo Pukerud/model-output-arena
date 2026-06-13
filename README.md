@@ -51,6 +51,7 @@ Models are either **☁️ API** (served by the vendor) or **🖥️ Local** (op
 | Qwen | Qwen 3.6 27B Heretic v2 | 🖥️ Local | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
 | Google | Gemma 4 26B A4B QAT | 🖥️ Local | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️ Local | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
+| Anthropic | Claude Sonnet 4.6 | ☁️ API | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 
 ## For humans
 

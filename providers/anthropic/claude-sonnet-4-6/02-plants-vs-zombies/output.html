@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Plants vs Zombies Mini</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: #111; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+
+#app { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.screen.active { display: flex; }
+
+/* ── MENU ── */
+#menu {
+  background: radial-gradient(ellipse at 50% 30%, #1a4a10 0%, #0a2008 60%, #050e03 100%);
+  position: relative; overflow: hidden;
+}
+#menu::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><circle cx='20' cy='20' r='1.2' fill='rgba(255,255,255,.04)'/></svg>") repeat;
+}
+.menu-title {
+  font-size: clamp(36px, 8vw, 72px);
+  font-weight: 900;
+  color: #7ee830;
+  text-shadow: 0 0 30px #4aaa10, 0 4px 0 #2a6606, 0 8px 0 #1a3a03;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  z-index: 1;
+}
+.menu-sub { color: #a0d060; font-size: 18px; margin-bottom: 40px; z-index: 1; }
+.btn {
+  padding: 14px 38px; font-size: 20px; font-weight: 700; border: none; border-radius: 12px;
+  cursor: pointer; transition: transform .12s, box-shadow .12s; margin: 8px; z-index: 1;
+  letter-spacing: 1px;
+}
+.btn:hover { transform: translateY(-3px) scale(1.04); }
+.btn:active { transform: scale(0.97); }
+.btn-green {
+  background: linear-gradient(135deg, #5ccf10, #3a9a08);
+  color: #fff; box-shadow: 0 4px 20px rgba(80,200,20,.5);
+}
+.btn-blue {
+  background: linear-gradient(135deg, #2080e0, #1050b0);
+  color: #fff; box-shadow: 0 4px 20px rgba(30,100,220,.4);
+}
+.btn-red {
+  background: linear-gradient(135deg, #d03020, #902010);
+  color: #fff; box-shadow: 0 4px 20px rgba(200,40,20,.4);
+}
+.btn-gray {
+  background: linear-gradient(135deg, #555, #333);
+  color: #ccc; box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+/* ── GAME ── */
+#game { background: #0a1a04; flex-direction: column; }
+#hud {
+  width: 100%; display: flex; align-items: center; gap: 14px;
+  padding: 8px 16px; background: linear-gradient(180deg, #0d1f06, #091504);
+  border-bottom: 2px solid #1e4010; flex-shrink: 0;
+}
+#sun-display {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,200,0,.12); border: 1px solid rgba(255,200,0,.3);
+  padding: 5px 14px; border-radius: 20px;
+}
+#sun-count { font-size: 22px; font-weight: 800; color: #ffe050; }
+.sun-icon { width: 26px; height: 26px; }
+#wave-display { color: #88cc44; font-size: 15px; font-weight: 600; margin-left: auto; }
+#score-display { color: #44ccff; font-size: 15px; font-weight: 600; }
+#pause-btn { margin-left: 8px; }
+
+/* plant picker */
+#picker {
+  display: flex; gap: 8px; padding: 8px 16px;
+  background: #0a1504; border-bottom: 2px solid #1e4010; flex-shrink: 0;
+}
+.plant-card {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255,255,255,.06); border: 2px solid #2a4a14;
+  border-radius: 10px; padding: 6px 10px; cursor: pointer;
+  transition: border-color .15s, transform .1s; min-width: 70px;
+  position: relative;
+}
+.plant-card:hover:not(.disabled) { border-color: #7ee830; transform: translateY(-2px); }
+.plant-card.selected { border-color: #ffde00; background: rgba(255,220,0,.08); }
+.plant-card.disabled { opacity: 0.45; cursor: not-allowed; }
+.plant-card .pname { font-size: 11px; color: #aaddaa; margin-top: 3px; }
+.plant-card .pcost { font-size: 12px; color: #ffe050; font-weight: 700; }
+.plant-emoji { font-size: 24px; line-height: 1; }
+.cooldown-bar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: #ff6030; border-radius: 0 0 8px 8px; transform-origin: left;
+}
+
+/* grid */
+#grid-container {
+  flex: 1; display: grid; position: relative; overflow: hidden;
+  min-height: 0;
+}
+#canvas { display: block; }
+
+/* overlay */
+#overlay {
+  position: absolute; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,.72); z-index: 10;
+}
+#overlay.active { display: flex; }
+.overlay-box {
+  background: linear-gradient(135deg, #0d2008, #091504);
+  border: 2px solid #3a7010; border-radius: 18px;
+  padding: 36px 48px; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+}
+.overlay-box h2 { font-size: 36px; font-weight: 900; margin-bottom: 12px; }
+.overlay-box p  { color: #88cc44; font-size: 16px; margin-bottom: 24px; }
+.win-title  { color: #7ee830; text-shadow: 0 0 20px #4aaa10; }
+.lose-title { color: #ff4030; text-shadow: 0 0 20px #cc2010; }
+.pause-title{ color: #ffde00; text-shadow: 0 0 20px #cc9900; }
+
+/* ── LEADERBOARD ── */
+#leaderboard { background: radial-gradient(ellipse at 50% 30%, #102030 0%, #060f1a 100%); }
+.lb-title { font-size: 40px; font-weight: 900; color: #44ccff; margin-bottom: 28px; text-shadow: 0 0 20px #1a88cc; }
+.lb-table { width: min(500px, 90vw); border-collapse: collapse; margin-bottom: 28px; }
+.lb-table th {
+  color: #44ccff; font-size: 14px; padding: 8px 16px; border-bottom: 2px solid #224466;
+  text-align: left; letter-spacing: .06em;
+}
+.lb-table td { padding: 10px 16px; color: #cce8ff; font-size: 16px; border-bottom: 1px solid #112233; }
+.lb-table tr:first-child td { color: #ffd700; font-weight: 700; }
+.lb-table tr:nth-child(2) td { color: #c0c0c0; }
+.lb-table tr:nth-child(3) td { color: #cd7f32; }
+.lb-rank { font-weight: 700; color: #44ccff; }
+.lb-empty { color: #445566; font-style: italic; text-align: center; padding: 24px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MAIN MENU -->
+  <div class="screen active" id="menu">
+    <div class="menu-title">🌿 Plants vs Zombies</div>
+    <div class="menu-sub">Mini Edition</div>
+    <button class="btn btn-green" onclick="startGame()">▶ Play</button>
+    <button class="btn btn-blue"  onclick="showLeaderboard()">🏆 Leaderboard</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="game">
+    <div id="hud">
+      <div id="sun-display">
+        <canvas class="sun-icon" id="sunIcon" width="26" height="26"></canvas>
+        <span id="sun-count">100</span>
+      </div>
+      <div id="picker"></div>
+      <div id="wave-display">Wave 1/5</div>
+      <div id="score-display">Score: 0</div>
+      <button class="btn btn-gray" id="pause-btn" onclick="togglePause()" style="padding:8px 16px;font-size:14px">⏸ Pause</button>
+    </div>
+    <div id="grid-container">
+      <canvas id="canvas"></canvas>
+      <div id="overlay">
+        <div class="overlay-box">
+          <h2 id="overlay-title">Paused</h2>
+          <p id="overlay-msg"></p>
+          <div id="overlay-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="screen" id="leaderboard">
+    <div class="lb-title">🏆 Leaderboard</div>
+    <table class="lb-table">
+      <thead><tr><th class="lb-rank">#</th><th>Name</th><th>Score</th><th>Wave</th></tr></thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+    <button class="btn btn-gray" onclick="showMenu()">← Back</button>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONSTANTS & CONFIG
+// ══════════════════════════════════════════
+const ROWS  = 5;
+const COLS  = 9;
+const WAVES = 5;
+
+const PLANTS = {
+  sunflower: { name:'Sunflower', cost:50,  color:'#ffde00', dark:'#c8a800', emoji:'🌻', cd:7500,
+               desc:'Produces sun',  hp:300, type:'producer', sunRate:7500, sunAmt:25 },
+  peashooter:{ name:'Peashooter', cost:100, color:'#4aaa20', dark:'#2a7010', emoji:'🫛', cd:7500,
+               desc:'Shoots peas',   hp:300, type:'shooter',  fireCd:1800, damage:20 },
+  wallnut:   { name:'Wall-nut',   cost:50,  color:'#c8903a', dark:'#8a5a10', emoji:'🪨', cd:30000,
+               desc:'Blocks zombies',hp:1200,type:'blocker' },
+  iceshooter:{ name:'Snow Pea',   cost:175, color:'#50ccff', dark:'#1888cc', emoji:'❄️', cd:7500,
+               desc:'Slows zombies', hp:300, type:'ice',      fireCd:2000, damage:18, slow:0.5 },
+  cherry:    { name:'Cherry Bomb',cost:150, color:'#ff3020', dark:'#b01808', emoji:'🍒', cd:50000,
+               desc:'Big explosion', hp:300, type:'bomb',     fuseTime:1500 },
+};
+
+const ZOMBIE_TYPES = {
+  basic:  { name:'Zombie',   hp:100, spd:0.25, color:'#8aaa60', dmg:20, score:10 },
+  cone:   { name:'Conehead', hp:280, spd:0.24, color:'#aabb70', dmg:20, score:25 },
+  bucket: { name:'Buckethead',hp:650,spd:0.20, color:'#bbcc80', dmg:20, score:50 },
+  runner: { name:'Runner',   hp:80,  spd:0.55, color:'#90bb50', dmg:30, score:20 },
+  giant:  { name:'Gargantuar',hp:1400,spd:0.15,color:'#ccdd90', dmg:60, score:100},
+};
+
+const WAVE_CONFIGS = [
+  [{type:'basic', n:4}],
+  [{type:'basic', n:3},{type:'cone',n:2}],
+  [{type:'basic', n:4},{type:'cone',n:2},{type:'runner',n:2}],
+  [{type:'cone',n:3},{type:'bucket',n:2},{type:'runner',n:2}],
+  [{type:'bucket',n:3},{type:'runner',n:3},{type:'giant',n:2}],
+];
+
+// ══════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════
+let gs = {};
+let canvas, ctx, raf, lastT;
+let cellW, cellH, offsetX, offsetY;
+let paused = false;
+
+function initGame() {
+  gs = {
+    sun: 150, score: 0,
+    wave: 0, waveActive: false, waveTimer: 0, nextWave: 4000,
+    zombieQueue: [], zombieSpawnTimer: 0, zombieSpawnInterval: 2200,
+    zombiesLeft: 0, waveCleared: false,
+    plants: {}, projectiles: [], zombies: [], particles: [],
+    bombs: [],
+    selectedPlant: null, cdTimers: {},
+    sunDrops: [], sunDropTimer: 3000,
+    gameOver: false, won: false,
+    houseHP: 5, houseFlash: 0,
+  };
+  for (const k in PLANTS) gs.cdTimers[k] = 0;
+}
+
+// ══════════════════════════════════════════
+// SCREENS
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showMenu() { stopGame(); showScreen('menu'); }
+function showLeaderboard() {
+  renderLeaderboard();
+  showScreen('leaderboard');
+}
+
+// ══════════════════════════════════════════
+// LEADERBOARD (localStorage)
+// ══════════════════════════════════════════
+function getScores() {
+  try { return JSON.parse(localStorage.getItem('pvz_scores') || '[]'); } catch { return []; }
+}
+function saveScore(score, wave, name) {
+  const scores = getScores();
+  scores.push({ score, wave, name: name || 'Player', date: new Date().toLocaleDateString() });
+  scores.sort((a,b) => b.score - a.score);
+  scores.splice(10);
+  localStorage.setItem('pvz_scores', JSON.stringify(scores));
+}
+function renderLeaderboard() {
+  const scores = getScores();
+  const tbody = document.getElementById('lb-body');
+  if (!scores.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="lb-empty">No scores yet. Play a game!</td></tr>';
+    return;
+  }
+  tbody.innerHTML = scores.map((s,i) =>
+    `<tr><td class="lb-rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+     <td>${s.name}</td><td>${s.score}</td><td>${s.wave}/${WAVES}</td></tr>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════
+// GAME SETUP
+// ══════════════════════════════════════════
+function startGame() {
+  showScreen('game');
+  initGame();
+  setupCanvas();
+  buildPicker();
+  drawSunIcon();
+  paused = false;
+  lastT = performance.now();
+  raf = requestAnimationFrame(loop);
+  scheduleNextWave();
+}
+
+function stopGame() {
+  if (raf) { cancelAnimationFrame(raf); raf = null; }
+}
+
+function setupCanvas() {
+  canvas = document.getElementById('canvas');
+  ctx    = canvas.getContext('2d');
+  const container = document.getElementById('grid-container');
+
+  function resize() {
+    const r = container.getBoundingClientRect();
+    canvas.width  = r.width;
+    canvas.height = r.height;
+    const gridW = r.width  * 0.78;
+    const gridH = r.height * 0.88;
+    cellW  = gridW / COLS;
+    cellH  = gridH / ROWS;
+    offsetX = (r.width  - gridW) * 0.5 + cellW * 0.5;
+    offsetY = (r.height - gridH) * 0.5 + cellH * 0.3;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  canvas.addEventListener('click', onCanvasClick);
+}
+
+function drawSunIcon() {
+  const c = document.getElementById('sunIcon');
+  const x = c.getContext('2d');
+  x.clearRect(0,0,26,26);
+  const g = x.createRadialGradient(13,13,2,13,13,12);
+  g.addColorStop(0,'#ffe870'); g.addColorStop(1,'#ffaa10');
+  x.fillStyle=g; x.beginPath(); x.arc(13,13,11,0,Math.PI*2); x.fill();
+  x.strokeStyle='#ffcc30'; x.lineWidth=2;
+  for(let i=0;i<8;i++){
+    const a=i/8*Math.PI*2;
+    x.beginPath();
+    x.moveTo(13+Math.cos(a)*11.5,13+Math.sin(a)*11.5);
+    x.lineTo(13+Math.cos(a)*14,13+Math.sin(a)*14);
+    x.stroke();
+  }
+}
+
+function buildPicker() {
+  const div = document.getElementById('picker');
+  div.innerHTML = '';
+  for (const [key, p] of Object.entries(PLANTS)) {
+    const card = document.createElement('div');
+    card.className = 'plant-card';
+    card.dataset.key = key;
+    card.innerHTML = `<span class="plant-emoji">${p.emoji}</span>
+      <span class="pname">${p.name}</span>
+      <span class="pcost">☀${p.cost}</span>
+      <div class="cooldown-bar" id="cd-${key}" style="transform:scaleX(0)"></div>`;
+    card.onclick = () => selectPlant(key);
+    div.appendChild(card);
+  }
+}
+
+function selectPlant(key) {
+  if (paused || gs.gameOver) return;
+  gs.selectedPlant = (gs.selectedPlant === key) ? null : key;
+  document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+  if (gs.selectedPlant) {
+    document.querySelector(`.plant-card[data-key="${gs.selectedPlant}"]`)?.classList.add('selected');
+  }
+}
+
+// ══════════════════════════════════════════
+// WAVE MANAGEMENT
+// ══════════════════════════════════════════
+function scheduleNextWave() {
+  gs.waveTimer = gs.nextWave;
+  gs.waveActive = false;
+}
+
+function spawnWave(waveIdx) {
+  const config = WAVE_CONFIGS[Math.min(waveIdx, WAVE_CONFIGS.length-1)];
+  gs.zombieQueue = [];
+  let total = 0;
+  for (const entry of config) {
+    for (let i = 0; i < entry.n; i++) {
+      gs.zombieQueue.push({ type: entry.type, delay: i * 1200 + (config.indexOf(entry)) * 400 });
+      total++;
+    }
+  }
+  gs.zombiesLeft = total;
+  gs.zombieQueue.sort((a,b) => a.delay - b.delay);
+  gs.zombieSpawnTimer = 0;
+  gs.waveActive = true;
+}
+
+function spawnZombie(type) {
+  const row  = Math.floor(Math.random() * ROWS);
+  const def  = ZOMBIE_TYPES[type];
+  gs.zombies.push({
+    id: Math.random(), type, row,
+    x: canvas.width + 60,
+    hp: def.hp, maxHp: def.hp,
+    spd: def.spd * (1 + gs.wave * 0.08),
+    dmg: def.dmg, score: def.score,
+    atk: 0, atkCd: 1000,
+    slow: 1, slowT: 0,
+    flash: 0,
+  });
+}
+
+// ══════════════════════════════════════════
+// CLICK HANDLER
+// ══════════════════════════════════════════
+function onCanvasClick(e) {
+  if (paused || gs.gameOver) return;
+  const r  = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
+
+  // check sun drop click
+  for (let i = gs.sunDrops.length - 1; i >= 0; i--) {
+    const s = gs.sunDrops[i];
+    if (Math.hypot(mx - s.x, my - s.y) < 22) {
+      gs.sun += s.amt;
+      gs.sunDrops.splice(i, 1);
+      spawnText(s.x, s.y, '+' + s.amt, '#ffe050');
+      updateHUD();
+      return;
+    }
+  }
+
+  if (!gs.selectedPlant) return;
+
+  // grid click
+  const col = Math.floor((mx - offsetX + cellW/2) / cellW);
+  const row = Math.floor((my - offsetY + cellH/2) / cellH);
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+
+  const key = `${row},${col}`;
+  if (gs.plants[key]) return;
+  const pdef = PLANTS[gs.selectedPlant];
+  if (gs.sun < pdef.cost) { flashHUD(); return; }
+  if (gs.cdTimers[gs.selectedPlant] > 0) return;
+
+  placePlant(row, col, gs.selectedPlant);
+}
+
+function placePlant(row, col, type) {
+  const pdef = PLANTS[type];
+  gs.sun -= pdef.cost;
+  gs.cdTimers[type] = pdef.cd;
+
+  const key = `${row},${col}`;
+  gs.plants[key] = {
+    row, col, type,
+    hp: pdef.hp, maxHp: pdef.hp,
+    timer: type === 'sunflower' ? pdef.sunRate : 0,
+    fireTimer: 0,
+    fuseTimer: type === 'cherry' ? pdef.fuseTime : -1,
+    flash: 0,
+  };
+
+  updateHUD();
+}
+
+// ══════════════════════════════════════════
+// GAME LOOP
+// ══════════════════════════════════════════
+function loop(now) {
+  if (!paused && !gs.gameOver) {
+    const dt = Math.min(now - lastT, 80);
+    update(dt);
+  }
+  lastT = now;
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  updateWave(dt);
+  updateSunDrops(dt);
+  updatePlants(dt);
+  updateZombies(dt);
+  updateProjectiles(dt);
+  updateBombs(dt);
+  updateParticles(dt);
+  updateCooldowns(dt);
+  updateHUD();
+  checkWin();
+}
+
+function updateWave(dt) {
+  if (!gs.waveActive) {
+    gs.waveTimer -= dt;
+    if (gs.waveTimer <= 0) {
+      gs.wave++;
+      spawnWave(gs.wave - 1);
+    }
+    return;
+  }
+  // spawn zombies from queue
+  if (gs.zombieQueue.length > 0) {
+    gs.zombieSpawnTimer += dt;
+    while (gs.zombieQueue.length && gs.zombieSpawnTimer >= gs.zombieQueue[0].delay) {
+      spawnZombie(gs.zombieQueue.shift().type);
+    }
+  }
+}
+
+function updateSunDrops(dt) {
+  gs.sunDropTimer -= dt;
+  if (gs.sunDropTimer <= 0) {
+    gs.sunDropTimer = 7000 + Math.random() * 4000;
+    gs.sunDrops.push({
+      x: 60 + Math.random() * (canvas.width * 0.7),
+      y: 20,
+      vy: 55, land: (offsetY + Math.floor(Math.random()*ROWS)*cellH + cellH*0.5),
+      amt: 25, age: 0, landed: false
+    });
+  }
+  for (const s of gs.sunDrops) {
+    s.age += dt;
+    if (!s.landed) {
+      s.y += s.vy * dt/1000;
+      if (s.y >= s.land) { s.y = s.land; s.landed = true; }
+    }
+  }
+  // expire old ones
+  gs.sunDrops = gs.sunDrops.filter(s => s.age < 8000);
+}
+
+function updatePlants(dt) {
+  for (const [key, p] of Object.entries(gs.plants)) {
+    const pdef = PLANTS[p.type];
+    if (p.flash > 0) p.flash -= dt;
+
+    if (p.type === 'sunflower') {
+      p.timer -= dt;
+      if (p.timer <= 0) {
+        p.timer = pdef.sunRate;
+        const cx = offsetX + p.col * cellW;
+        const cy = offsetY + p.row * cellH;
+        gs.sunDrops.push({ x: cx, y: cy, vy: 0, land: cy, amt: pdef.sunAmt, age: 0, landed: true });
+      }
+    }
+
+    if (p.type === 'shooter' || p.type === 'ice') {
+      // check for zombies in same row
+      const rowZombies = gs.zombies.filter(z => z.row === p.row);
+      if (rowZombies.length > 0) {
+        p.fireTimer -= dt;
+        if (p.fireTimer <= 0) {
+          p.fireTimer = pdef.fireCd;
+          const cx = offsetX + p.col * cellW + cellW * 0.4;
+          const cy = offsetY + p.row * cellH;
+          gs.projectiles.push({
+            x: cx, y: cy, row: p.row,
+            spd: 320, dmg: pdef.damage,
+            type: p.type === 'ice' ? 'ice' : 'pea',
+            slow: pdef.slow || 1,
+          });
+        }
+      } else {
+        p.fireTimer = Math.min(p.fireTimer, 200);
+      }
+    }
+
+    if (p.type === 'cherry') {
+      p.fuseTimer -= dt;
+      if (p.fuseTimer <= 0) {
+        // explosion
+        const cx = offsetX + p.col * cellW;
+        const cy = offsetY + p.row * cellH;
+        explodeBomb(cx, cy, p.row, p.col);
+        delete gs.plants[key];
+      }
+    }
+  }
+}
+
+function explodeBomb(cx, cy, row, col) {
+  gs.bombs.push({ x: cx, y: cy, r: 0, maxR: cellW * 2.5, age: 0, dur: 500 });
+  for (const z of gs.zombies) {
+    const zx = z.x;
+    const zy = offsetY + z.row * cellH;
+    const dist = Math.hypot(cx - zx, cy - zy);
+    if (dist < cellW * 2.5) {
+      z.hp -= 1800;
+      spawnParticles(zx, zy, '#ff6030', 6);
+    }
+  }
+  // kill nearby plants too (none — cherry is intentional)
+  spawnParticles(cx, cy, '#ff3010', 14);
+  spawnParticles(cx, cy, '#ffaa20', 10);
+}
+
+function updateZombies(dt) {
+  for (let i = gs.zombies.length - 1; i >= 0; i--) {
+    const z = gs.zombies[i];
+    if (z.flash > 0) z.flash -= dt;
+    if (z.slowT > 0) z.slowT -= dt; else z.slow = 1;
+
+    // look for plant to eat
+    const plantInWay = getPlantAt(z.row, z.x);
+    if (plantInWay) {
+      z.atk -= dt;
+      if (z.atk <= 0) {
+        z.atk = z.atkCd;
+        const pkey = `${plantInWay.row},${plantInWay.col}`;
+        gs.plants[pkey].hp -= z.dmg;
+        gs.plants[pkey].flash = 200;
+        if (gs.plants[pkey].hp <= 0) {
+          delete gs.plants[pkey];
+          spawnParticles(plantInWay.cx, plantInWay.cy, '#88cc44', 5);
+        }
+      }
+    } else {
+      z.x -= z.spd * z.slow * dt * 0.06;
+    }
+
+    // reached house
+    const houseX = offsetX - cellW * 0.5;
+    if (z.x <= houseX) {
+      gs.zombies.splice(i, 1);
+      gs.houseHP--;
+      gs.houseFlash = 600;
+      gs.zombiesLeft--;
+      if (gs.houseHP <= 0) { endGame(false); return; }
+      continue;
+    }
+
+    if (z.hp <= 0) {
+      gs.score += z.score;
+      gs.zombiesLeft--;
+      spawnParticles(z.x, offsetY + z.row * cellH, '#8aaa60', 8);
+      gs.zombies.splice(i, 1);
+    }
+  }
+}
+
+function getPlantAt(row, zx) {
+  for (const [key, p] of Object.entries(gs.plants)) {
+    if (p.row !== row) continue;
+    const px = offsetX + p.col * cellW;
+    if (zx <= px + cellW * 0.5 && zx >= px - cellW * 0.35) {
+      return { ...p, cx: px, cy: offsetY + p.row * cellH };
+    }
+  }
+  return null;
+}
+
+function updateProjectiles(dt) {
+  for (let i = gs.projectiles.length - 1; i >= 0; i--) {
+    const proj = gs.projectiles[i];
+    proj.x += proj.spd * dt / 1000;
+    if (proj.x > canvas.width + 20) { gs.projectiles.splice(i, 1); continue; }
+
+    // hit zombie
+    let hit = false;
+    for (const z of gs.zombies) {
+      if (z.row !== proj.row) continue;
+      if (Math.abs(proj.x - z.x) < 22) {
+        z.hp -= proj.dmg;
+        z.flash = 150;
+        if (proj.slow < 1) { z.slow = proj.slow; z.slowT = 3000; }
+        spawnParticles(proj.x, proj.y, proj.type === 'ice' ? '#80ddff' : '#88ff44', 3);
+        gs.projectiles.splice(i, 1);
+        hit = true;
+        break;
+      }
+    }
+  }
+}
+
+function updateBombs(dt) {
+  for (let i = gs.bombs.length - 1; i >= 0; i--) {
+    const b = gs.bombs[i];
+    b.age += dt;
+    b.r = b.maxR * Math.min(b.age / b.dur, 1);
+    if (b.age > b.dur) gs.bombs.splice(i, 1);
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = gs.particles.length - 1; i >= 0; i--) {
+    const p = gs.particles[i];
+    p.x += p.vx * dt/1000;
+    p.y += p.vy * dt/1000;
+    p.vy += 200 * dt/1000;
+    p.life -= dt;
+    if (p.life <= 0) gs.particles.splice(i, 1);
+  }
+}
+
+function updateCooldowns(dt) {
+  for (const k in gs.cdTimers) {
+    if (gs.cdTimers[k] > 0) {
+      gs.cdTimers[k] = Math.max(0, gs.cdTimers[k] - dt);
+      const bar = document.getElementById('cd-' + k);
+      if (bar) bar.style.transform = `scaleX(${gs.cdTimers[k] / PLANTS[k].cd})`;
+    }
+  }
+  // update disabled state
+  document.querySelectorAll('.plant-card').forEach(card => {
+    const k = card.dataset.key;
+    const p = PLANTS[k];
+    card.classList.toggle('disabled', gs.sun < p.cost || gs.cdTimers[k] > 0);
+  });
+}
+
+function spawnParticles(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const spd = 40 + Math.random() * 120;
+    gs.particles.push({ x, y, vx: Math.cos(a)*spd, vy: Math.sin(a)*spd - 60,
+      color, r: 2 + Math.random()*3, life: 400 + Math.random()*400 });
+  }
+}
+
+function spawnText(x, y, text, color) {
+  gs.particles.push({ x, y, vx: 0, vy: -60, color, text, r: 0, life: 800, isText: true });
+}
+
+function checkWin() {
+  if (!gs.waveActive && gs.wave >= WAVES && gs.zombies.length === 0) {
+    endGame(true);
+  }
+}
+
+function endGame(won) {
+  gs.gameOver = true;
+  gs.won = won;
+
+  const title  = document.getElementById('overlay-title');
+  const msg    = document.getElementById('overlay-msg');
+  const btns   = document.getElementById('overlay-btns');
+
+  title.textContent = won ? '🌿 You Win!' : '💀 Game Over';
+  title.className = won ? 'win-title' : 'lose-title';
+  msg.textContent  = `Score: ${gs.score}  •  Wave ${gs.wave}/${WAVES}`;
+
+  btns.innerHTML = '';
+  const name = prompt('Enter your name for the leaderboard:') || 'Player';
+  saveScore(gs.score, gs.wave, name);
+
+  const r = document.createElement('button');
+  r.className = 'btn btn-green'; r.textContent = '▶ Play Again'; r.onclick = startGame;
+  const m = document.createElement('button');
+  m.className = 'btn btn-gray'; m.textContent = '← Menu'; m.onclick = showMenu;
+  const lb = document.createElement('button');
+  lb.className = 'btn btn-blue'; lb.textContent = '🏆 Scores'; lb.onclick = showLeaderboard;
+  btns.append(r, m, lb);
+
+  document.getElementById('overlay').classList.add('active');
+}
+
+function togglePause() {
+  if (gs.gameOver) return;
+  paused = !paused;
+  document.getElementById('pause-btn').textContent = paused ? '▶ Resume' : '⏸ Pause';
+  const overlay = document.getElementById('overlay');
+  if (paused) {
+    document.getElementById('overlay-title').textContent = 'Paused';
+    document.getElementById('overlay-title').className = 'pause-title';
+    document.getElementById('overlay-msg').textContent = '';
+    const btns = document.getElementById('overlay-btns');
+    btns.innerHTML = '';
+    const r = document.createElement('button');
+    r.className = 'btn btn-green'; r.textContent = '▶ Resume'; r.onclick = togglePause;
+    const m = document.createElement('button');
+    m.className = 'btn btn-gray'; m.textContent = '← Menu'; m.onclick = showMenu;
+    btns.append(r, m);
+    overlay.classList.add('active');
+  } else {
+    overlay.classList.remove('active');
+    lastT = performance.now();
+  }
+}
+
+function updateHUD() {
+  document.getElementById('sun-count').textContent = gs.sun;
+  document.getElementById('wave-display').textContent =
+    gs.waveActive ? `Wave ${gs.wave}/${WAVES}` : (gs.wave >= WAVES ? 'Final Wave!' : `Next wave: ${Math.ceil(gs.waveTimer/1000)}s`);
+  document.getElementById('score-display').textContent = `Score: ${gs.score}`;
+}
+
+function flashHUD() {
+  const el = document.getElementById('sun-display');
+  el.style.border = '1px solid #ff4030';
+  setTimeout(() => el.style.border = '1px solid rgba(255,200,0,.3)', 300);
+}
+
+// ══════════════════════════════════════════
+// DRAWING
+// ══════════════════════════════════════════
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  drawBackground(W, H);
+  drawGrid();
+  drawSunDrops();
+  drawPlants();
+  drawProjectiles();
+  drawBombs();
+  drawZombies();
+  drawParticles();
+  drawHouse(W, H);
+}
+
+function drawBackground(W, H) {
+  // sky
+  const sg = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+  sg.addColorStop(0, '#87ceeb'); sg.addColorStop(1, '#c8e8ff');
+  ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H * 0.5);
+
+  // grass rows
+  for (let r = 0; r < ROWS; r++) {
+    const cy = offsetY + r * cellH;
+    const even = r % 2 === 0;
+    ctx.fillStyle = even ? '#4a9a20' : '#3d8518';
+    ctx.fillRect(0, cy - cellH/2, W, cellH);
+  }
+  // dirt path top
+  ctx.fillStyle = '#6a4a1a';
+  ctx.fillRect(0, 0, offsetX - cellW*0.5, H);
+  ctx.fillStyle = '#5a3a0e';
+  ctx.fillRect(W * 0.88, 0, W * 0.12, H);
+}
+
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = offsetX + c * cellW - cellW/2;
+      const y = offsetY + r * cellH - cellH/2;
+      ctx.strokeRect(x, y, cellW, cellH);
+    }
+  }
+  ctx.setLineDash([]);
+}
+
+function drawHouse(W, H) {
+  if (gs.houseFlash > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(0, 0, offsetX - cellW * 0.5, H);
+    ctx.restore();
+    gs.houseFlash -= 16;
+  }
+  // house icon
+  const hx = 30, hy = H / 2;
+  const hw = 50, hh = 55;
+  ctx.fillStyle = '#c8802a';
+  ctx.fillRect(hx - hw/2, hy - hh/2, hw, hh);
+  // roof
+  ctx.fillStyle = '#883010';
+  ctx.beginPath();
+  ctx.moveTo(hx - hw/2 - 6, hy - hh/2);
+  ctx.lineTo(hx, hy - hh/2 - 28);
+  ctx.lineTo(hx + hw/2 + 6, hy - hh/2);
+  ctx.fill();
+  // door
+  ctx.fillStyle = '#5a2808';
+  ctx.fillRect(hx - 9, hy, 18, 22);
+  // HP
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = i < gs.houseHP ? '#ff3030' : '#333';
+    ctx.beginPath();
+    ctx.arc(20 + i * 12, H - 22, 4, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawPlants() {
+  for (const [key, p] of Object.entries(gs.plants)) {
+    const cx = offsetX + p.col * cellW;
+    const cy = offsetY + p.row * cellH;
+    const pdef = PLANTS[p.type];
+    const flash = p.flash > 0;
+
+    ctx.save();
+    if (flash) ctx.globalAlpha = 0.6;
+
+    drawPlantSprite(p.type, cx, cy, cellW, cellH, p);
+
+    // HP bar
+    if (p.hp < p.maxHp) {
+      const bw = cellW * 0.7, bh = 5;
+      const bx = cx - bw/2, by = cy - cellH/2 + 3;
+      ctx.fillStyle = '#333';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = p.hp > p.maxHp*0.5 ? '#44ee44' : p.hp > p.maxHp*0.25 ? '#eeee44' : '#ee4444';
+      ctx.fillRect(bx, by, bw * p.hp/p.maxHp, bh);
+    }
+    ctx.restore();
+  }
+}
+
+function drawPlantSprite(type, cx, cy, cw, ch, p) {
+  const r = Math.min(cw, ch) * 0.36;
+  const pdef = PLANTS[type];
+
+  if (type === 'sunflower') {
+    // petals
+    ctx.fillStyle = '#ffde00';
+    for (let i = 0; i < 8; i++) {
+      const a = i/8*Math.PI*2 + performance.now()*0.001;
+      ctx.beginPath();
+      ctx.ellipse(cx + Math.cos(a)*r*0.9, cy + Math.sin(a)*r*0.9 - 5, r*0.32, r*0.18, a, 0, Math.PI*2);
+      ctx.fill();
+    }
+    // center
+    ctx.beginPath(); ctx.arc(cx, cy-5, r*0.52, 0, Math.PI*2);
+    ctx.fillStyle = '#8B4513'; ctx.fill();
+    // face
+    ctx.fillStyle = '#ffde00';
+    ctx.beginPath(); ctx.arc(cx-4, cy-8, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+4, cy-8, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy-3, 4, 0.1, Math.PI-0.1); ctx.stroke();
+    // stem
+    ctx.strokeStyle = '#3a8010'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.5); ctx.lineTo(cx, cy+ch*0.45); ctx.stroke();
+
+  } else if (type === 'peashooter') {
+    // body
+    ctx.fillStyle = '#4aaa20';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r*0.65, r*0.85, 0, 0, Math.PI*2); ctx.fill();
+    // mouth/barrel
+    ctx.fillStyle = '#3a8010';
+    ctx.beginPath(); ctx.ellipse(cx+r*0.6, cy-r*0.1, r*0.45, r*0.32, 0.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a5008';
+    ctx.beginPath(); ctx.ellipse(cx+r*0.72, cy-r*0.1, r*0.22, r*0.22, 0, 0, Math.PI*2); ctx.fill();
+    // eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx-r*0.1, cy-r*0.35, r*0.22, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(cx-r*0.08, cy-r*0.33, r*0.10, 0, Math.PI*2); ctx.fill();
+    // stem
+    ctx.strokeStyle = '#3a8010'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.8); ctx.lineTo(cx, cy+ch*0.45); ctx.stroke();
+
+  } else if (type === 'wallnut') {
+    // shell
+    const g = ctx.createRadialGradient(cx-r*0.2, cy-r*0.2, r*0.1, cx, cy, r*1.05);
+    g.addColorStop(0,'#e8a838'); g.addColorStop(0.6,'#c8883a'); g.addColorStop(1,'#7a4810');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r*1.05, 0, Math.PI*2); ctx.fill();
+    // face changes with hp
+    const ratio = p.hp / p.maxHp;
+    ctx.strokeStyle = '#6a3808'; ctx.lineWidth = 2;
+    // eyes
+    ctx.fillStyle = '#6a3808';
+    ctx.beginPath(); ctx.arc(cx-r*0.28, cy-r*0.22, r*0.12, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+r*0.28, cy-r*0.22, r*0.12, 0, Math.PI*2); ctx.fill();
+    if (ratio > 0.5) {
+      ctx.beginPath(); ctx.arc(cx, cy+r*0.22, r*0.3, 0, Math.PI); ctx.stroke();
+    } else if (ratio > 0.25) {
+      ctx.beginPath(); ctx.moveTo(cx-r*0.35, cy+r*0.25); ctx.lineTo(cx+r*0.35, cy+r*0.25); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(cx, cy+r*0.35, r*0.3, Math.PI, 0); ctx.stroke();
+      // cracks
+      ctx.strokeStyle = '#5a2808'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(cx-r*0.2, cy-r*0.5); ctx.lineTo(cx-r*0.4, cy+r*0.3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+r*0.15, cy-r*0.3); ctx.lineTo(cx+r*0.45, cy+r*0.1); ctx.stroke();
+    }
+
+  } else if (type === 'iceshooter') {
+    ctx.fillStyle = '#50aadd';
+    ctx.beginPath(); ctx.ellipse(cx, cy, r*0.65, r*0.85, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#3088bb';
+    ctx.beginPath(); ctx.ellipse(cx+r*0.6, cy-r*0.1, r*0.45, r*0.32, 0.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#aaddff';
+    ctx.beginPath(); ctx.ellipse(cx+r*0.72, cy-r*0.1, r*0.22, r*0.22, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx-r*0.1, cy-r*0.35, r*0.22, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#2060aa';
+    ctx.beginPath(); ctx.arc(cx-r*0.08, cy-r*0.33, r*0.10, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#3a8010'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.8); ctx.lineTo(cx, cy+ch*0.45); ctx.stroke();
+
+  } else if (type === 'cherry') {
+    const pulse = 0.9 + 0.1 * Math.sin(performance.now() * 0.01);
+    // two cherries
+    ctx.fillStyle = '#dd2010';
+    ctx.beginPath(); ctx.arc(cx-r*0.35, cy+r*0.1, r*0.55*pulse, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+r*0.35, cy+r*0.1, r*0.55*pulse, 0, Math.PI*2); ctx.fill();
+    // stems
+    ctx.strokeStyle = '#3a8010'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx-r*0.35, cy-r*0.45); ctx.quadraticCurveTo(cx-r*0.1, cy-r*0.8, cx, cy-r*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+r*0.35, cy-r*0.45); ctx.quadraticCurveTo(cx+r*0.1, cy-r*0.8, cx, cy-r*0.5); ctx.stroke();
+    // fuse countdown
+    const frac = p.fuseTimer / PLANTS.cherry.fuseTime;
+    ctx.fillStyle = frac > 0.5 ? '#ffaa00' : '#ff3000';
+    ctx.font = `bold ${r*0.55}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.ceil(p.fuseTimer/1000), cx, cy - r*1.0);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawZombies() {
+  for (const z of gs.zombies) {
+    const cx = z.x;
+    const cy = offsetY + z.row * cellH;
+    const r  = Math.min(cellW, cellH) * 0.30;
+    const flash = z.flash > 0;
+    const slow  = z.slow < 1;
+
+    ctx.save();
+    if (flash) { ctx.globalAlpha = 0.5; }
+
+    // slow tint
+    if (slow) {
+      ctx.shadowColor = '#88ccff'; ctx.shadowBlur = 8;
+    }
+
+    drawZombieSprite(z.type, cx, cy, r, z.hp / z.maxHp);
+    ctx.restore();
+
+    // HP bar
+    const bw = cellW * 0.65, bh = 4;
+    const bx = cx - bw/2, by = cy - cellH/2 + 2;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = z.hp > z.maxHp*0.5 ? '#44ee44' : z.hp > z.maxHp*0.25 ? '#eeee44' : '#ee4444';
+    ctx.fillRect(bx, by, bw * z.hp/z.maxHp, bh);
+  }
+}
+
+function drawZombieSprite(type, cx, cy, r, hpRatio) {
+  const bodyColor = type === 'giant' ? '#b8cc80' : '#8aaa60';
+  const shirtColor= type === 'bucket' ? '#888' : '#2255aa';
+  const headSize  = type === 'giant' ? r*1.5 : r;
+  const walk = Math.sin(performance.now() * 0.008) * 4;
+
+  // body
+  ctx.fillStyle = shirtColor;
+  ctx.fillRect(cx - headSize*0.55, cy - headSize*0.2, headSize*1.1, headSize*1.1);
+  // arms
+  ctx.strokeStyle = bodyColor; ctx.lineWidth = headSize*0.4;
+  ctx.beginPath();
+  ctx.moveTo(cx - headSize*0.55, cy + headSize*0.2);
+  ctx.lineTo(cx - headSize*1.1, cy + walk*0.5);
+  ctx.moveTo(cx + headSize*0.55, cy + headSize*0.2);
+  ctx.lineTo(cx + headSize*1.1, cy - walk*0.5);
+  ctx.stroke();
+  // legs
+  ctx.strokeStyle = '#223388'; ctx.lineWidth = headSize*0.38;
+  ctx.beginPath();
+  ctx.moveTo(cx - headSize*0.28, cy + headSize*0.9);
+  ctx.lineTo(cx - headSize*0.28, cy + headSize*1.6 + walk);
+  ctx.moveTo(cx + headSize*0.28, cy + headSize*0.9);
+  ctx.lineTo(cx + headSize*0.28, cy + headSize*1.6 - walk);
+  ctx.stroke();
+  // head
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath(); ctx.arc(cx, cy - headSize*0.45, headSize*0.82, 0, Math.PI*2); ctx.fill();
+  // hat / helmet
+  if (type === 'cone') {
+    ctx.fillStyle = '#dd8810';
+    ctx.beginPath();
+    ctx.moveTo(cx - headSize, cy - headSize*0.45);
+    ctx.lineTo(cx, cy - headSize*2.1);
+    ctx.lineTo(cx + headSize, cy - headSize*0.45);
+    ctx.closePath(); ctx.fill();
+  } else if (type === 'bucket') {
+    ctx.fillStyle = '#999';
+    ctx.fillRect(cx - headSize*0.85, cy - headSize*1.5, headSize*1.7, headSize);
+    ctx.fillStyle = '#777';
+    ctx.fillRect(cx - headSize*0.9, cy - headSize*1.6, headSize*1.8, headSize*0.25);
+  } else if (type === 'giant') {
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(cx - headSize, cy - headSize*1.8, headSize*2, headSize*0.45);
+  }
+  // eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx-headSize*0.28, cy-headSize*0.55, headSize*0.20, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+headSize*0.28, cy-headSize*0.55, headSize*0.20, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ff2010';
+  ctx.beginPath(); ctx.arc(cx-headSize*0.24, cy-headSize*0.52, headSize*0.10, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+headSize*0.24, cy-headSize*0.52, headSize*0.10, 0, Math.PI*2); ctx.fill();
+}
+
+function drawProjectiles(){
+  for (const proj of gs.projectiles) {
+    ctx.beginPath();
+    if (proj.type === 'ice') {
+      ctx.fillStyle = '#aaddff';
+      ctx.arc(proj.x, proj.y, 7, 0, Math.PI*2);
+    } else {
+      ctx.fillStyle = '#66cc22';
+      ctx.arc(proj.x, proj.y, 6, 0, Math.PI*2);
+    }
+    ctx.fill();
+    ctx.strokeStyle = proj.type === 'ice' ? '#5599cc' : '#3a8010';
+    ctx.lineWidth = 1.5; ctx.stroke();
+  }
+}
+
+function drawBombs() {
+  for (const b of gs.bombs) {
+    const alpha = 1 - b.age/b.dur;
+    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    g.addColorStop(0, `rgba(255,220,50,${alpha*0.9})`);
+    g.addColorStop(0.4, `rgba(255,80,10,${alpha*0.7})`);
+    g.addColorStop(1, `rgba(255,0,0,0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawSunDrops() {
+  for (const s of gs.sunDrops) {
+    const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 22);
+    g.addColorStop(0,'#ffe870'); g.addColorStop(0.7,'#ffaa10'); g.addColorStop(1,'rgba(255,170,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(s.x, s.y, 22, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ffe050';
+    ctx.beginPath(); ctx.arc(s.x, s.y, 12, 0, Math.PI*2); ctx.fill();
+    // rays
+    ctx.strokeStyle = '#ffcc30'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 8; i++) {
+      const a = i/8*Math.PI*2 + s.age*0.002;
+      ctx.beginPath();
+      ctx.moveTo(s.x + Math.cos(a)*12, s.y + Math.sin(a)*12);
+      ctx.lineTo(s.x + Math.cos(a)*18, s.y + Math.sin(a)*18);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawParticles() {
+  for (const p of gs.particles) {
+    const alpha = p.life / 800;
+    ctx.globalAlpha = Math.min(1, alpha);
+    if (p.isText) {
+      ctx.fillStyle = p.color;
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.text, p.x, p.y);
+      ctx.textAlign = 'left';
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+</script>
+</body>
+</html>

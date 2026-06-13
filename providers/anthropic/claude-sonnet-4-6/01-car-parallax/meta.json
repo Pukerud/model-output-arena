@@ -1,0 +1,12 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-sonnet-4-6",
+  "model_display": "Claude Sonnet 4.6",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-13T12:00:00Z",
+  "runner": "Claude Sonnet 4.6 via Claude Code agent",
+  "notes": "Sunset dusk palette; layered parallax (sky, stars, mountains×2, hills×2, bg-trees, poles, road, fg-trees); procedural car drawn in canvas with spinning spoked wheels, body bounce, sunset glow, headlight/taillight; Mulberry32 PRNG for deterministic scenery; HDPI-aware canvas.",
+  "hosting": "api"
+}

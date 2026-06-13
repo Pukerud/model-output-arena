@@ -1,0 +1,12 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-sonnet-4-6",
+  "model_display": "Claude Sonnet 4.6",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-13T12:00:00Z",
+  "runner": "Claude Sonnet 4.6 via Claude Code agent",
+  "notes": "Three.js r166 via ESM importmap CDN. Cemetery scene: spooky gravestones, bare trees, moon with halo, fog, volumetric clouds. 4 articulated dancers each with unique style (MJ fedora + moonwalk prep, Pepe frog-crouch, Trump finger-point + MAGA cap, Musk rocket-pin + nerdy flail). ACES filmic tone mapping, PCF soft shadows, 6-light rig (moonlight, ambient, 2 green point, spot, back-red, 2 purple rim). Beat-synced BPM=104 Thriller rhythm, auto-cycling camera modes, floating particle orbs. OrbitControls for manual navigation.",
+  "hosting": "api"
+}
