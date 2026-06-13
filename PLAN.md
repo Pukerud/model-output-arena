@@ -10,9 +10,12 @@
 3. For **each** of the three prompts in [`PROMPTS/`](./PROMPTS): generate the complete answer exactly as
    the prompt asks, save it as `output.html`, copy the prompt text into `prompt.md`, and fill in `meta.json`.
 4. Append your model to [`manifest.js`](./manifest.js) so `compare.html` can show it.
-5. Commit + push. Done.
+5. Add your model as a row in the **Models tested** table in [`README.md`](./README.md).
+6. Commit + push. Done.
 
-**Do not modify other models' folders, `README.md`, `PLAN.md`, or `PROMPTS/`. Only add your own.**
+**Do not modify other models' folders, `PLAN.md`, or `PROMPTS/`. The only edits you make outside your
+own `providers/<provider>/<model>/` folder are: append one entry to `manifest.js` and add one row to the
+Models tested table in `README.md`. Never touch other models' rows/entries.**
 
 ## 1. The goal
 
@@ -115,16 +118,34 @@ Append a new object to `window.ARENA.models` (do **not** delete existing entries
 },
 ```
 
-## 8. Commit + push
+## 8. Update the README
+
+The **Models tested** table in [`README.md`](./README.md) must stay in sync with `manifest.js`. After
+registering your model, add one row for it (do **not** edit or remove existing rows):
+
+```markdown
+| <Provider display> | <Model display> | [`providers/<provider-slug>/<model-slug>`](./providers/<provider-slug>/<model-slug>) |
+```
+
+Example:
+
+```markdown
+| OpenAI | GPT-4o | [`providers/openai/gpt-4o`](./providers/openai/gpt-4o) |
+```
+
+Use the same `provider_display` / `model_display` strings you put in `manifest.js` and `meta.json` so the
+table matches. This is the one allowed edit to `README.md`.
+
+## 9. Commit + push
 
 ```bash
-git add providers/ manifest.js
+git add providers/ manifest.js README.md
 git commit -m "Add <provider-slug>/<model-slug> outputs"
 git push
 ```
 
 Commit message convention: `Add <provider-slug>/<model-slug> outputs`.
 
-## 9. After you're done
+## 10. After you're done
 
 Tell the human it's safe to open [`compare.html`](./compare.html). Then stop. Don't touch other folders.

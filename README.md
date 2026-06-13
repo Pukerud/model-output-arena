@@ -40,7 +40,11 @@ See the [`providers/`](./providers) tree.
 
 | Provider | Model | Path |
 |----------|-------|------|
+| Anthropic | Claude Opus 4.8 | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
+| Anthropic | Claude Haiku 4.5 | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
 | Z.AI | GLM 5.2 | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
+| Z.AI | GLM 5.1 | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
+| Z.AI | GLM 5 Turbo | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
 
 ## For humans
 
