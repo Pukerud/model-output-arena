@@ -31,7 +31,9 @@ trivial to diff two models head‑to‑head.
 
 ![Comparing Claude Sonnet 4.6 and GPT-5.5 on the parallax-car test in compare.html](./docs/compare-screenshot.png)
 
-Open [`compare.html`](./compare.html) in any browser (just double‑click it — **no server needed**).
+🌐 **Try it live (no clone needed):** <https://pukerud.github.io/model-output-arena/compare.html>
+
+Or open [`compare.html`](./compare.html) in any browser (just double‑click it — **no server needed**).
 It auto‑discovers every model and lets you pick a test plus any two models to view **side‑by‑side**.
 
 ### Quick start
@@ -50,7 +52,8 @@ No build, no install, no server — it's a single static page that reads [`manif
 ### Shareable links
 
 The current comparison is encoded in the URL hash, so you can link straight to a matchup —
-e.g. `compare.html#test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5` opens the view above.
+e.g. <https://pukerud.github.io/model-output-arena/compare.html#test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5>
+opens the view above. (Drop the domain to get a relative link that works on your local clone.)
 
 ## Models tested
 
