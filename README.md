@@ -66,23 +66,23 @@ Two independent axes are labelled:
 
 | Provider | Model | Type | Weights | Path |
 |----------|-------|------|---------|------|
-| Anthropic | Claude Opus 4.8 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
 | Anthropic | Claude Haiku 4.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
-| Z.AI | GLM 5.2 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
-| Z.AI | GLM 5.1 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
-| Z.AI | GLM 5 Turbo | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
+| Anthropic | Claude Opus 4.8 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
+| Anthropic | Claude Opus 4.8 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8-native`](./providers/anthropic/claude-opus-4-8-native) |
+| Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
+| DeepSeek | DeepSeek V4 Pro | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-pro`](./providers/deepseek/deepseek-v4-pro) |
+| Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
+| Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
+| Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
+| MiniMax | MiniMax-M3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3`](./providers/minimax/minimax-m3) |
+| MiniMax | MiniMax-M3 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3-native`](./providers/minimax/minimax-m3-native) |
 | OpenAI | GPT-5.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
 | OpenAI | GPT-5.5 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5-native`](./providers/openai/gpt-5.5-native) |
 | Qwen | Qwen 3.6 27B Heretic v2 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
-| Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
-| Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
-| Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
+| Z.AI | GLM 5 Turbo | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
+| Z.AI | GLM 5.1 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
+| Z.AI | GLM 5.2 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
 | Z.AI | GLM 5.2 (Native Harness) | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2-native`](./providers/z-ai/glm-5.2-native) |
-| Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
-| Anthropic | Claude Opus 4.8 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8-native`](./providers/anthropic/claude-opus-4-8-native) |
-| DeepSeek | DeepSeek V4 Pro | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-pro`](./providers/deepseek/deepseek-v4-pro) |
-| MiniMax | MiniMax-M3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3`](./providers/minimax/minimax-m3) |
-| MiniMax | MiniMax-M3 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3-native`](./providers/minimax/minimax-m3-native) |
 
 ## How outputs were generated
 
