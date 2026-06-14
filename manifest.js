@@ -236,6 +236,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/deepseek/deepseek-v4-pro/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/deepseek/deepseek-v4-pro/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "minimax",
+      provider_display: "MiniMax",
+      model: "minimax-m3",
+      model_display: "MiniMax-M3",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/minimax/minimax-m3",
+      added: "2026-06-14",
+      outputs: {
+        "01-car-parallax":      "providers/minimax/minimax-m3/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/minimax/minimax-m3/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/minimax/minimax-m3/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

@@ -1,0 +1,13 @@
+{
+  "provider": "minimax",
+  "provider_display": "MiniMax",
+  "model": "minimax-m3",
+  "model_display": "MiniMax-M3",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-14T10:09:48Z",
+  "runner": "MiniMax-M3 via pi agent",
+  "notes": "Single self-contained HTML, Three.js 0.160 via ES module CDN. Scene: foggy graveyard with full moon, halo sprite, starfield (400 points), tombstone ring, dead trees, displaced ground plane, glowing stage disc + ring. Lighting: moonlight key (PCFSoft shadows, 2048 shadow map), warm rim, purple backlight, four orange/purple Halloween spotlights. Post: ACES Filmic tone mapping, UnrealBloom pass, FXAA pass, CSS vignette, animated film-grain canvas. Characters: stylized low-poly humanoids (Michael — black suit + red jacket + fedora + sunglasses + white socks; Pepe — green frog head + bulging eyes + wide mouth; Donald — navy suit + red tie + blonde combover; Elon — leather jacket + receding hairline) + 8 backup zombies. Choreography: 32-second loop with 7 poses (Idle → Zombie Stomp → Shuffle R → Shuffle L → Arms-Up Lunge → Claw Hands → Settle-Bow), procedural per-character offset, leg/torso/head/arm rotations + slight vertical bob. Fog particles (800 additive points) drift upward. UI: Play/Pause, 4 camera modes (Front / Orbit / Low / Crane), Fog toggle, Spotlights toggle, full window resize handling.",
+  "hosting": "api",
+  "weights": "closed"
+}

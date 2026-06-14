@@ -1,0 +1,13 @@
+{
+  "provider": "minimax",
+  "provider_display": "MiniMax",
+  "model": "minimax-m3",
+  "model_display": "MiniMax-M3",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-14T10:00:41Z",
+  "runner": "MiniMax-M3 via pi agent",
+  "notes": "Single self-contained HTML, no libraries. Layered parallax (sun glow + sky gradient, wisp/puff clouds, flapping birds, far/mid mountain ranges with snow caps, rolling hills, tree band with three variants, roadside poles with lamp glow + speed/curve signs, scrolling lane dashes, foreground tufts + dust bands) with continuous modulo scroll for a seamless loop. dt-based timing; DPR-aware full-page canvas; spinning wheels tied to speed; subtle body bob + pitch; cinematic sunset palette with stars in the upper sky band and warm haze along the horizon. Includes headlight cone, tail-light glow, and windshield reflection.",
+  "hosting": "api",
+  "weights": "closed"
+}
