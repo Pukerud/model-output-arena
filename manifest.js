@@ -251,6 +251,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/minimax/minimax-m3/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/minimax/minimax-m3/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "minimax",
+      provider_display: "MiniMax",
+      model: "minimax-m3-native",
+      model_display: "MiniMax-M3 (Native Harness)",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/minimax/minimax-m3-native",
+      added: "2026-06-14",
+      outputs: {
+        "01-car-parallax":      "providers/minimax/minimax-m3-native/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/minimax/minimax-m3-native/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/minimax/minimax-m3-native/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

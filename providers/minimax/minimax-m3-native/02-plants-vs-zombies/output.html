@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lawn Guardians — PvZ Mini</title>
+<style>
+  :root {
+    --c-grass-1: #4a8a2a;
+    --c-grass-2: #3a6e22;
+    --c-soil-1: #6b4220;
+    --c-soil-2: #4d2f15;
+    --c-sky-1: #1a3a78;
+    --c-sky-2: #5fb4ff;
+    --c-sun: #ffe48a;
+    --c-text: #fff;
+    --c-panel: rgba(20, 30, 50, 0.78);
+    --c-panel-stroke: rgba(255, 255, 255, 0.18);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    color: var(--c-text);
+    user-select: none;
+    background: #06121e;
+  }
+  #stage {
+    position: relative; width: 100vw; height: 100vh;
+    background: linear-gradient(180deg, var(--c-sky-1) 0%, var(--c-sky-2) 60%, #8fcf6a 100%);
+    overflow: hidden;
+  }
+  #field {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 70%;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.35) 100%),
+      repeating-linear-gradient(0deg,
+        var(--c-grass-1) 0 60px, var(--c-grass-2) 60px 120px);
+    border-top: 6px solid #5a3a1a;
+    box-shadow: inset 0 30px 60px rgba(0,0,0,0.25);
+  }
+  .lane {
+    position: absolute; left: 0; right: 0; height: 90px;
+    border-bottom: 2px dashed rgba(255,255,255,0.05);
+  }
+  .lane:nth-child(1) { top: 0; }
+  .lane:nth-child(2) { top: 90px; }
+  .lane:nth-child(3) { top: 180px; }
+  .lane:nth-child(4) { top: 270px; }
+  .lane:nth-child(5) { top: 360px; }
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--c-panel);
+    border-bottom: 1px solid var(--c-panel-stroke);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+  #hud .group {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--c-panel-stroke);
+    border-radius: 8px;
+  }
+  #hud .label { font-size: 12px; opacity: 0.7; }
+  #hud .val { font-size: 16px; font-weight: bold; }
+  #tray {
+    position: absolute; top: 64px; left: 14px;
+    display: flex; gap: 8px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-panel-stroke);
+    border-radius: 10px;
+    padding: 8px;
+    z-index: 10;
+  }
+  .plant-card {
+    width: 72px; height: 88px;
+    background: linear-gradient(180deg, #2c3a55, #16223a);
+    border: 2px solid #4a608a;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 6px 4px;
+    font-size: 11px; text-align: center;
+    transition: transform 0.1s, border-color 0.15s, opacity 0.15s;
+  }
+  .plant-card:hover { transform: translateY(-2px); border-color: #88c8ff; }
+  .plant-card.cooling { opacity: 0.45; cursor: not-allowed; }
+  .plant-card.selected { border-color: #ffd060; box-shadow: 0 0 0 2px #ffd060aa inset; }
+  .plant-card .ico { font-size: 28px; line-height: 1; }
+  .plant-card .cost { color: #ffd060; font-weight: bold; }
+  .plant-card .cd { position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: bold; color: #ffd060;
+    pointer-events: none; }
+  .plant-card .wrap { position: relative; width: 100%; height: 100%; }
+  #overlay, #titleScreen, #gameoverScreen, #winScreen, #leaderboardScreen, #settingsScreen {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(10,20,40,0.75), rgba(0,0,0,0.92));
+    z-index: 50;
+  }
+  .card {
+    background: linear-gradient(180deg, #1d2a48, #0e1428);
+    border: 1px solid var(--c-panel-stroke);
+    border-radius: 14px;
+    padding: 24px 28px;
+    min-width: 340px; max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .card h1 { margin: 0 0 6px; font-size: 28px; }
+  .card h2 { margin: 0 0 12px; font-size: 18px; opacity: 0.9; }
+  .card p { margin: 0 0 14px; font-size: 13px; opacity: 0.8; line-height: 1.4; }
+  .btn {
+    display: inline-block; padding: 10px 18px;
+    background: linear-gradient(180deg, #4a8a2a, #2c5818);
+    color: #fff; border: 1px solid #6ab04a; border-radius: 8px;
+    cursor: pointer; font-size: 14px; font-weight: bold;
+    margin: 4px;
+  }
+  .btn.alt { background: linear-gradient(180deg, #2c4a78, #162a4a); border-color: #4a6e9a; }
+  .btn.danger { background: linear-gradient(180deg, #b04030, #7a2418); border-color: #d05040; }
+  .btn:hover { filter: brightness(1.15); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  table.leader { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.leader th, table.leader td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #2a3a5a; }
+  table.leader th { color: #ffd060; }
+  .diffRow { display: flex; gap: 6px; margin: 6px 0 14px; }
+  .diffRow .btn { flex: 1; padding: 8px; }
+  .diffRow .btn.active { background: linear-gradient(180deg, #ffd060, #c08830); color: #1a1422; border-color: #ffd060; }
+  .toast {
+    position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.75); padding: 8px 16px; border-radius: 6px;
+    font-size: 14px; pointer-events: none; z-index: 60;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+  .settingRow {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 8px 0; font-size: 13px;
+  }
+  .settingRow input[type=range] { width: 140px; }
+  .sun { position: absolute; width: 36px; height: 36px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff7c0, #ffd060 60%, #c08820);
+    box-shadow: 0 0 18px #ffd060aa;
+    cursor: pointer; z-index: 5; }
+  .sun .ring { position: absolute; inset: -6px; border: 2px dashed #ffd060;
+    border-radius: 50%; opacity: 0.5; animation: spin 8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .mower { position: absolute; left: 0; width: 56px; height: 40px;
+    background: linear-gradient(180deg, #d04030, #7a2018);
+    border: 2px solid #ff8060; border-radius: 4px; z-index: 4; }
+  .mower::after {
+    content: ''; position: absolute; left: 6px; right: 6px; bottom: -6px; height: 8px;
+    background: repeating-linear-gradient(90deg, #ff8060 0 4px, #7a2018 4px 8px);
+    border-radius: 0 0 4px 4px;
+  }
+  .house {
+    position: absolute; right: -10px; top: 20px; width: 220px; height: 320px;
+    background: linear-gradient(180deg, #d8a060 0%, #a07040 100%);
+    border-left: 6px solid #6a4820;
+    z-index: 1; opacity: 0.6;
+  }
+  .house::before {
+    content: ''; position: absolute; left: 0; right: 0; top: -60px; height: 60px;
+    background: linear-gradient(180deg, transparent 0%, #6a4020 100%);
+    clip-path: polygon(0 100%, 0 40%, 50% 0, 100% 40%, 100% 100%);
+  }
+  .zombie .hpbar {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: -8px; width: 28px; height: 4px;
+    background: #400; border: 1px solid #200; border-radius: 2px;
+  }
+  .zombie .hpbar .fill { height: 100%; background: linear-gradient(90deg, #ff4040, #ffa040); }
+  .pauseBtn {
+    position: absolute; top: 14px; right: 14px; z-index: 11;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--c-panel); border: 1px solid var(--c-panel-stroke);
+    color: #fff; cursor: pointer; font-size: 18px;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="house"></div>
+  <div id="field">
+    <div class="lane"></div><div class="lane"></div><div class="lane"></div>
+    <div class="lane"></div><div class="lane"></div>
+  </div>
+  <div id="hud" style="display:none">
+    <div class="group"><span class="label">☀</span><span class="val" id="sunVal">50</span></div>
+    <div class="group"><span class="label">Wave</span><span class="val" id="waveVal">1/10</span></div>
+    <div class="group"><span class="label">Score</span><span class="val" id="scoreVal">0</span></div>
+    <div class="group" id="zombieCountGroup" style="display:none"><span class="label">Zombies</span><span class="val" id="zombieCount">0</span></div>
+  </div>
+  <div id="tray" style="display:none"></div>
+  <button class="pauseBtn" id="pauseBtn" style="display:none" title="Pause">⏸</button>
+  <div class="toast" id="toast"></div>
+</div>
+
+<div id="titleScreen">
+  <div class="card">
+    <h1>🌱 Lawn Guardians</h1>
+    <h2>A tiny Plants vs Zombies</h2>
+    <p>Defend your lawn from 10 waves of zombies. Plant, harvest sun, survive.</p>
+    <div class="diffRow" id="diffRow">
+      <button class="btn" data-diff="easy">Easy</button>
+      <button class="btn active" data-diff="normal">Normal</button>
+      <button class="btn" data-diff="hard">Hard</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="startBtn">▶ Start</button>
+      <button class="btn alt" id="leaderboardBtn">🏆 Leaderboard</button>
+      <button class="btn alt" id="settingsBtn">⚙ Settings</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseScreen" style="display:none">
+  <div class="card">
+    <h1>⏸ Paused</h1>
+    <div class="row">
+      <button class="btn" id="resumeBtn">▶ Resume</button>
+      <button class="btn alt" id="restartBtn">↺ Restart</button>
+      <button class="btn danger" id="quitBtn">✕ Quit</button>
+    </div>
+  </div>
+</div>
+
+<div id="gameoverScreen" style="display:none">
+  <div class="card">
+    <h1>💀 The zombies ate your brain</h1>
+    <p id="gameoverScore">Final score: 0</p>
+    <div id="nameRow" style="margin:10px 0">
+      <input id="playerName" placeholder="Your name" maxlength="12" style="padding:8px;border-radius:6px;border:1px solid #4a608a;background:#0e1428;color:#fff;width:60%">
+      <button class="btn" id="saveScoreBtn">Save</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="retryBtn">↺ Retry</button>
+      <button class="btn alt" id="backToTitleBtn">⌂ Title</button>
+    </div>
+  </div>
+</div>
+
+<div id="winScreen" style="display:none">
+  <div class="card">
+    <h1>🎉 You defended the lawn!</h1>
+    <p id="winScore">Final score: 0</p>
+    <div id="nameRowW" style="margin:10px 0">
+      <input id="playerNameW" placeholder="Your name" maxlength="12" style="padding:8px;border-radius:6px;border:1px solid #4a608a;background:#0e1428;color:#fff;width:60%">
+      <button class="btn" id="saveScoreBtnW">Save</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="playAgainBtn">↺ Play Again</button>
+      <button class="btn alt" id="backToTitleBtnW">⌂ Title</button>
+    </div>
+  </div>
+</div>
+
+<div id="leaderboardScreen" style="display:none">
+  <div class="card">
+    <h1>🏆 Leaderboard</h1>
+    <table class="leader"><thead><tr><th>#</th><th>Name</th><th>Score</th><th>Wave</th><th>When</th></tr></thead>
+    <tbody id="leaderBody"></tbody></table>
+    <div class="row" style="margin-top:14px">
+      <button class="btn alt" id="clearLeaderBtn">Clear</button>
+      <button class="btn" id="backFromLeaderBtn">← Back</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsScreen" style="display:none">
+  <div class="card">
+    <h1>⚙ Settings</h1>
+    <div class="settingRow"><span>Sound</span><input type="checkbox" id="optSound" checked></div>
+    <div class="settingRow"><span>Music</span><input type="checkbox" id="optMusic" checked></div>
+    <div class="settingRow"><span>Quality</span>
+      <select id="optQuality" style="background:#0e1428;color:#fff;padding:6px;border-radius:4px;border:1px solid #4a608a">
+        <option value="low">Low</option><option value="med" selected>Medium</option><option value="high">High</option>
+      </select>
+    </div>
+    <div class="settingRow"><span>Game speed</span>
+      <input type="range" id="optSpeed" min="0.5" max="2" step="0.1" value="1">
+    </div>
+    <div class="row"><button class="btn" id="saveSettingsBtn">Save</button><button class="btn alt" id="backFromSettingsBtn">Cancel</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- Audio (WebAudio synth) ----------
+  const audio = {
+    ctx: null,
+    enabled: true, music: true,
+    init() {
+      if (this.ctx) return;
+      try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { this.ctx = null; }
+    },
+    beep(freq, dur, type='sine', vol=0.15) {
+      if (!this.enabled || !this.ctx) return;
+      const t = this.ctx.currentTime;
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g); g.connect(this.ctx.destination);
+      o.start(t); o.stop(t + dur);
+    },
+    place() { this.beep(420, 0.06, 'triangle', 0.1); this.beep(560, 0.08, 'triangle', 0.08); },
+    shoot() { this.beep(800, 0.05, 'square', 0.06); },
+    hit()  { this.beep(180, 0.08, 'sawtooth', 0.08); },
+    explode() { this.beep(120, 0.25, 'sawtooth', 0.18); this.beep(60, 0.35, 'square', 0.12); },
+    sun()  { this.beep(660, 0.05, 'sine', 0.1); this.beep(880, 0.06, 'sine', 0.08); },
+    win()  { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.beep(f, 0.18, 'triangle', 0.15), i * 130)); },
+    lose() { [400, 320, 240, 160].forEach((f, i) => setTimeout(() => this.beep(f, 0.25, 'sawtooth', 0.15), i * 180)); },
+  };
+  // Simple ambient music (triangle LFO)
+  let musicTimer = null;
+  function startMusic() {
+    if (musicTimer) return;
+    if (!audio.music) return;
+    let t = 0;
+    const seq = [220, 277, 330, 277, 247, 220, 196, 220];
+    musicTimer = setInterval(() => {
+      if (!audio.ctx || !audio.music) return;
+      audio.beep(seq[t % seq.length], 0.18, 'triangle', 0.04);
+      t++;
+    }, 350);
+  }
+  function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+
+  // ---------- Settings persistence ----------
+  const SETTINGS_KEY = 'lg_settings_v1';
+  function loadSettings() {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+  // ---------- Leaderboard ----------
+  const LB_KEY = 'lg_leaderboard_v1';
+  function loadLB() { try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch (e) { return []; } }
+  function saveLB(lb) { localStorage.setItem(LB_KEY, JSON.stringify(lb)); }
+  function addEntry(name, score, wave) {
+    const lb = loadLB();
+    lb.push({ name: (name || 'Anon').slice(0,12), score, wave, when: new Date().toISOString().slice(0,10) });
+    lb.sort((a, b) => b.score - a.score);
+    saveLB(lb.slice(0, 10));
+  }
+
+  // ---------- Game state ----------
+  const stage = document.getElementById('stage');
+  const field = document.getElementById('field');
+  const tray = document.getElementById('tray');
+  const toast = document.getElementById('toast');
+
+  const PLANTS = [
+    { id: 'sunflower',  name: 'Sunflower',  cost: 50,  cd: 7,   hp: 30, emoji: '🌻', prod: 25, prodCd: 8 },
+    { id: 'peashooter', name: 'Pea Shooter',cost: 100, cd: 7,   hp: 40, emoji: '🌱', dmg: 25, fireRate: 1.4, color: '#4ac74a' },
+    { id: 'wallnut',    name: 'Wall-nut',   cost: 50,  cd: 20,  hp: 400, emoji: '🥜' },
+    { id: 'snowpea',    name: 'Snow Pea',   cost: 175, cd: 7,   hp: 40, emoji: '❄️', dmg: 25, fireRate: 1.4, slow: 0.5 },
+    { id: 'repeater',   name: 'Repeater',   cost: 200, cd: 7,   hp: 40, emoji: '🌿', dmg: 25, fireRate: 1.4, shots: 2 },
+    { id: 'cherry',     name: 'Cherry Bomb',cost: 150, cd: 30,  hp: 30, emoji: '🍒', explode: { radius: 140, dmg: 1800 } },
+  ];
+  const ZOMBIES = [
+    { id: 'walker',   name: 'Walker',   hp: 100, spd: 22, dmg: 25, color: '#5a8a4a' },
+    { id: 'cone',     name: 'Conehead', hp: 200, spd: 22, dmg: 25, color: '#5a8a4a' },
+    { id: 'bucket',   name: 'Bucket',   hp: 400, spd: 18, dmg: 25, color: '#5a8a4a' },
+    { id: 'sprinter', name: 'Sprinter', hp: 80,  spd: 45, dmg: 20, color: '#7aa05a' },
+    { id: 'bruiser',  name: 'Bruiser',  hp: 600, spd: 14, dmg: 40, color: '#3a5a2a' },
+  ];
+  const DIFFS = {
+    easy:   { sunStart: 100, sunFall: 8, zombieHpMul: 0.7, waveSize: 0.7 },
+    normal: { sunStart: 50,  sunFall: 6, zombieHpMul: 1.0, waveSize: 1.0 },
+    hard:   { sunStart: 25,  sunFall: 4, zombieHpMul: 1.4, waveSize: 1.4 },
+  };
+  const WAVES = [
+    { types: ['walker'],         count: 3,  delay: 18 },
+    { types: ['walker'],         count: 5,  delay: 16 },
+    { types: ['walker', 'cone'], count: 6,  delay: 14 },
+    { types: ['cone'],           count: 7,  delay: 13 },
+    { types: ['walker', 'cone'], count: 8,  delay: 12 },
+    { types: ['bucket'],         count: 6,  delay: 12 },
+    { types: ['cone', 'bucket'], count: 9,  delay: 11 },
+    { types: ['sprinter'],       count: 8,  delay: 10 },
+    { types: ['cone', 'bucket', 'sprinter'], count: 10, delay: 9 },
+    { types: ['walker', 'cone', 'bucket', 'sprinter', 'bruiser'], count: 14, delay: 8 },
+  ];
+
+  const state = {
+    running: false, paused: false, gameOver: false, won: false,
+    diff: 'normal',
+    sun: 50, wave: 0, score: 0,
+    plants: [], zombies: [], projectiles: [], suns: [], particles: [],
+    selectedPlant: null,
+    cooldowns: {},
+    lastTs: 0, spawnTimer: 0, waveTimer: 0, spawning: false,
+    speedMul: 1,
+  };
+
+  function setSelectedPlant(id) {
+    state.selectedPlant = id;
+    document.querySelectorAll('.plant-card').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+  }
+  function showToast(msg, dur=1500) {
+    toast.textContent = msg; toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), dur);
+  }
+  function setHud() {
+    document.getElementById('sunVal').textContent = Math.floor(state.sun);
+    document.getElementById('waveVal').textContent = `${state.wave}/${WAVES.length}`;
+    document.getElementById('scoreVal').textContent = state.score;
+    document.getElementById('zombieCount').textContent = state.zombies.length;
+  }
+  function buildTray() {
+    tray.innerHTML = '';
+    PLANTS.forEach(p => {
+      const wrap = document.createElement('div');
+      wrap.className = 'plant-card';
+      wrap.dataset.id = p.id;
+      wrap.innerHTML = `
+        <div class="wrap">
+          <div class="ico">${p.emoji}</div>
+          <div class="name">${p.name}</div>
+          <div class="cost">☀${p.cost}</div>
+          <div class="cd" style="display:none"></div>
+        </div>`;
+      wrap.addEventListener('click', () => {
+        if (state.cooldowns[p.id] > 0) return;
+        if (state.sun < p.cost) { showToast('Need more sun ☀'); return; }
+        setSelectedPlant(state.selectedPlant === p.id ? null : p.id);
+      });
+      tray.appendChild(wrap);
+    });
+  }
+  function updateCooldownsUI() {
+    document.querySelectorAll('.plant-card').forEach(c => {
+      const id = c.dataset.id;
+      const cd = state.cooldowns[id] || 0;
+      const cdEl = c.querySelector('.cd');
+      const plant = PLANTS.find(p => p.id === id);
+      if (cd > 0) {
+        c.classList.add('cooling');
+        cdEl.style.display = 'flex';
+        cdEl.textContent = Math.ceil(cd);
+      } else {
+        c.classList.remove('cooling');
+        cdEl.style.display = 'none';
+      }
+    });
+  }
+  // Initialize cooldowns to 0
+  PLANTS.forEach(p => state.cooldowns[p.id] = 0);
+
+  // ---------- Field click to plant ----------
+  function getLaneFromY(clientY) {
+    const r = field.getBoundingClientRect();
+    const y = clientY - r.top;
+    return Math.max(0, Math.min(4, Math.floor(y / 90)));
+  }
+  field.addEventListener('click', (e) => {
+    if (!state.running || state.paused) return;
+    if (!state.selectedPlant) return;
+    const def = PLANTS.find(p => p.id === state.selectedPlant);
+    if (!def || state.sun < def.cost || state.cooldowns[def.id] > 0) return;
+    const lane = getLaneFromY(e.clientY);
+    const r = field.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    if (state.plants.find(p => p.lane === lane && Math.abs(p.x - x) < 40)) { showToast('Spot taken'); return; }
+    state.sun -= def.cost;
+    state.cooldowns[def.id] = def.cd;
+    state.plants.push({
+      id: def.id, def, lane, x,
+      hp: def.hp, maxHp: def.hp,
+      cooldown: 0,
+    });
+    audio.place();
+    setSelectedPlant(null);
+  });
+
+  // ---------- Sun spawns ----------
+  function spawnSun(x, y) {
+    const s = document.createElement('div');
+    s.className = 'sun';
+    s.innerHTML = '<div class="ring"></div>';
+    s.style.left = x + 'px';
+    s.style.top  = y + 'px';
+    stage.appendChild(s);
+    state.suns.push({ el: s, x, y, vy: 18 + Math.random() * 14, targetY: y + 60, ttl: 12, age: 0 });
+  }
+  function onSunClick(idx) {
+    const s = state.suns[idx];
+    state.sun += 25;
+    s.el.remove();
+    state.suns.splice(idx, 1);
+    audio.sun();
+  }
+  function bindSunClicks() {
+    state.suns.forEach((s, i) => {
+      s.el.onclick = () => onSunClick(i);
+    });
+  }
+
+  // ---------- Plant rendering & behavior ----------
+  function drawPlant(p) {
+    // Handled via DOM elements for crisp text
+  }
+  function ensurePlantEl(p) {
+    if (p.el) return;
+    const el = document.createElement('div');
+    el.style.cssText = `position:absolute;left:${p.x - 28}px;top:${p.lane * 90 + 8}px;width:56px;height:80px;text-align:center;z-index:6;`;
+    el.innerHTML = `
+      <div style="font-size:48px;line-height:1">${p.def.emoji}</div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:50px;height:6px;background:#300;border-radius:3px;">
+        <div class="hp" style="height:100%;width:100%;background:linear-gradient(90deg,#4ac74a,#a0e040);border-radius:3px;"></div>
+      </div>`;
+    field.appendChild(el);
+    p.el = el;
+  }
+  function updatePlant(p, dt) {
+    ensurePlantEl(p);
+    const hpPct = Math.max(0, p.hp / p.maxHp);
+    p.el.querySelector('.hp').style.width = (hpPct * 100) + '%';
+    if (p.hp <= 0) {
+      p.el.remove(); p.dead = true;
+      spawnParticles(p.x, p.lane * 90 + 40, '#4ac74a', 14);
+      audio.explode();
+    }
+    // Sunflower production
+    if (p.def.prod) {
+      p.cooldown -= dt;
+      if (p.cooldown <= 0) {
+        spawnSun(p.x + (Math.random() - 0.5) * 60, p.lane * 90 + 30);
+        p.cooldown = p.def.prodCd;
+      }
+    }
+    // Shooting
+    if (p.def.dmg) {
+      p.cooldown = (p.cooldown || 0) - dt;
+      const target = state.zombies.find(z => z.lane === p.lane && z.x > p.x);
+      if (target && p.cooldown <= 0) {
+        const shots = p.def.shots || 1;
+        for (let i = 0; i < shots; i++) {
+          state.projectiles.push({
+            lane: p.lane, x: p.x + 30, y: p.lane * 90 + 30,
+            vx: 320, dmg: p.def.dmg, slow: p.def.slow || 0,
+            color: p.def.slow ? '#a0e0ff' : '#7ad06a',
+            age: 0,
+          });
+        }
+        p.cooldown = p.def.fireRate;
+        audio.shoot();
+      }
+    }
+  }
+  function drawShootersShoot(p) {
+    // done via updatePlant projectiles
+  }
+
+  // ---------- Zombies ----------
+  function spawnZombie(type) {
+    const def = ZOMBIES.find(z => z.id === type);
+    const r = field.getBoundingClientRect();
+    const diff = DIFFS[state.diff];
+    const z = {
+      def, lane: Math.floor(Math.random() * 5),
+      x: r.width + 30, hp: def.hp * diff.zombieHpMul, maxHp: def.hp * diff.zombieHpMul,
+      baseSpd: def.spd, slowT: 0,
+      anim: 0, eating: false, dead: false,
+    };
+    state.zombies.push(z);
+  }
+  function ensureZombieEl(z) {
+    if (z.el) return;
+    const el = document.createElement('div');
+    el.className = 'zombie';
+    el.style.cssText = `position:absolute;left:0;top:${z.lane * 90 + 6}px;width:54px;height:80px;z-index:7;transition:filter 0.2s;`;
+    const body = z.def.id === 'bruiser' ? '#3a5a2a' : z.def.color;
+    el.innerHTML = `
+      <div class="hpbar"><div class="fill"></div></div>
+      <div style="position:absolute;left:0;top:0;width:54px;height:80px;">
+        <div style="position:absolute;left:6px;top:14px;width:42px;height:50px;background:${body};border:2px solid #2a3a1a;border-radius:6px;"></div>
+        <div style="position:absolute;left:14px;top:6px;width:26px;height:18px;background:#5a8a4a;border:2px solid #2a3a1a;border-radius:50%;"></div>
+        <div style="position:absolute;left:20px;top:14px;width:5px;height:5px;background:#000;border-radius:50%;"></div>
+        <div style="position:absolute;left:30px;top:14px;width:5px;height:5px;background:#000;border-radius:50%;"></div>
+        <div style="position:absolute;left:18px;top:20px;width:16px;height:3px;background:#3a1a1a;"></div>
+      </div>`;
+    field.appendChild(el);
+    z.el = el;
+  }
+  function updateZombie(z, dt) {
+    ensureZombieEl(z);
+    z.el.style.transform = `translateX(${z.x}px)`;
+    const hpPct = Math.max(0, z.hp / z.maxHp);
+    z.el.querySelector('.fill').style.width = (hpPct * 100) + '%';
+    z.el.style.filter = z.slowT > 0 ? 'hue-rotate(180deg) saturate(1.5) brightness(0.8)' : '';
+    if (z.hp <= 0) {
+      z.dead = true;
+      z.el.remove();
+      spawnParticles(z.x, z.lane * 90 + 40, '#5a8a4a', 12);
+      state.score += 50;
+      audio.hit();
+      return;
+    }
+    // Slow timer
+    if (z.slowT > 0) z.slowT -= dt;
+    const spd = z.baseSpd * (z.slowT > 0 ? 0.5 : 1);
+    // Check plant in front
+    const front = state.plants.find(p => p.lane === z.lane && !p.dead && Math.abs(p.x - z.x) < 36);
+    if (front) {
+      front.hp -= z.def.dmg * dt;
+      z.eating = true;
+    } else {
+      z.eating = false;
+      z.x -= spd * dt;
+    }
+    if (z.x < 0) {
+      // Reached house — game over
+      state.gameOver = true;
+      onLose();
+    }
+  }
+
+  // ---------- Projectiles ----------
+  function ensureProjEl(pr) {
+    if (pr.el) return;
+    const el = document.createElement('div');
+    el.style.cssText = `position:absolute;left:0;top:0;width:14px;height:14px;border-radius:50%;background:${pr.color};box-shadow:0 0 6px ${pr.color};z-index:8;`;
+    field.appendChild(el);
+    pr.el = el;
+  }
+  function updateProj(pr, dt) {
+    ensureProjEl(pr);
+    pr.x += pr.vx * dt;
+    pr.el.style.transform = `translate(${pr.x}px, ${pr.y}px)`;
+    pr.age += dt;
+    // Hit check
+    const tgt = state.zombies.find(z => z.lane === pr.lane && !z.dead && Math.abs(z.x - pr.x) < 30);
+    if (tgt) {
+      tgt.hp -= pr.dmg;
+      if (pr.slow) tgt.slowT = 3;
+      pr.dead = true; pr.el.remove();
+      audio.hit();
+    } else if (pr.x > field.clientWidth + 50 || pr.age > 5) {
+      pr.dead = true; pr.el.remove();
+    }
+  }
+
+  // ---------- Particles ----------
+  function spawnParticles(x, y, color, n) {
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div');
+      el.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:4px;height:4px;background:${color};border-radius:50%;z-index:9;`;
+      field.appendChild(el);
+      state.particles.push({
+        el,
+        x, y,
+        vx: (Math.random() - 0.5) * 160,
+        vy: (Math.random() - 0.5) * 160 - 60,
+        life: 0.6 + Math.random() * 0.4,
+        age: 0,
+      });
+    }
+  }
+  function updatePart(p, dt) {
+    p.age += dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 200 * dt;
+    p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+    p.el.style.opacity = 1 - p.age / p.life;
+    if (p.age >= p.life) { p.el.remove(); p.dead = true; }
+  }
+
+  // ---------- Mowers ----------
+  function ensureMowers() {
+    if (state.mowers && state.mowers.length) return;
+    state.mowers = [];
+    for (let i = 0; i < 5; i++) {
+      const el = document.createElement('div');
+      el.className = 'mower';
+      el.style.top = (i * 90 + 30) + 'px';
+      field.appendChild(el);
+      state.mowers.push({ el, lane: i, used: false, x: 0 });
+    }
+  }
+  function updateMowers(dt) {
+    for (const m of state.mowers) {
+      if (m.used) { m.el.style.opacity = 0.3; continue; }
+      const z = state.zombies.find(zz => zz.lane === m.lane && !zz.dead && zz.x < 30);
+      if (z) {
+        m.used = true;
+        // Kill all zombies in this lane up to screen
+        state.zombies.filter(zz => zz.lane === m.lane && !zz.dead).forEach(zz => { zz.hp = 0; });
+        spawnParticles(30, m.lane * 90 + 40, '#d04030', 30);
+        audio.explode();
+      }
+    }
+  }
+
+  // ---------- Wave control ----------
+  function startNextWave() {
+    state.wave++;
+    if (state.wave > WAVES.length) {
+      state.won = true; onWin(); return;
+    }
+    const w = WAVES[state.wave - 1];
+    const diff = DIFFS[state.diff];
+    const total = Math.ceil(w.count * diff.waveSize);
+    state.spawning = true;
+    state.spawnRemaining = total;
+    state.spawnQueue = [];
+    for (let i = 0; i < total; i++) {
+      state.spawnQueue.push(w.types[Math.floor(Math.random() * w.types.length)]);
+    }
+    state.spawnTimer = 0;
+    showToast(`Wave ${state.wave}/${WAVES.length} — ${total} zombies incoming!`);
+  }
+  function updateSpawn(dt) {
+    if (!state.spawning) return;
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0 && state.spawnQueue.length) {
+      spawnZombie(state.spawnQueue.shift());
+      state.spawnTimer = 1.2;
+    }
+    if (state.spawnQueue.length === 0) state.spawning = false;
+  }
+  function checkWaveProgress(dt) {
+    if (state.spawning) return;
+    if (state.zombies.every(z => z.dead)) {
+      // All dead, brief intermission then next
+      state.waveTimer = (state.waveTimer || 0) - dt;
+      if (state.waveTimer == null || state.waveTimer > 6) state.waveTimer = 6;
+      if (state.waveTimer <= 0) {
+        state.waveTimer = 0;
+        startNextWave();
+      }
+    }
+  }
+
+  // ---------- Main loop ----------
+  function loop(ts) {
+    if (!state.running) return;
+    const dt = Math.min(0.05, (ts - state.lastTs) / 1000) * state.speedMul;
+    state.lastTs = ts;
+    if (!state.paused) {
+      // Sun falls (ambient)
+      if (Math.random() < DIFFS[state.diff].sunFall * dt) {
+        const r = field.getBoundingClientRect();
+        spawnSun(120 + Math.random() * (r.width - 240), 80 + Math.random() * 200);
+      }
+      // Cooldowns tick
+      for (const id in state.cooldowns) {
+        if (state.cooldowns[id] > 0) state.cooldowns[id] = Math.max(0, state.cooldowns[id] - dt);
+      }
+      updateCooldownsUI();
+      // Sun motion
+      state.suns.forEach((s, i) => {
+        s.age += dt;
+        if (s.y < s.targetY) s.y += s.vy * dt;
+        s.el.style.transform = `translateY(${s.y - (s.y - s.targetY)}px)`;
+        s.el.style.top = s.y + 'px';
+        if (s.age > s.ttl) { s.el.remove(); s.dead = true; }
+      });
+      state.suns = state.suns.filter(s => !s.dead);
+      bindSunClicks();
+      // Update entities
+      state.plants.forEach(p => updatePlant(p, dt));
+      state.zombies.forEach(z => updateZombie(z, dt));
+      state.projectiles.forEach(p => updateProj(p, dt));
+      state.particles.forEach(p => updatePart(p, dt));
+      state.plants = state.plants.filter(p => !p.dead);
+      state.zombies = state.zombies.filter(z => !z.dead);
+      state.projectiles = state.projectiles.filter(p => !p.dead);
+      state.particles = state.particles.filter(p => !p.dead);
+      ensureMowers();
+      updateMowers(dt);
+      updateSpawn(dt);
+      checkWaveProgress(dt);
+      // Start wave 1 the first frame
+      if (state.wave === 0 && !state.spawning) {
+        state.waveTimer = 3;
+        const t = setTimeout(() => { if (state.running && !state.paused && state.wave === 0) startNextWave(); }, 3000);
+      }
+      setHud();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- UI flows ----------
+  function startGame() {
+    audio.init();
+    state.running = true;
+    state.paused = false;
+    state.gameOver = false;
+    state.won = false;
+    state.sun = DIFFS[state.diff].sunStart;
+    state.wave = 0; state.score = 0;
+    state.plants = []; state.zombies = []; state.projectiles = []; state.suns = []; state.particles = [];
+    state.mowers = null;
+    if (state.mowerEls) state.mowerEls.forEach(e => e.remove());
+    state.mowerEls = null;
+    // clear any leftover DOM
+    field.querySelectorAll('.zombie,.mower,.sun').forEach(e => e.remove());
+    // remove plant els
+    state.lastTs = performance.now();
+    document.getElementById('hud').style.display = 'flex';
+    document.getElementById('pauseBtn').style.display = 'block';
+    document.getElementById('tray').style.display = 'flex';
+    ['titleScreen','gameoverScreen','winScreen','leaderboardScreen','settingsScreen','pauseScreen'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+    buildTray();
+    startMusic();
+  }
+  function onLose() {
+    if (state._endingHandled) return; state._endingHandled = true;
+    state.running = false;
+    stopMusic();
+    audio.lose();
+    document.getElementById('gameoverScore').textContent = `Final score: ${state.score}`;
+    document.getElementById('gameoverScreen').style.display = 'flex';
+  }
+  function onWin() {
+    if (state._endingHandled) return; state._endingHandled = true;
+    state.running = false;
+    stopMusic();
+    audio.win();
+    document.getElementById('winScore').textContent = `Final score: ${state.score}`;
+    document.getElementById('winScreen').style.display = 'flex';
+  }
+  function pause() {
+    if (!state.running) return;
+    state.paused = true;
+    document.getElementById('pauseScreen').style.display = 'flex';
+  }
+  function resume() {
+    state.paused = false;
+    state.lastTs = performance.now();
+    document.getElementById('pauseScreen').style.display = 'none';
+  }
+  function backToTitle() {
+    state.running = false; state.paused = false; state._endingHandled = false;
+    state.wave = 0; state.score = 0; state.sun = 50;
+    state.plants = []; state.zombies = []; state.projectiles = []; state.suns = []; state.particles = [];
+    state.mowers = null;
+    field.querySelectorAll('.zombie,.mower,.sun').forEach(e => e.remove());
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('tray').style.display = 'none';
+    document.getElementById('pauseBtn').style.display = 'none';
+    ['pauseScreen','gameoverScreen','winScreen','leaderboardScreen','settingsScreen'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById('titleScreen').style.display = 'flex';
+    stopMusic();
+  }
+
+  // ---------- Settings / Leaderboard ----------
+  function openLeaderboard() {
+    const lb = loadLB();
+    const body = document.getElementById('leaderBody');
+    if (lb.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="opacity:0.6;text-align:center;padding:14px">No scores yet — go defend that lawn!</td></tr>';
+    } else {
+      body.innerHTML = lb.map((e, i) =>
+        `<tr><td>${i+1}</td><td>${e.name}</td><td>${e.score}</td><td>${e.wave}</td><td>${e.when}</td></tr>`
+      ).join('');
+    }
+    document.getElementById('leaderboardScreen').style.display = 'flex';
+  }
+  function openSettings() {
+    const s = loadSettings();
+    document.getElementById('optSound').checked = s.sound !== false;
+    document.getElementById('optMusic').checked = s.music !== false;
+    document.getElementById('optQuality').value = s.quality || 'med';
+    document.getElementById('optSpeed').value = s.speed || 1;
+    document.getElementById('settingsScreen').style.display = 'flex';
+  }
+  function applySettings() {
+    const s = {
+      sound: document.getElementById('optSound').checked,
+      music: document.getElementById('optMusic').checked,
+      quality: document.getElementById('optQuality').value,
+      speed: parseFloat(document.getElementById('optSpeed').value),
+    };
+    saveSettings(s);
+    audio.enabled = s.sound;
+    audio.music = s.music;
+    state.speedMul = s.speed;
+    if (!s.music) stopMusic();
+    showToast('Settings saved');
+  }
+  function applyStoredSettings() {
+    const s = loadSettings();
+    audio.enabled = s.sound !== false;
+    audio.music = s.music !== false;
+    state.speedMul = s.speed || 1;
+  }
+  applyStoredSettings();
+
+  // ---------- Wire up ----------
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('leaderboardBtn').addEventListener('click', openLeaderboard);
+  document.getElementById('backFromLeaderBtn').addEventListener('click', () => document.getElementById('leaderboardScreen').style.display = 'none');
+  document.getElementById('clearLeaderBtn').addEventListener('click', () => { saveLB([]); openLeaderboard(); });
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => { applySettings(); document.getElementById('settingsScreen').style.display = 'none'; });
+  document.getElementById('backFromSettingsBtn').addEventListener('click', () => document.getElementById('settingsScreen').style.display = 'none');
+  document.getElementById('pauseBtn').addEventListener('click', pause);
+  document.getElementById('resumeBtn').addEventListener('click', resume);
+  document.getElementById('restartBtn').addEventListener('click', () => { state._endingHandled = false; startGame(); });
+  document.getElementById('quitBtn').addEventListener('click', backToTitle);
+  document.getElementById('retryBtn').addEventListener('click', () => { state._endingHandled = false; startGame(); });
+  document.getElementById('backToTitleBtn').addEventListener('click', backToTitle);
+  document.getElementById('playAgainBtn').addEventListener('click', () => { state._endingHandled = false; startGame(); });
+  document.getElementById('backToTitleBtnW').addEventListener('click', backToTitle);
+  document.getElementById('saveScoreBtn').addEventListener('click', () => {
+    addEntry(document.getElementById('playerName').value, state.score, state.wave);
+    showToast('Score saved');
+  });
+  document.getElementById('saveScoreBtnW').addEventListener('click', () => {
+    addEntry(document.getElementById('playerNameW').value, state.score, state.wave);
+    showToast('Score saved');
+  });
+  document.querySelectorAll('#diffRow .btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#diffRow .btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      state.diff = b.dataset.diff;
+    });
+  });
+
+  // Allow ESC to pause
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (state.paused) resume(); else pause();
+    }
+  });
+
+  // First-frame setup of the title screen
+  buildTray();
+  // (tray hidden until start)
+
+  // Start the rAF loop just so the title screen stays painted
+  state.lastTs = performance.now();
+  function idleLoop(ts) {
+    requestAnimationFrame(idleLoop);
+  }
+  requestAnimationFrame(idleLoop);
+})();
+</script>
+</body>
+</html>

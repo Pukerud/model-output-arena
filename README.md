@@ -79,6 +79,7 @@ Two independent axes are labelled:
 | Anthropic | Claude Opus 4.8 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8-native`](./providers/anthropic/claude-opus-4-8-native) |
 | DeepSeek | DeepSeek V4 Pro | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-pro`](./providers/deepseek/deepseek-v4-pro) |
 | MiniMax | MiniMax-M3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3`](./providers/minimax/minimax-m3) |
+| MiniMax | MiniMax-M3 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3-native`](./providers/minimax/minimax-m3-native) |
 
 ## How outputs were generated
 
@@ -90,6 +91,7 @@ Outputs are produced by pointing an **agent harness** at this repo and giving it
 - **Antigravity IDE** — Google DeepMind's native agentic harness. Used for the **Gemini 3.1 Pro (Native Harness)** entry.
 - **Codex Desktop native harness** — OpenAI's Codex Desktop app. Used for the **GPT-5.5 (Native Harness)** entry, which is the *same model* as the existing GPT-5.5 entry but generated in Codex Desktop instead of pi.dev.
 - **Claude Code Desktop native harness** — Anthropic's own first-party desktop app. Used for the **Claude Opus 4.8 (Native Harness)** entry, which is the *same model* as the existing Claude Opus 4.8 entry (run via the Claude Code VS Code extension) but generated in Claude Code Desktop — the native-harness analogue of the GLM 5.2 and GPT-5.5 pairs.
+- **MiniMax Code native harness** — MiniMax's own first-party desktop agent. Used for the **MiniMax-M3 (Native Harness)** entry, which is the *same model* as the existing MiniMax-M3 entry (run via the Z.AI Pi dev extension) but generated in MiniMax Code — the native-harness analogue of the GLM 5.2, GPT-5.5 and Claude Opus 4.8 pairs.
 
 Runs use the listed harness environment, with the same prompts and no post-editing — what you see is what the model produced.
 
