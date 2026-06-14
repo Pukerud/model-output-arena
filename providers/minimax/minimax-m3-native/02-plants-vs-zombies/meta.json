@@ -1,0 +1,13 @@
+{
+  "provider": "minimax",
+  "provider_display": "MiniMax",
+  "model": "minimax-m3-native",
+  "model_display": "MiniMax-M3 (Native Harness)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-06-14T12:31:00Z",
+  "runner": "MiniMax-M3 via MiniMax Code (native harness)",
+  "notes": "Single self-contained HTML, no libraries. 5x9 lane field, 6 plant types (Sunflower, Pea Shooter, Wall-nut, Snow Pea, Repeater, Cherry Bomb) and 5 zombie types (Walker, Conehead, Bucket, Sprinter, Bruiser). 10-wave survival. Title screen with difficulty selector (Easy/Normal/Hard), HUD with sun economy + wave/score, plant tray with per-card cooldowns, pause overlay, settings (sound/music/quality/speed, persisted in localStorage), top-10 leaderboard (localStorage), WebAudio-synth SFX (place/shoot/hit/explode/sun/win/lose) + ambient triangle-wave music. House silhouette backdrop, lane mowers as last defense, particle FX, clickable DOM suns with dashed-ring decoration, HP bars with hue-shift slow indicator, screen-shake-ready design.",
+  "hosting": "api",
+  "weights": "closed"
+}

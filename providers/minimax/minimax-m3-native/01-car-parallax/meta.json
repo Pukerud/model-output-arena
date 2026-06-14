@@ -1,0 +1,13 @@
+{
+  "provider": "minimax",
+  "provider_display": "MiniMax",
+  "model": "minimax-m3-native",
+  "model_display": "MiniMax-M3 (Native Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-06-14T12:30:00Z",
+  "runner": "MiniMax-M3 via MiniMax Code (native harness)",
+  "notes": "Single self-contained HTML, no libraries. Golden-hour sunset sky with vertical gradient (deep navy → indigo → magenta → amber horizon), warm sun disc with multi-stop radial glow, subtle upper-band stars, drifting puff clouds (3-ellipse puffs with warm rim), 6 flapping birds, two mountain ranges (far = lighter purple with snow-cap highlights, mid = darker purple), rolling-hill silhouette, 60-item tree band with 3 silhouettes (pine / round / tall), 16 roadside poles with warm lamp glow + occasional curve/speed signs, perspective road with scrolling center dashes, side tufts. Car: red body, dark cabin, windshield reflection, headlight cone, tail-light glow, spinning 5-spoke wheels, body bob + pitch tied to road speed. DPR-aware, dt-based, modular scroll with seamless wrap on each layer.",
+  "hosting": "api",
+  "weights": "closed"
+}
