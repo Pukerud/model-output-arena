@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-pro",
+  "model_display": "DeepSeek V4 Pro",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-06-14T12:00:00Z",
+  "runner": "DeepSeek V4 Pro via pi agent",
+  "notes": "",
+  "hosting": "api",
+  "weights": "closed"
+}

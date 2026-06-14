@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-pro",
+  "model_display": "DeepSeek V4 Pro",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-06-14T12:00:00Z",
+  "runner": "DeepSeek V4 Pro via pi agent",
+  "notes": "",
+  "hosting": "api",
+  "weights": "closed"
+}

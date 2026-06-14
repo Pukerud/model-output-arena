@@ -221,6 +221,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/anthropic/claude-opus-4-8-native/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/anthropic/claude-opus-4-8-native/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "deepseek",
+      provider_display: "DeepSeek",
+      model: "deepseek-v4-pro",
+      model_display: "DeepSeek V4 Pro",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/deepseek/deepseek-v4-pro",
+      added: "2026-06-14",
+      outputs: {
+        "01-car-parallax":      "providers/deepseek/deepseek-v4-pro/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/deepseek/deepseek-v4-pro/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/deepseek/deepseek-v4-pro/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
