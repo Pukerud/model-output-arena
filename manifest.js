@@ -208,6 +208,21 @@ window.ARENA = {
       },
     },
     {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemini-3.5-flash-native",
+      model_display: "Gemini 3.5 Flash (Native Harness)",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/google/gemini-3.5-flash-native",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemini-3.5-flash-native/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemini-3.5-flash-native/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemini-3.5-flash-native/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "anthropic",
       provider_display: "Anthropic",
       model: "claude-opus-4-8-native",

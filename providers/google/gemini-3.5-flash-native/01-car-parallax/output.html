@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinematic Parallax Drive - Canvas Simulation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0b1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+      z-index: 10;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">Gemini 3.5 Flash &bull; Parallax Drive Simulation</div>
+  <canvas id="parallaxCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('parallaxCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Handle high DPI displays
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Speed factors for different layers
+    const globalSpeed = 8; 
+
+    // Time tracker
+    let lastTime = 0;
+    let elapsed = 0;
+
+    // Background mountains generator helper (pseudo-random but deterministic)
+    function generateMountainPoints(segments, amplitude, frequency, seed) {
+      const points = [];
+      let currentVal = 0;
+      for (let i = 0; i <= segments; i++) {
+        // Simple multi-frequency sine generator
+        const x = (i / segments);
+        let y = Math.sin(x * frequency * 2 * Math.PI + seed) * amplitude;
+        y += Math.sin(x * frequency * 4 * Math.PI + seed * 2.3) * (amplitude * 0.3);
+        y += Math.cos(x * frequency * 8 * Math.PI - seed * 1.1) * (amplitude * 0.1);
+        points.push({ x: x, y: y });
+      }
+      return points;
+    }
+
+    // Scene layers
+    const layers = {
+      stars: [],
+      clouds: [
+        { x: 100, y: 120, size: 60, speed: 0.05 },
+        { x: 400, y: 80, size: 80, speed: 0.03 },
+        { x: 700, y: 150, size: 50, speed: 0.07 },
+        { x: 1100, y: 90, size: 90, speed: 0.04 }
+      ],
+      mountainFar: {
+        points: generateMountainPoints(120, 45, 2, 42),
+        speed: 0.1,
+        color: '#1a1836',
+        offset: 0
+      },
+      mountainMid: {
+        points: generateMountainPoints(120, 35, 4, 17),
+        speed: 0.3,
+        color: '#28204b',
+        offset: 0
+      },
+      hillsNear: {
+        points: generateMountainPoints(120, 20, 6, 99),
+        speed: 0.8,
+        color: '#37275d',
+        offset: 0
+      },
+      trees: [],
+      telegraphPoles: [],
+      particles: []
+    };
+
+    // Initialize stars
+    for (let i = 0; i < 60; i++) {
+      layers.stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * (window.innerHeight * 0.4),
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.7 + 0.3,
+        speed: Math.random() * 0.02
+      });
+    }
+
+    // Initialize trees
+    const numTrees = 12;
+    for (let i = 0; i < numTrees; i++) {
+      layers.trees.push({
+        x: (window.innerWidth / numTrees) * i + Math.random() * 50,
+        height: Math.random() * 80 + 70,
+        width: Math.random() * 20 + 20,
+        type: Math.random() > 0.4 ? 'pine' : 'round',
+        color: Math.random() > 0.5 ? '#171a36' : '#111327'
+      });
+    }
+
+    // Initialize poles
+    const numPoles = 4;
+    for (let i = 0; i < numPoles; i++) {
+      layers.telegraphPoles.push({
+        x: (window.innerWidth / numPoles) * i + 100,
+        height: 180
+      });
+    }
+
+    // Main Drive Parameters
+    const driveState = {
+      carYOffset: 0,
+      carRotation: 0,
+      wheelRotation: 0,
+      speedKmh: 110
+    };
+
+    // Draw a single tree
+    function drawTree(x, y, width, height, type, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (type === 'pine') {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - width / 2, y + height);
+        ctx.lineTo(x + width / 2, y + height);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(x, y - height * 0.2);
+        ctx.lineTo(x - width * 0.4, y + height * 0.6);
+        ctx.lineTo(x + width * 0.4, y + height * 0.6);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Round deciduous tree
+        ctx.beginPath();
+        ctx.arc(x, y + height * 0.4, width * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x - width * 0.3, y + height * 0.6, width * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + width * 0.3, y + height * 0.6, width * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(x - 3, y + height * 0.6, 6, height * 0.5); // trunk
+      }
+    }
+
+    // Render loop
+    function animate(time) {
+      if (!lastTime) lastTime = time;
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
+      elapsed += dt;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const horizon = h * 0.62;
+
+      // Update offsets based on speed
+      layers.mountainFar.offset = (layers.mountainFar.offset + globalSpeed * layers.mountainFar.speed) % w;
+      layers.mountainMid.offset = (layers.mountainMid.offset + globalSpeed * layers.mountainMid.speed) % w;
+      layers.hillsNear.offset = (layers.hillsNear.offset + globalSpeed * layers.hillsNear.speed) % w;
+
+      // Update clouds
+      layers.clouds.forEach(c => {
+        c.x -= c.speed * globalSpeed;
+        if (c.x + c.size * 2 < 0) c.x = w + c.size;
+      });
+
+      // Update trees
+      layers.trees.forEach(t => {
+        t.x -= globalSpeed * 1.5;
+        if (t.x < -100) {
+          t.x = w + 100;
+          t.height = Math.random() * 80 + 70;
+        }
+      });
+
+      // Update poles
+      layers.telegraphPoles.forEach(p => {
+        p.x -= globalSpeed * 3;
+        if (p.x < -100) p.x = w + 100;
+      });
+
+      // Update car suspension/bounce simulation
+      driveState.carYOffset = Math.sin(elapsed * 18) * 0.8 + Math.sin(elapsed * 32) * 0.25;
+      driveState.carRotation = (Math.sin(elapsed * 22) * 0.003) + (Math.sin(elapsed * 11) * 0.001);
+      driveState.wheelRotation += (globalSpeed * 5) * dt;
+
+      // 1. SKY GRADIENT (Sunset/Dusk theme)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
+      skyGrad.addColorStop(0, '#0c0721'); // Deep space
+      skyGrad.addColorStop(0.35, '#23113c'); // Twilight purple
+      skyGrad.addColorStop(0.65, '#5b1842'); // Magenta sunset glow
+      skyGrad.addColorStop(0.85, '#d35230'); // Warm orange horizon
+      skyGrad.addColorStop(1, '#f1903e'); // Yellow sunset shine
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Stars twinkling and drifting
+      ctx.fillStyle = '#ffffff';
+      layers.stars.forEach(s => {
+        s.alpha = Math.max(0.1, s.alpha + (Math.random() - 0.5) * 0.05);
+        ctx.globalAlpha = s.alpha;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
+
+      // Sun drawing (cinematic lighting source)
+      const sunX = w * 0.75;
+      const sunY = horizon - 20;
+      const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 150);
+      sunGrad.addColorStop(0, 'rgba(255, 243, 204, 0.95)');
+      sunGrad.addColorStop(0.1, 'rgba(254, 180, 80, 0.8)');
+      sunGrad.addColorStop(0.3, 'rgba(235, 75, 96, 0.3)');
+      sunGrad.addColorStop(1, 'rgba(12, 7, 33, 0)');
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 150, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw clouds
+      ctx.fillStyle = 'rgba(211, 82, 48, 0.25)';
+      layers.clouds.forEach(c => {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+        ctx.arc(c.x + c.size * 0.6, c.y - c.size * 0.2, c.size * 0.8, 0, Math.PI * 2);
+        ctx.arc(c.x + c.size * 1.2, c.y, c.size * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 2. PARALLAX LAYER: Far Mountains
+      ctx.fillStyle = layers.mountainFar.color;
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let i = 0; i <= w; i += 5) {
+        const u = ((i + layers.mountainFar.offset) % w) / w;
+        const index = Math.floor(u * (layers.mountainFar.points.length - 1));
+        const yVal = layers.mountainFar.points[index].y;
+        ctx.lineTo(i, horizon - 150 + yVal);
+      }
+      ctx.lineTo(w, horizon);
+      ctx.lineTo(0, horizon);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. PARALLAX LAYER: Mid Mountains
+      ctx.fillStyle = layers.mountainMid.color;
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let i = 0; i <= w; i += 5) {
+        const u = ((i + layers.mountainMid.offset) % w) / w;
+        const index = Math.floor(u * (layers.mountainMid.points.length - 1));
+        const yVal = layers.mountainMid.points[index].y;
+        ctx.lineTo(i, horizon - 90 + yVal);
+      }
+      ctx.lineTo(w, horizon);
+      ctx.lineTo(0, horizon);
+      ctx.closePath();
+      ctx.fill();
+
+      // 4. PARALLAX LAYER: Near Hills
+      ctx.fillStyle = layers.hillsNear.color;
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      for (let i = 0; i <= w; i += 5) {
+        const u = ((i + layers.hillsNear.offset) % w) / w;
+        const index = Math.floor(u * (layers.hillsNear.points.length - 1));
+        const yVal = layers.hillsNear.points[index].y;
+        ctx.lineTo(i, horizon - 40 + yVal);
+      }
+      ctx.lineTo(w, horizon);
+      ctx.lineTo(0, horizon);
+      ctx.closePath();
+      ctx.fill();
+
+      // 5. PARALLAX LAYER: Trees (passing by behind road but in front of hills)
+      layers.trees.forEach(t => {
+        drawTree(t.x, horizon - t.height, t.width, t.height, t.type, t.color);
+      });
+
+      // 6. ROAD & FOREGROUND GROUND
+      // Asphalt color gradient
+      const roadGrad = ctx.createLinearGradient(0, horizon, 0, h);
+      roadGrad.addColorStop(0, '#120f26'); // High horizon contrast
+      roadGrad.addColorStop(0.1, '#1b1836'); // Asphalt base
+      roadGrad.addColorStop(0.5, '#0b0817'); // Dark asphalt close up
+      roadGrad.addColorStop(1, '#05030d');
+      ctx.fillStyle = roadGrad;
+      ctx.fillRect(0, horizon, w, h - horizon);
+
+      // Distant roadside fence/barrier (simple scrolling elements)
+      ctx.strokeStyle = '#272044';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, horizon);
+      ctx.lineTo(w, horizon);
+      ctx.stroke();
+
+      // 7. TELEGRAPH POLES (Passing in front of background, behind car)
+      ctx.strokeStyle = '#0e0b1f';
+      ctx.fillStyle = '#0e0b1f';
+      ctx.lineWidth = 4;
+      layers.telegraphPoles.forEach(p => {
+        // Main pole
+        ctx.beginPath();
+        ctx.moveTo(p.x, horizon + 50);
+        ctx.lineTo(p.x, horizon - p.height);
+        ctx.stroke();
+
+        // Crossbar
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 25, horizon - p.height + 20);
+        ctx.lineTo(p.x + 25, horizon - p.height + 20);
+        ctx.stroke();
+        ctx.lineWidth = 4;
+
+        // Wire connecting lines (dynamic curves)
+        ctx.strokeStyle = 'rgba(14, 11, 31, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Draw simple drop curves connecting poles
+        ctx.quadraticCurveTo(p.x + (w / numPoles) / 2, horizon - p.height + 60, p.x + (w / numPoles), horizon - p.height + 20);
+        ctx.stroke();
+        ctx.strokeStyle = '#0e0b1f';
+        ctx.lineWidth = 4;
+      });
+
+      // 8. ROAD LINES / MARKINGS (Fast moving perspective lines)
+      const markerSpeed = globalSpeed * 4.5;
+      const markerOffset = (elapsed * markerSpeed * 100) % 250;
+      ctx.fillStyle = 'rgba(240, 160, 50, 0.25)'; // Weathered yellow middle lane
+      const laneY = horizon + (h - horizon) * 0.45;
+      const markerWidth = 80;
+      const gap = 120;
+
+      for (let x = -250 + markerOffset; x < w + 250; x += (markerWidth + gap)) {
+        // Perspective thickness scaling (slighter thinner as they go far)
+        ctx.beginPath();
+        ctx.moveTo(x, laneY);
+        ctx.lineTo(x + markerWidth, laneY);
+        ctx.lineTo(x + markerWidth - 15, laneY + 5);
+        ctx.lineTo(x - 15, laneY + 5);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Near side road marking (white)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      const nearLaneY = horizon + (h - horizon) * 0.8;
+      const nearMarkerWidth = 150;
+      const nearGap = 200;
+      for (let x = -350 + markerOffset * 1.5; x < w + 350; x += (nearMarkerWidth + nearGap)) {
+        ctx.beginPath();
+        ctx.moveTo(x, nearLaneY);
+        ctx.lineTo(x + nearMarkerWidth, nearLaneY);
+        ctx.lineTo(x + nearMarkerWidth - 30, nearLaneY + 12);
+        ctx.lineTo(x - 30, nearLaneY + 12);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Exhaust particle emitter update and draw
+      if (Math.random() < 0.3) {
+        layers.particles.push({
+          x: w * 0.26,
+          y: horizon + 115,
+          vx: -Math.random() * 2 - 2,
+          vy: -Math.random() * 1.5,
+          size: Math.random() * 3 + 2,
+          alpha: 0.6
+        });
+      }
+
+      layers.particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.size += 0.2;
+        p.alpha -= dt * 1.1;
+        if (p.alpha <= 0) {
+          layers.particles.splice(idx, 1);
+        } else {
+          ctx.fillStyle = `rgba(180, 100, 120, ${p.alpha * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // 9. THE MAIN SUBJECT: Sleek Sports Car (drawn in foreground)
+      ctx.save();
+      // Set baseline position of car relative to viewport
+      const carBaseX = w * 0.35;
+      const carBaseY = horizon + 40;
+
+      // Apply bounce and subtle pitch rotation from suspension
+      ctx.translate(carBaseX, carBaseY + driveState.carYOffset);
+      ctx.rotate(driveState.carRotation);
+
+      // CINEMATIC CAR LIGHTS & REFLECTIONS (drawn before car body so body overlaps correctly)
+      // Dynamic Glowing Headlight cone
+      const headlightGrad = ctx.createRadialGradient(280, 25, 0, 550, 45, 280);
+      headlightGrad.addColorStop(0, 'rgba(255, 235, 170, 0.85)');
+      headlightGrad.addColorStop(0.15, 'rgba(255, 215, 120, 0.45)');
+      headlightGrad.addColorStop(0.5, 'rgba(240, 160, 50, 0.1)');
+      headlightGrad.addColorStop(1, 'rgba(240, 160, 50, 0)');
+      ctx.fillStyle = headlightGrad;
+      ctx.beginPath();
+      ctx.moveTo(270, 18);
+      ctx.lineTo(580, -30);
+      ctx.lineTo(580, 130);
+      ctx.closePath();
+      ctx.fill();
+
+      // Taillight glow (red casting backwards)
+      const taillightGrad = ctx.createRadialGradient(-180, 28, 0, -280, 32, 100);
+      taillightGrad.addColorStop(0, 'rgba(255, 10, 30, 0.6)');
+      taillightGrad.addColorStop(0.4, 'rgba(200, 5, 20, 0.15)');
+      taillightGrad.addColorStop(1, 'rgba(200, 5, 20, 0)');
+      ctx.fillStyle = taillightGrad;
+      ctx.beginPath();
+      ctx.arc(-180, 28, 100, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Underglow (cyberpunk magenta tint)
+      const underglowGrad = ctx.createRadialGradient(40, 75, 5, 40, 75, 150);
+      underglowGrad.addColorStop(0, 'rgba(255, 40, 120, 0.55)');
+      underglowGrad.addColorStop(0.5, 'rgba(180, 20, 150, 0.15)');
+      underglowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = underglowGrad;
+      ctx.beginPath();
+      ctx.ellipse(40, 75, 160, 25, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // CAR BODY DESIGN (Sleek sports car style)
+      // Car chassis base coordinates relative to translated center
+      // Length roughly 360px (-180 to 180)
+      
+      // Shadow directly under car body
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.beginPath();
+      ctx.ellipse(30, 80, 210, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main metallic body gradient (Deep metallic navy/teal)
+      const bodyGrad = ctx.createLinearGradient(-180, 0, 180, 0);
+      bodyGrad.addColorStop(0, '#100c25');
+      bodyGrad.addColorStop(0.2, '#1a1f3c');
+      bodyGrad.addColorStop(0.5, '#2b3f6f');
+      bodyGrad.addColorStop(0.8, '#18274d');
+      bodyGrad.addColorStop(1, '#0e122b');
+
+      ctx.fillStyle = bodyGrad;
+      
+      // Car exterior path
+      ctx.beginPath();
+      ctx.moveTo(-170, 65); // Rear lower bumper
+      ctx.quadraticCurveTo(-182, 30, -170, 25); // Rear curve up
+      ctx.lineTo(-140, 25); // Rear spoiler ledge
+      ctx.quadraticCurveTo(-115, 0, -80, -2); // Rear windshield line
+      ctx.lineTo(-20, -15); // Roof line back
+      ctx.lineTo(60, -15); // Roof line front
+      ctx.quadraticCurveTo(110, -10, 145, 28); // Windshield slope to hood
+      ctx.lineTo(240, 34); // Hood
+      ctx.quadraticCurveTo(270, 36, 275, 50); // Nose curve
+      ctx.lineTo(265, 72); // Front bumper lip
+      ctx.lineTo(215, 72); // Front chin spoiler
+      // Front wheel cutout
+      ctx.arc(170, 70, 42, Math.PI * 1.15, Math.PI * 1.85, true);
+      ctx.lineTo(130, 72); // Side skirt
+      ctx.lineTo(-70, 72); // Side skirt middle
+      // Rear wheel cutout
+      ctx.arc(-110, 70, 42, Math.PI * 1.15, Math.PI * 1.85, true);
+      ctx.lineTo(-150, 72); // Rear skirt
+      ctx.closePath();
+      ctx.fill();
+
+      // Subtle metallic highlight curve on side
+      ctx.strokeStyle = '#4e70a6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-165, 35);
+      ctx.quadraticCurveTo(-60, 30, 80, 36);
+      ctx.quadraticCurveTo(150, 42, 230, 43);
+      ctx.stroke();
+
+      // Windows (glossy black with sunset gradients reflecting)
+      const windowGrad = ctx.createLinearGradient(-80, -15, 110, 35);
+      windowGrad.addColorStop(0, '#0f051d');
+      windowGrad.addColorStop(0.5, '#2e1948');
+      windowGrad.addColorStop(1, '#ff895a'); // Reflecting orange sunset
+
+      ctx.fillStyle = windowGrad;
+      ctx.beginPath();
+      ctx.moveTo(-75, 10);
+      ctx.lineTo(-25, -5);
+      ctx.lineTo(55, -5);
+      ctx.lineTo(105, 25);
+      ctx.quadraticCurveTo(50, 26, 0, 25);
+      ctx.quadraticCurveTo(-50, 22, -75, 10);
+      ctx.closePath();
+      ctx.fill();
+
+      // Chrome window divider/pillar
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(15, -6, 8, 32);
+      ctx.fillRect(-35, -5, 6, 22);
+
+      // Headlight glass and glowing bulb
+      ctx.fillStyle = '#ffeed0';
+      ctx.beginPath();
+      ctx.ellipse(265, 43, 8, 5, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tail light (glowing red lens)
+      ctx.fillStyle = '#ff2233';
+      ctx.beginPath();
+      ctx.fillRect(-178, 28, 6, 12);
+      ctx.fill();
+
+      // Interior wheel wells shadow
+      ctx.fillStyle = '#06060c';
+      ctx.beginPath();
+      ctx.arc(170, 70, 38, 0, Math.PI, true);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(-110, 70, 38, 0, Math.PI, true);
+      ctx.fill();
+
+      // WHEEL DRAWING FUNCTIONS (animated wheels spinning)
+      function drawWheel(wx, wy, rotAngle) {
+        ctx.save();
+        ctx.translate(wx, wy);
+        ctx.rotate(rotAngle);
+
+        // 1. Tire Rubber
+        ctx.fillStyle = '#14141d';
+        ctx.strokeStyle = '#0a0a0f';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Tire tread highlights
+        ctx.strokeStyle = '#23232c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 31, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 2. Wheel Rim Outer Lip
+        ctx.fillStyle = '#4c525c';
+        ctx.beginPath();
+        ctx.arc(0, 0, 23, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Silver alloy face
+        ctx.fillStyle = '#8f97a3';
+        ctx.beginPath();
+        ctx.arc(0, 0, 21, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Chrome ring
+        ctx.strokeStyle = '#d9e1ed';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 3. Spokes (Silver alloy design)
+        ctx.strokeStyle = '#cccccc';
+        ctx.fillStyle = '#1e2126';
+        ctx.lineWidth = 3.5;
+        const numSpokes = 8;
+        for (let i = 0; i < numSpokes; i++) {
+          const angle = (i * Math.PI * 2) / numSpokes;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(angle) * 19, Math.sin(angle) * 19);
+          ctx.stroke();
+        }
+
+        // Center hub cap
+        ctx.fillStyle = '#3c4047';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#e8eef7';
+        ctx.beginPath();
+        ctx.arc(0, 0, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      // Draw the front and rear wheels
+      drawWheel(170, 70, driveState.wheelRotation);
+      drawWheel(-110, 70, driveState.wheelRotation);
+
+      ctx.restore(); // Restore car state offset/rotation
+
+      requestAnimationFrame(animate);
+    }
+
+    // Start scene
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

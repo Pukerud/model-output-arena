@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.5-flash-native",
+  "model_display": "Gemini 3.5 Flash (Native Harness)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-06-13T21:14:00Z",
+  "runner": "Gemini 3.5 Flash via Antigravity IDE",
+  "notes": "Run through Google DeepMind's native agentic harness (Antigravity IDE). Single-shot: no clarifying questions, worked on first run. Includes fully functional HTML5 game board using Canvas 2D overlay, active seed packets with sun collection, custom lawnmowers triggers, procedural wave system, persistent leaderboard using localStorage, retro audio synthethizer via Web Audio API, and menus/pause overlays.",
+  "hosting": "api",
+  "weights": "closed"
+}

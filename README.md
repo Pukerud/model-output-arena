@@ -74,6 +74,7 @@ Two independent axes are labelled:
 | Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
+| Google | Gemini 3.5 Flash (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.5-flash-native`](./providers/google/gemini-3.5-flash-native) |
 | MiniMax | MiniMax-M3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3`](./providers/minimax/minimax-m3) |
 | MiniMax | MiniMax-M3 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3-native`](./providers/minimax/minimax-m3-native) |
 | OpenAI | GPT-5.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
@@ -91,7 +92,7 @@ Outputs are produced by pointing an **agent harness** at this repo and giving it
 - **Pi dev** — the Z.AI Pi dev extension, used for most non-Anthropic models.
 - **Claude Code** — the VS Code extension, used for the Anthropic models.
 - **Z.AI native harness** — Z.AI's own agent. Used for the **GLM 5.2 (Native Harness)** entry, which is the *same model* as the existing GLM 5.2 but driven by a different harness — a useful head-to-head on how much the harness shapes the result.
-- **Antigravity IDE** — Google DeepMind's native agentic harness. Used for the **Gemini 3.1 Pro (Native Harness)** entry.
+- **Antigravity IDE** — Google DeepMind's native agentic harness. Used for the **Gemini 3.1 Pro (Native Harness)** and **Gemini 3.5 Flash (Native Harness)** entries.
 - **Codex Desktop native harness** — OpenAI's Codex Desktop app. Used for the **GPT-5.5 (Native Harness)** entry, which is the *same model* as the existing GPT-5.5 entry but generated in Codex Desktop instead of pi.dev.
 - **Claude Code Desktop native harness** — Anthropic's own first-party desktop app. Used for the **Claude Opus 4.8 (Native Harness)** entry, which is the *same model* as the existing Claude Opus 4.8 entry (run via the Claude Code VS Code extension) but generated in Claude Code Desktop — the native-harness analogue of the GLM 5.2 and GPT-5.5 pairs.
 - **MiniMax Code native harness** — MiniMax's own first-party desktop agent. Used for the **MiniMax-M3 (Native Harness)** entry, which is the *same model* as the existing MiniMax-M3 entry (run via the Z.AI Pi dev extension) but generated in MiniMax Code — the native-harness analogue of the GLM 5.2, GPT-5.5 and Claude Opus 4.8 pairs.

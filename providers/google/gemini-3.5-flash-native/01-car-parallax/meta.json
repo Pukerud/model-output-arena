@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.5-flash-native",
+  "model_display": "Gemini 3.5 Flash (Native Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-06-13T21:13:30Z",
+  "runner": "Gemini 3.5 Flash via Antigravity IDE",
+  "notes": "Run through Google DeepMind's native agentic harness (Antigravity IDE). Single-shot: no clarifying questions, worked on first run. Features sleek custom sports car chassis drawing, animated spinning rims, active suspension pitch/bounce dynamics, custom particle exhaust, parallax scrolling layers (mountains, hills, trees, telegraph wires), and cinematic sunset/horizon lighting gradients with light flare.",
+  "hosting": "api",
+  "weights": "closed"
+}
