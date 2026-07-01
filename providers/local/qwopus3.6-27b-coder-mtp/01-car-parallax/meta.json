@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwopus3.6-27b-coder-mtp",
+  "model_display": "QwOpus 3.6 27B Coder MTP",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-07-02T00:00:00Z",
+  "runner": "QwOpus 3.6 27B Coder MTP via pi agent (local)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 4090"
+  }
+}

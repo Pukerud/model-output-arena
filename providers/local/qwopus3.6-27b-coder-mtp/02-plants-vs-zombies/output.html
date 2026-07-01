@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Plants vs Zombies</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+canvas{display:block;background:#1a472a;margin:auto;border:3px solid #5d4037}
+body{background:#1b1b1b;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Segoe UI',sans-serif}
+#ui{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.plant-btn{width:64px;height:72px;border:2px solid #fff;border-radius:8px;background:#3e2723;color:#fff;font-size:11px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.plant-btn.selected{border-color:#ffd700;box-shadow:0 0 10px #ffd700}
+.plant-btn .cost{font-size:13px;font-weight:bold;color:#ffd700}
+#sun-display{position:absolute;top:10px;left:10px;background:#ffeb3b;color:#3e2723;padding:6px 14px;border-radius:8px;font-weight:bold;font-size:18px;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+#score-display{position:absolute;top:10px;right:10px;background:#fff;color:#3e2723;padding:6px 14px;border-radius:8px;font-weight:bold;font-size:16px;z-index:10}
+#game-over,#start-screen{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.92);color:#fff;padding:40px;border-radius:16px;text-align:center;z-index:20;display:none}
+#game-over h1{font-size:36px;color:#ff1744;margin-bottom:10px}
+#start-screen h1{font-size:32px;color:#ffd700;margin-bottom:10px}
+button.play-btn{margin-top:15px;padding:12px 32px;font-size:18px;background:#4caf50;color:#fff;border:none;border-radius:8px;cursor:pointer}
+#leaderboard{position:absolute;top:60px;left:10px;background:rgba(0,0,0,.7);color:#fff;padding:10px;border-radius:8px;font-size:12px;z-index:10;width:140px;display:none}
+</style>
+</head>
+<body>
+<canvas id="c" width="960" height="540"></canvas>
+<div id="sun-display">☀️ 50</div>
+<div id="score-display">Score: 0</div>
+<div id="ui">
+  <div class="plant-btn selected" data-type="peashooter" onclick="selectPlant('peashooter')"><span>🫛</span><span class="cost">100</span></div>
+  <div class="plant-btn" data-type="sunflower" onclick="selectPlant('sunflower')"><span>🌻</span><span class="cost">50</span></div>
+  <div class="plant-btn" data-type="wallnut" onclick="selectPlant('wallnut')"><span>🥜</span><span class="cost">50</span></div>
+  <div class="plant-btn" data-type="snowpea" onclick="selectPlant('snowpea')"><span>❄️</span><span class="cost">175</span></div>
+</div>
+<div id="start-screen" style="display:block">
+  <h1>🌻 Plants vs Zombies 🧟</h1>
+  <p>Defend your lawn from the zombie horde!</p>
+  <button class="play-btn" onclick="startGame()">▶ Play</button>
+</div>
+<div id="game-over">
+  <h1>GAME OVER</h1>
+  <p id="final-score"></p>
+  <button class="play-btn" onclick="restartGame()">🔄 Restart</button>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const COLS=9,ROWS=5;
+const CELL_W=104,CELL_H=96;
+const GRID_X=38,GRID_Y=70;
+
+let sun=50,score=0,selectedPlant='peashooter',gameRunning=false,zombies=[],plants=[],projectiles=[],sunDrops=[];
+let spawnTimer=0,waveNum=1,lastTime=0;
+const PLANT_COSTS={peashooter:100,sunflower:50,wallnut:50,snowpea:175};
+
+function selectPlant(t){selectedPlant=t;document.querySelectorAll('.plant-btn').forEach(b=>b.classList.toggle('selected',b.dataset.type===t));}
+
+function startGame(){sun=50;score=0;zombies=[];plants=[];projectiles=[];sunDrops=[];waveNum=1;spawnTimer=0;gameRunning=true;document.getElementById('start-screen').style.display='none';updateUI();requestAnimationFrame(loop);}
+function restartGame(){startGame();}
+
+function updateUI(){
+  document.getElementById('sun-display').textContent='☀️ '+sun;
+  document.getElementById('score-display').textContent='Score: '+score;
+}
+
+// Plant definitions
+const PLANT_DEFS={
+  peashooter:{hp:100,shootRate:1.4,color:'#4caf50',emoji:'🫛'},
+  sunflower:{hp:80,sunRate:2.4,color:'#ffeb3b',emoji:'🌻'},
+  wallnut:{hp:400,shootRate:0,color:'#795548',emoji:'🥜'},
+  snowpea:{hp:100,shootRate:1.4,color:'#29b6f6',emoji:'❄️'}
+};
+
+function placePlant(col,row){
+  const cost=PLANT_COSTS[selectedPlant];
+  if(sun<cost)return;
+  if(plants.find(p=>p.col===col&&p.row===row))return;
+  sun-=cost;
+  plants.push({type:selectedPlant,col,row,x:GRID_X+col*CELL_W+CELL_W/2,y:GRID_Y+row*CELL_H+CELL_H/2,hp:PLANT_DEFS[selectedPlant].hp,timer:0});
+  updateUI();
+}
+
+function spawnZombie(){
+  const row=Math.floor(Math.random()*ROWS);
+  const speed=15+waveNum*3;
+  zombies.push({row,x:canvas.width,y:GRID_Y+row*CELL_H+CELL_H/2,hp:60+waveNum*20,maxHp:60+waveNum*20,speed,slowed:false,slowTimer:0});
+}
+
+function spawnSun(x,y){sunDrops.push({x:x||Math.random()*(canvas.width-100)+50,y:y||-30,targetY:GRID_Y+Math.random()*ROWS*CELL_H,vy:60,timer:8});}
+
+function loop(ts){
+  if(!gameRunning)return;
+  const dt=Math.min((ts-lastTime)/1000,0.05);lastTime=ts;spawnTimer+=dt;
+
+  // Spawn zombies
+  const interval=Math.max(2,6-waveNum*0.3);
+  if(spawnTimer>interval){spawnZombie();spawnTimer=0;if(Math.random()<0.1)waveNum++;}
+
+  // Sunflower sun production
+  plants.forEach(p=>{if(p.type==='sunflower'){p.timer+=dt;if(p.timer>=PLANT_DEFS.sunflower.sunRate){p.timer=0;spawnSun(p.x,p.y-20);}}});
+
+  // Peashooter shooting
+  plants.forEach(p=>{
+    if(p.type==='peashooter'||p.type==='snowpea'){
+      p.timer+=dt;
+      const hasZombie=zombies.some(z=>z.row===p.row&&z.x>p.x);
+      if(hasZombie&&p.timer>=PLANT_DEFS[p.type].shootRate){
+        p.timer=0;
+        projectiles.push({x:p.x+20,y:p.y,row:p.row,speed:300,ice:p.type==='snowpea'});
+      }
+    }
+  });
+
+  // Move projectiles
+  for(let i=projectiles.length-1;i>=0;i--){
+    const pr=projectiles[i];pr.x+=pr.speed*dt;
+    if(pr.x>canvas.width){projectiles.splice(i,1);continue;}
+    // Hit zombie?
+    for(let j=zombies.length-1;j>=0;j--){
+      const z=zombies[j];
+      if(z.row===pr.row&&Math.abs(z.x-pr.x)<25){
+        z.hp-=20;
+        if(pr.ice){z.slowed=true;z.slowTimer=3;}
+        projectiles.splice(i,1);
+        if(z.hp<=0){score+=10;zombies.splice(j,1);updateUI();}
+        break;
+      }
+    }
+  }
+
+  // Move zombies
+  for(let i=zombies.length-1;i>=0;i--){
+    const z=zombies[i];
+    let spd=z.speed*(z.slowed?0.4:1);
+    if(z.slowed){z.slowTimer-=dt;if(z.slowTimer<=0)z.slowed=false;}
+    // Eat plant?
+    const eating=plants.find(p=>p.row===z.row&&Math.abs(p.x-z.x)<30);
+    if(eating){eating.hp-=40*dt;if(eating.hp<=0){plants.splice(plants.indexOf(eating),1);}}
+    else{z.x-=spd*dt;}
+    // Game over?
+    if(z.x<GRID_X-20){gameOver();return;}
+  }
+
+  // Sun drops
+  for(let i=sunDrops.length-1;i>=0;i--){
+    const s=sunDrops[i];
+    if(s.y<s.targetY)s.y+=s.vy*dt;
+    s.timer-=dt;
+    if(s.timer<=0||s.y>s.targetY+50){sunDrops.splice(i,1);}
+  }
+
+  // Random sun from sky
+  if(Math.random()<0.003)spawnSun();
+
+  draw();requestAnimationFrame(loop);
+}
+
+function gameOver(){gameRunning=false;document.getElementById('final-score').textContent='Score: '+score;document.getElementById('game-over').style.display='block';}
+
+function draw(){
+  // Sky
+  const skyGrad=ctx.createLinearGradient(0,0,0,GRID_Y);
+  skyGrad.addColorStop(0,'#87ceeb');skyGrad.addColorStop(1,'#b2dfdb');
+  ctx.fillStyle=skyGrad;ctx.fillRect(0,0,canvas.width,GRID_Y);
+
+  // Lawn rows
+  for(let r=0;r<ROWS;r++){
+    const y=GRID_Y+r*CELL_H;
+    ctx.fillStyle=r%2===0?'#4caf50':'#388e3c';
+    ctx.fillRect(GRID_X,y,CELL_W*COLS,CELL_H);
+  }
+
+  // Grid lines
+  ctx.strokeStyle='rgba(0,0,0,0.1)';ctx.lineWidth=1;
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(GRID_X+c*CELL_W,GRID_Y);ctx.lineTo(GRID_X+c*CELL_W,GRID_Y+ROWS*CELL_H);ctx.stroke();}
+
+  // Plants
+  plants.forEach(p=>{
+    const def=PLANT_DEFS[p.type];
+    ctx.font='36px serif';ctx.textAlign='center';ctx.fillText(def.emoji,p.x,p.y+12);
+    // HP bar
+    if(p.hp<def.hp){
+      const pct=p.hp/def.hp;
+      ctx.fillStyle='#f44336';ctx.fillRect(p.x-20,p.y-28,40,5);
+      ctx.fillStyle='#4caf50';ctx.fillRect(p.x-20,p.y-28,40*pct,5);
+    }
+  });
+
+  // Zombies
+  zombies.forEach(z=>{
+    const emoji=z.slowed?'🥶':'🧟';
+    ctx.font='36px serif';ctx.textAlign='center';ctx.fillText(emoji,z.x,z.y+12);
+    // HP bar
+    const pct=z.hp/z.maxHp;
+    ctx.fillStyle='#f44336';ctx.fillRect(z.x-20,z.y-28,40,5);
+    ctx.fillStyle='#ffeb3b';ctx.fillRect(z.x-20,z.y-28,40*pct,5);
+  });
+
+  // Projectiles
+  projectiles.forEach(pr=>{
+    ctx.fillStyle=pr.ice?'#81d4fa':'#76ff03';
+    ctx.beginPath();ctx.arc(pr.x,pr.y,6,0,Math.PI*2);ctx.fill();
+  });
+
+  // Sun drops
+  sunDrops.forEach(s=>{
+    ctx.font='28px serif';ctx.textAlign='center';ctx.fillText('☀️',s.x,s.y+10);
+  });
+
+  // Wave indicator
+  ctx.fillStyle='#fff';ctx.font='bold 16px sans-serif';ctx.textAlign='left';
+  ctx.fillText('Wave '+waveNum,GRID_X,GRID_Y-8);
+}
+
+// Click to place plant or collect sun
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  // Collect sun?
+  for(let i=sunDrops.length-1;i>=0;i--){
+    if(Math.hypot(sunDrops[i].x-mx,sunDrops[i].y-my)<30){sun+=25;sunDrops.splice(i,1);updateUI();return;}
+  }
+  // Place plant?
+  const col=Math.floor((mx-GRID_X)/CELL_W);
+  const row=Math.floor((my-GRID_Y)/CELL_H);
+  if(col>=0&&col<COLS&&row>=0&&row<ROWS)placePlant(col,row);
+});
+</script>
+</body>
+</html>

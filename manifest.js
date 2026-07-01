@@ -296,6 +296,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/ornith-1.0-35b-uncensored/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/ornith-1.0-35b-uncensored/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwopus3.6-27b-coder-mtp",
+      model_display: "QwOpus 3.6 27B Coder MTP",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwopus3.6-27b-coder-mtp",
+      added: "2026-07-02",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwopus3.6-27b-coder-mtp/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwopus3.6-27b-coder-mtp/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwopus3.6-27b-coder-mtp/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

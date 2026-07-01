@@ -85,6 +85,7 @@ Two independent axes are labelled:
 | Z.AI | GLM 5.2 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2`](./providers/z-ai/glm-5.2) |
 | Z.AI | GLM 5.2 (Native Harness) | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.2-native`](./providers/z-ai/glm-5.2-native) |
 | Local (llama.cpp) | Ornith 1.0 35B Uncensored | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/ornith-1.0-35b-uncensored`](./providers/local/ornith-1.0-35b-uncensored) |
+| Local (llama.cpp) | QwOpus 3.6 27B Coder MTP | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwopus3.6-27b-coder-mtp`](./providers/local/qwopus3.6-27b-coder-mtp) |
 
 ## How outputs were generated
 

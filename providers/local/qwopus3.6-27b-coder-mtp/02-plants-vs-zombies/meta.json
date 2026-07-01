@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwopus3.6-27b-coder-mtp",
+  "model_display": "QwOpus 3.6 27B Coder MTP",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:8f1e5687419505d78246f3595884e6a38c40307b032cb576a327aeefc5e6d906",
+  "generated_at": "2026-07-02T00:00:00Z",
+  "runner": "QwOpus 3.6 27B Coder MTP via pi agent (local)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 4090"
+  }
+}

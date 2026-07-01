@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwopus3.6-27b-coder-mtp",
+  "model_display": "QwOpus 3.6 27B Coder MTP",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-02T00:00:00Z",
+  "runner": "QwOpus 3.6 27B Coder MTP via pi agent (local)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 4090"
+  }
+}
