@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "ornith-1.0-35b-uncensored",
+  "model_display": "Ornith 1.0 35B Uncensored",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:8f1e5687419505d78246f3595884e6a38c40307b032cb576a327aeefc5e6d906",
+  "generated_at": "2026-07-01T00:00:00Z",
+  "runner": "Ornith-1.0-35B-uncensored via pi agent (llama.cpp)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

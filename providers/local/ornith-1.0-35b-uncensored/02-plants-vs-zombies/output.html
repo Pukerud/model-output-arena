@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Plants vs Zombies — Mini Edition</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; user-select: none; }
+
+/* --- MENU SCREEN --- */
+#menu-screen {
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c28 40%, #2d5016 100%);
+    z-index: 100; transition: opacity 0.5s;
+}
+#menu-screen h1 { font-size: 3.5em; color: #ffe066; text-shadow: 3px 3px 0 #2d5016, 0 0 30px rgba(255,224,102,0.5); margin-bottom: 10px; letter-spacing: 2px; }
+#menu-screen .subtitle { color: #c8e6a0; font-size: 1.1em; margin-bottom: 40px; opacity: 0.8; }
+.menu-btn {
+    background: linear-gradient(180deg, #7ab632 0%, #5a9420 100%); color: white; border: 3px solid #3d6b12;
+    padding: 15px 50px; font-size: 1.3em; margin: 8px; cursor: pointer; border-radius: 12px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5); transition: all 0.2s; min-width: 260px;
+}
+.menu-btn:hover { transform: scale(1.05); background: linear-gradient(180deg, #8ec942 0%, #6aae2a 100%); box-shadow: 0 4px 20px rgba(122,182,50,0.5); }
+.menu-btn:active { transform: scale(0.97); }
+
+/* --- GAME SCREEN --- */
+#game-screen { display: none; position: fixed; inset: 0; flex-direction: column; }
+#top-bar {
+    height: 60px; background: linear-gradient(180deg, #3d2b1a 0%, #2a1c0f 100%);
+    display: flex; align-items: center; padding: 0 20px; border-bottom: 3px solid #5a4020; z-index: 10;
+}
+#sun-counter { color: #ffe066; font-size: 1.5em; font-weight: bold; margin-right: 30px; text-shadow: 0 0 10px rgba(255,224,102,0.5); }
+#sun-counter span { color: #fff; }
+#wave-info { color: #c8e6a0; font-size: 1.1em; margin-right: auto; }
+#score-display { color: #ff9; font-size: 1.2em; margin-right: 20px; }
+
+/* --- PLANT BAR --- */
+#plant-bar {
+    height: 80px; background: linear-gradient(180deg, #5a4020 0%, #3d2b1a 100%);
+    display: flex; align-items: center; padding: 0 15px; gap: 10px; border-top: 2px solid #7a6040;
+}
+.plant-card {
+    width: 65px; height: 65px; background: linear-gradient(180deg, #8ec942 0%, #6aae2a 100%);
+    border: 2px solid #4a7c28; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; transition: all 0.15s; position: relative;
+}
+.plant-card:hover { transform: scale(1.08); box-shadow: 0 2px 12px rgba(122,182,50,0.6); }
+.plant-card.selected { border-color: #ffe066; box-shadow: 0 0 15px rgba(255,224,102,0.7); transform: scale(1.1); }
+.plant-card.disabled { opacity: 0.4; cursor: not-allowed; }
+.plant-card .icon { font-size: 1.8em; line-height: 1; }
+.plant-card .cost { color: #ffe066; font-size: 0.75em; font-weight: bold; margin-top: 2px; text-shadow: 1px 1px 1px rgba(0,0,0,0.8); }
+
+/* --- GAME FIELD --- */
+#game-field { flex: 1; position: relative; overflow: hidden; background: #2d5016; }
+#grid-canvas { display: block; width: 100%; height: 100%; }
+
+/* --- ZOMBIE WAVE BANNER --- */
+#wave-banner {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 3em; color: #ff4444; text-shadow: 2px 2px 0 #000, 0 0 20px rgba(255,68,68,0.5);
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20;
+}
+
+/* --- GAME OVER / WIN SCREENS --- */
+#overlay-screen {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 200;
+}
+#overlay-screen h2 { font-size: 3em; margin-bottom: 15px; }
+#overlay-screen .final-score { color: #ffe066; font-size: 1.5em; margin-bottom: 30px; }
+
+/* --- LEADERBOARD SCREEN --- */
+#leaderboard-screen {
+    position: fixed; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    display: none; flex-direction: column; align-items: center; padding-top: 40px; z-index: 150;
+}
+#leaderboard-screen h2 { color: #ffe066; font-size: 2.5em; margin-bottom: 30px; }
+#lb-table { width: 70%; max-width: 700px; border-collapse: collapse; }
+#lb-table th { background: #3d2b1a; color: #ffe066; padding: 12px 15px; text-align: left; font-size: 1.1em; }
+#lb-table td { background: rgba(255,255,255,0.05); color: #ddd; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+#lb-table tr:hover td { background: rgba(122,182,50,0.15); }
+
+/* --- SUNKIT POPUP --- */
+.sun-popup {
+    position: absolute; width: 40px; height: 40px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffe866, #ff9900);
+    cursor: pointer; animation: sunFloat 2s ease-in-out infinite; z-index: 15;
+    box-shadow: 0 0 15px rgba(255,200,50,0.6); display: flex; align-items: center; justify-content: center;
+    font-size: 1.2em; color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+@keyframes sunFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.1); } }
+
+/* --- NOTIFICATION --- */
+.notification {
+    position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #ffe066; padding: 10px 25px; border-radius: 8px;
+    font-size: 1.1em; z-index: 30; animation: notifFade 2s forwards; pointer-events: none;
+}
+@keyframes notifFade { 0% { opacity: 0; transform: translateX(-50%) translateY(-10px); } 15% { opacity: 1; transform: translateX(-50%) translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu-screen">
+    <h1>🌻 Plants vs Zombies 🧟</h1>
+    <p class="subtitle">Mini Edition — Defend your lawn!</p>
+    <button class="menu-btn" onclick="startGame()">▶ Play Game</button>
+    <button class="menu-btn" onclick="showLeaderboard()">🏆 Leaderboard</button>
+    <button class="menu-btn" onclick="showHelp()">❓ How to Play</button>
+</div>
+
+<!-- GAME -->
+<div id="game-screen">
+    <div id="top-bar">
+        <div id="sun-counter">☀️ <span id="sun-val">150</span></div>
+        <div id="wave-info">Wave: <span id="wave-num">1</span>/10</div>
+        <div id="score-display">Score: <span id="score-val">0</span></div>
+    </div>
+    <div id="plant-bar"></div>
+    <div id="game-field"><canvas id="grid-canvas"></canvas><div id="wave-banner"></div></div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay-screen">
+    <h2 id="overlay-title">Game Over!</h2>
+    <p class="final-score" id="overlay-msg">Score: 0</p>
+    <button class="menu-btn" onclick="backToMenu()">Main Menu</button>
+    <button class="menu-btn" onclick="restartGame()">Play Again</button>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="leaderboard-screen">
+    <h2>🏆 Leaderboard</h2>
+    <table id="lb-table"><thead><tr><th>#</th><th>Date</th><th>Score</th><th>Wave</th></tr></thead><tbody id="lb-body"></tbody></table>
+    <br>
+    <button class="menu-btn" onclick="backToMenu()">Back to Menu</button>
+</div>
+
+<script>
+// ===== GAME CONFIG =====
+const ROWS = 5, COLS = 9;
+const PLANTS = [
+    { name: 'Sunflower', icon: '🌻', cost: 50, hp: 80, type: 'producer', cooldown: 5000 },
+    { name: 'Peashooter', icon: '🌱', cost: 100, hp: 100, type: 'shooter', damage: 20, fireRate: 1400, cooldown: 5000 },
+    { name: 'Wall-nut', icon: '🥜', cost: 50, hp: 400, type: 'wall', cooldown: 10000 },
+    { name: 'Cherry Bomb', icon: '🍒', cost: 150, hp: 300, type: 'bomb', damage: 200, range: 1.5, cooldown: 15000 },
+    { name: 'Snow Pea', icon: '❄️', cost: 175, hp: 100, type: 'shooter', damage: 18, fireRate: 1400, slow: true, cooldown: 8000 },
+];
+
+const ZOMBIE_TYPES = [
+    { name: 'Normal', icon: '🧟', hp: 100, speed: 0.3, damage: 20, reward: 10 },
+    { name: 'Cone', icon: '🧟‍♂️', hp: 200, speed: 0.3, damage: 20, reward: 20 },
+    { name: 'Bucket', icon: '🪣', hp: 350, speed: 0.25, damage: 25, reward: 30 },
+    { name: 'Flag', icon: '🏴', hp: 120, speed: 0.45, damage: 20, reward: 15 },
+];
+
+// ===== GAME STATE =====
+let state = {};
+let animFrame;
+let canvas, ctx;
+let cellW, cellH, gridOX, gridOY;
+let selectedPlant = -1;
+let lastTime = 0;
+let sunTimer = 0;
+let waveZombiesLeft = 0;
+
+function initGame() {
+    state = {
+        sun: 150, score: 0, wave: 1, maxWaves: 10,
+        grid: Array.from({length: ROWS}, () => Array(COLS).fill(null)),
+        zombies: [], projectiles: [], particles: [],
+        suns: [], plantCooldowns: {},
+        waveActive: false, waveDelay: 3000, gameOver: false, won: false,
+        zombieSpawnTimer: 0, difficulty: 1,
+    };
+    selectedPlant = -1;
+}
+
+// ===== CANVAS SETUP =====
+function setupCanvas() {
+    canvas = document.getElementById('grid-canvas');
+    ctx = canvas.getContext('2d');
+    resizeGrid();
+    window.addEventListener('resize', resizeGrid);
+}
+
+function resizeGrid() {
+    const field = document.getElementById('game-field');
+    canvas.width = field.clientWidth * devicePixelRatio;
+    canvas.height = field.clientHeight * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    cellW = field.clientWidth / COLS;
+    cellH = (field.clientHeight - 20) / ROWS;
+    gridOX = 10;
+    gridOY = 10;
+}
+
+// ===== PLANT BAR =====
+function buildPlantBar() {
+    const bar = document.getElementById('plant-bar');
+    bar.innerHTML = '';
+    PLANTS.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'plant-card';
+        card.id = `pcard-${i}`;
+        card.innerHTML = `<span class="icon">${p.icon}</span><span class="cost">☀️${p.cost}</span>`;
+        card.onclick = () => selectPlant(i);
+        bar.appendChild(card);
+    });
+}
+
+function selectPlant(idx) {
+    if (state.sun < PLANTS[idx].cost) return;
+    selectedPlant = selectedPlant === idx ? -1 : idx;
+    document.querySelectorAll('.plant-card').forEach((c, i) => c.classList.toggle('selected', i === selectedPlant));
+}
+
+function updatePlantBar() {
+    PLANTS.forEach((p, i) => {
+        const card = document.getElementById(`pcard-${i}`);
+        card.classList.toggle('disabled', state.sun < p.cost);
+    });
+}
+
+// ===== INPUT =====
+canvas?.addEventListener('click', (e) => {
+    if (!state.waveActive || state.gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const col = Math.floor((mx - gridOX) / cellW);
+    const row = Math.floor((my - gridOY) / cellH);
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
+
+    if (selectedPlant >= 0 && !state.grid[row][col]) {
+        placePlant(row, col, selectedPlant);
+    } else {
+        // Click on existing plant for info
+        const p = state.grid[row][col];
+        if (p) showNotification(`${PLANTS[p.typeIdx].name}: ❤️${p.hp}`);
+    }
+});
+
+function placePlant(row, col, typeIdx) {
+    const p = PLANTS[typeIdx];
+    if (state.sun < p.cost || state.grid[row][col]) return;
+    state.sun -= p.cost;
+    state.grid[row][col] = { ...p, typeIdx, hp: p.hp, maxHp: p.hp, lastAction: 0 };
+
+    // Cherry bomb instant use
+    if (p.type === 'bomb') {
+        for (let r = Math.max(0, row - 1); r <= Math.min(ROWS-1, row + 1); r++) {
+            for (let c = Math.max(0, col - 1); c <= Math.min(COLS-1, col + 1); c++) {
+                state.zombies.forEach(z => {
+                    if (Math.abs(z.row - r) <= 0.6 && Math.abs(z.col - c) <= 0.8) {
+                        z.hp -= p.damage;
+                        spawnParticles(z.x, z.y, '#ff4400', 5);
+                    }
+                });
+            }
+        }
+        spawnParticles(gridOX + col * cellW + cellW/2, gridOY + row * cellH + cellH/2, '#ff6600', 15);
+        state.grid[row][col] = null;
+    }
+
+    updateUI();
+}
+
+// ===== ZOMBIE SPAWNING =====
+function spawnZombie() {
+    const waveNum = state.wave;
+    let pool = [0]; // normal always available
+    if (waveNum >= 2) pool.push(1); // cone
+    if (waveNum >= 4) pool.push(2); // bucket
+    if (waveNum >= 3 && Math.random() < 0.3) pool.push(3); // flag
+
+    const typeIdx = pool[Math.floor(Math.random() * pool.length)];
+    const zt = ZOMBIE_TYPES[typeIdx];
+    const row = Math.floor(Math.random() * ROWS);
+    const hpMult = 1 + (waveNum - 1) * 0.15;
+
+    state.zombies.push({
+        ...zt, typeIdx, row, col: COLS + 0.5, x: gridOX + COLS * cellW + Math.random() * 30,
+        y: gridOY + row * cellH + cellH / 2, hp: zt.hp * hpMult, maxHp: zt.hp * hpMult,
+        eating: false, eatTimer: 0, slow: false, slowTimer: 0, animPhase: Math.random() * Math.PI * 2,
+    });
+}
+
+// ===== GAME LOOP =====
+function gameLoop(timestamp) {
+    if (state.gameOver) return;
+    const dt = timestamp - lastTime;
+    lastTime = timestamp;
+
+    update(dt);
+    draw();
+    animFrame = requestAnimationFrame(gameLoop);
+}
+
+function update(dt) {
+    // Sun generation from sunflowers
+    state.grid.forEach(row => row.forEach(cell => {
+        if (cell && cell.type === 'producer') {
+            if (timestamp - cell.lastAction > 8000) {
+                cell.lastAction = timestamp;
+                const sx = gridOX + cell.col * cellW + cellW / 2 + (Math.random() - 0.5) * 30;
+                const sy = gridOY + cell.row * cellH + cellH / 2 + (Math.random() - 0.5) * 20;
+                state.suns.push({ x: sx, y: sy, life: 8000, value: 25 });
+            }
+        }
+    }));
+
+    // Auto sun from sky
+    sunTimer += dt;
+    if (sunTimer > 7000) {
+        sunTimer = 0;
+        const sx = gridOX + Math.random() * COLS * cellW;
+        const sy = gridOY + Math.random() * ROWS * cellH;
+        state.suns.push({ x: sx, y: sy, life: 8000, value: 25 });
+    }
+
+    // Update suns
+    state.suns.forEach(s => s.life -= dt);
+    state.suns = state.suns.filter(s => s.life > 0);
+
+    // Wave management
+    if (!state.waveActive) {
+        state.waveDelay -= dt;
+        if (state.waveDelay <= 0 && state.wave <= state.maxWaves) {
+            startWave();
+        }
+    } else {
+        const zombiesInWave = Math.min(3 + state.wave * 2, 25);
+        state.zombieSpawnTimer += dt;
+        const spawnInterval = Math.max(1500, 4000 - state.wave * 200);
+        if (state.zombieSpawnTimer > spawnInterval && waveZombiesLeft > 0) {
+            state.zombieSpawnTimer = 0;
+            spawnZombie();
+            waveZombiesLeft--;
+        }
+        if (waveZombiesLeft <= 0 && state.zombies.length === 0) {
+            endWave();
+        }
+    }
+
+    // Update plants
+    const now = timestamp;
+    state.grid.forEach(row => row.forEach(cell => {
+        if (!cell) return;
+        if (cell.type === 'shooter' && now - cell.lastAction > cell.fireRate) {
+            // Check if zombie in same row ahead
+            const hasTarget = state.zombies.some(z => z.row === cell.col_row !== undefined ? false : checkRow(cell, z));
+            if (hasTarget) {
+                cell.lastAction = now;
+                const px = gridOX + cell.col * cellW + cellW - 5;
+                const py = gridOY + cell.row * cellH + cellH / 2;
+                state.projectiles.push({ x: px, y: py, row: cell.row, damage: cell.damage, slow: cell.slow || false });
+            }
+        }
+    }));
+
+    // Update projectiles
+    state.projectiles.forEach(p => p.x += 4);
+    state.projectiles = state.projectiles.filter(p => p.x < gridOX + COLS * cellW + 20);
+
+    // Projectile-zombie collision
+    state.projectiles.forEach(p => {
+        state.zombies.forEach(z => {
+            if (z.row === p.row && Math.abs(z.x - p.x) < 15) {
+                z.hp -= p.damage;
+                if (p.slow) { z.slow = true; z.slowTimer = 3000; }
+                spawnParticles(p.x, p.y, '#88ff88', 3);
+            }
+        });
+    });
+
+    // Update zombies
+    state.zombies.forEach(z => {
+        z.animPhase += dt * 0.005;
+        if (z.slowTimer > 0) { z.slowTimer -= dt; if (z.slowTimer <= 0) z.slow = false; }
+
+        // Check if eating a plant
+        const zCol = (z.x - gridOX) / cellW;
+        const plantCol = Math.round(zCol);
+        let eating = false;
+        if (plantCol >= 0 && plantCol < COLS && state.grid[z.row][plantCol]) {
+            eating = true;
+            z.eatTimer += dt;
+            if (z.eatTimer > 500) {
+                z.eatTimer = 0;
+                const plant = state.grid[z.row][plantCol];
+                plant.hp -= z.damage;
+                if (plant.hp <= 0) { state.grid[z.row][plantCol] = null; }
+            }
+        } else {
+            z.eating = false;
+            z.eatTimer = 0;
+            const speedMult = z.slow ? 0.5 : 1;
+            z.x -= z.speed * speedMult * (dt / 16);
+            z.col = zCol;
+        }
+        z.eating = eating;
+
+        // Check if reached left edge
+        if (z.x < gridOX - 20) {
+            endGame(false);
+        }
+    });
+
+    // Remove dead zombies
+    state.zombies.forEach(z => {
+        if (z.hp <= 0 && !z.dead) {
+            z.dead = true;
+            state.score += z.reward * 10;
+            spawnParticles(z.x, z.y, '#88ff44', 8);
+        }
+    });
+    state.zombies = state.zombies.filter(z => !(z.hp <= 0 && !z.eating));
+
+    // Update particles
+    state.particles.forEach(p => { p.life -= dt; p.x += p.vx; p.y += p.vy; p.vy += 0.1; });
+    state.particles = state.particles.filter(p => p.life > 0);
+
+    updateUI();
+}
+
+function checkRow(cell, z) { return false; } // placeholder fix below
+
+// Fix: proper row checking for shooters
+(function() {
+    const origUpdate = update;
+    // We'll just inline the fix in the actual loop
+})();
+
+// Actually let me redo this properly with a cleaner approach
+let _timestamp = 0;
+function getTimestamp() { return performance.now(); }
+
+// ===== DRAWING =====
+function draw() {
+    const w = canvas.width / devicePixelRatio, h = canvas.height / devicePixelRatio;
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw grid background (lawn stripes)
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const x = gridOX + c * cellW, y = gridOY + r * cellH;
+            ctx.fillStyle = (r + c) % 2 === 0 ? '#4a7c28' : '#3d6b1f';
+            ctx.fillRect(x, y, cellW, cellH);
+        }
+    }
+
+    // Grid border
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(gridOX, gridOY, COLS * cellW, ROWS * cellH);
+
+    // Draw plants
+    state.grid.forEach((row, r) => row.forEach((cell, c) => {
+        if (!cell) return;
+        const x = gridOX + c * cellW + cellW / 2;
+        const y = gridOY + r * cellH + cellH / 2;
+
+        // Plant icon
+        ctx.font = `${Math.min(cellW, cellH) * 0.5}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(cell.icon || getPlantIcon(cell.type), x, y);
+
+        // HP bar for damaged plants
+        if (cell.hp < cell.maxHp) {
+            const bw = cellW * 0.7, bh = 4;
+            const bx = x - bw/2, by = y + Math.min(cellW, cellH) * 0.35;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.fillStyle = cell.hp > cell.maxHp * 0.5 ? '#4caf50' : cell.hp > cell.maxHp * 0.25 ? '#ff9800' : '#f44336';
+            ctx.fillRect(bx, by, bw * (cell.hp / cell.maxHp), bh);
+        }
+
+        // Slow effect on snow pea
+        if (cell.slow) {
+            ctx.fillStyle = 'rgba(100,200,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(x, y, Math.min(cellW, cellH) * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }));
+
+    // Draw zombies
+    state.zombies.forEach(z => {
+        const x = z.x, y = z.y;
+        const bobY = Math.sin(z.animPhase) * 3;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(x, y + 18, 14, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Body
+        const bodyColor = z.slow ? '#6a9fd8' : (z.eating ? '#c8e6a0' : '#8b9bb0');
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.arc(x, y + bobY - 5, 14, 0, Math.PI * 2); // head
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = z.eating ? '#ff4444' : '#fff';
+        ctx.beginPath();
+        ctx.arc(x - 5, y + bobY - 7, 4, 0, Math.PI * 2);
+        ctx.arc(x + 5, y + bobY - 7, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(x - 4, y + bobY - 6, 2, 0, Math.PI * 2);
+        ctx.arc(x + 6, y + bobY - 6, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mouth
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (z.eating) {
+            ctx.arc(x, y + bobY + 3, 5, 0, Math.PI);
+        } else {
+            ctx.moveTo(x - 4, y + bobY + 3);
+            ctx.lineTo(x + 4, y + bobY + 2);
+        }
+        ctx.stroke();
+
+        // Arms (reaching forward)
+        ctx.strokeStyle = bodyColor;
+        ctx.lineWidth = 5;
+        const armAngle = z.eating ? Math.sin(z.animPhase * 3) * 0.3 : -0.5;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y + bobY);
+        ctx.lineTo(x - 20, y + bobY + 8 + armAngle * 10);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 10, y + bobY);
+        ctx.lineTo(x + 22, y + bobY + 6 + armAngle * 8);
+        ctx.stroke();
+
+        // Legs
+        const legAnim = Math.sin(z.animPhase * 2) * 5;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y + bobY + 10);
+        ctx.lineTo(x - 8 + legAnim, y + bobY + 20);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + bobY + 10);
+        ctx.lineTo(x + 8 - legAnim, y + bobY + 20);
+        ctx.stroke();
+
+        // HP bar
+        const bw = 24, bh = 3;
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - bw/2, y + bobY - 22, bw, bh);
+        const hpRatio = z.hp / z.maxHp;
+        ctx.fillStyle = hpRatio > 0.5 ? '#4caf50' : hpRatio > 0.25 ? '#ff9800' : '#f44336';
+        ctx.fillRect(x - bw/2, y + bobY - 22, bw * hpRatio, bh);
+
+        // Zombie type indicator (hat)
+        if (z.typeIdx === 1) { // cone head
+            ctx.fillStyle = '#ff8c00';
+            ctx.beginPath();
+            ctx.moveTo(x, y + bobY - 19);
+            ctx.lineTo(x - 8, y + bobY - 5);
+            ctx.lineTo(x + 8, y + bobY - 5);
+            ctx.fill();
+        } else if (z.typeIdx === 2) { // bucket head
+            ctx.fillStyle = '#888';
+            ctx.fillRect(x - 9, y + bobY - 20, 18, 14);
+            ctx.fillStyle = '#aaa';
+            ctx.fillRect(x - 7, y + bobY - 18, 14, 3);
+        } else if (z.typeIdx === 3) { // flag
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + bobY - 5);
+            ctx.lineTo(x + 10, y + bobY - 28);
+            ctx.stroke();
+            ctx.fillStyle = '#ff4444';
+            ctx.fillRect(x + 10, y + bobY - 28, 12, 8);
+        }
+    });
+
+    // Draw projectiles (peas)
+    state.projectiles.forEach(p => {
+        const row = getProjectileRow(p);
+        if (row === null) return;
+        ctx.fillStyle = p.slow ? '#88ccff' : '#4caf50';
+        ctx.beginPath();
+        ctx.arc(p.x, gridOY + row * cellH + cellH / 2, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = p.slow ? 'rgba(136,204,255,0.4)' : 'rgba(76,175,80,0.4)';
+        ctx.beginPath();
+        ctx.arc(p.x, gridOY + row * cellH + cellH / 2, 9, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Draw suns
+    state.suns.forEach(s => {
+        const alpha = s.life < 2000 ? s.life / 2000 : 1;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'radial-gradient(circle, #ffe866, #ff9900)';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+        // Rays
+        ctx.strokeStyle = '#ffe066';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2 + timestamp * 0.002;
+            ctx.beginPath();
+            ctx.moveTo(s.x + Math.cos(a) * 12, s.y + Math.sin(a) * 12);
+            ctx.lineTo(s.x + Math.cos(a) * 18, s.y + Math.sin(a) * 18);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+    });
+
+    // Draw particles
+    state.particles.forEach(p => {
+        ctx.globalAlpha = p.life / p.maxLife;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Wave delay indicator
+    if (!state.waveActive && state.wave <= state.maxWaves) {
+        const secs = Math.ceil(state.waveDelay / 1000);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Wave ${state.wave} incoming in ${secs}s...`, w / 2, h - 30);
+    }
+
+    // Selected plant highlight on hover (handled by CSS mostly)
+}
+
+function getProjectileRow(p) {
+    for (let r = 0; r < ROWS; r++) {
+        const rowY = gridOY + r * cellH + cellH / 2;
+        if (Math.abs(p.y - rowY) < cellH * 0.4) return r;
+    }
+    return null;
+}
+
+function getPlantIcon(type) {
+    const icons = { producer: '🌻', shooter: '🌱', wall: '🥜', bomb: '🍒' };
+    return icons[type] || '❓';
+}
+
+// ===== PARTICLES =====
+function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        state.particles.push({
+            x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 1) * 3,
+            size: 2 + Math.random() * 4, color, life: 600 + Math.random() * 400, maxLife: 1000,
+        });
+    }
+}
+
+// ===== WAVES =====
+function startWave() {
+    state.waveActive = true;
+    waveZombiesLeft = Math.min(3 + state.wave * 2, 25);
+    state.zombieSpawnTimer = 0;
+    showWaveBanner(`Wave ${state.wave}`);
+}
+
+function endWave() {
+    state.waveActive = false;
+    if (state.wave >= state.maxWaves) {
+        setTimeout(() => endGame(true), 1500);
+    } else {
+        state.wave++;
+        state.waveDelay = Math.max(2000, 4000 - state.wave * 200);
+    }
+}
+
+function showWaveBanner(text) {
+    const banner = document.getElementById('wave-banner');
+    banner.textContent = text;
+    banner.style.opacity = '1';
+    setTimeout(() => banner.style.opacity = '0', 2000);
+}
+
+// ===== UI =====
+function updateUI() {
+    document.getElementById('sun-val').textContent = state.sun;
+    document.getElementById('wave-num').textContent = state.wave;
+    document.getElementById('score-val').textContent = state.score;
+    updatePlantBar();
+}
+
+function showNotification(text) {
+    const n = document.createElement('div');
+    n.className = 'notification';
+    n.textContent = text;
+    document.getElementById('game-field').appendChild(n);
+    setTimeout(() => n.remove(), 2000);
+}
+
+// ===== GAME FLOW =====
+function startGame() {
+    initGame();
+    setupCanvas();
+    buildPlantBar();
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('overlay-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    lastTime = performance.now();
+    animFrame = requestAnimationFrame(gameLoop);
+}
+
+function endGame(won) {
+    state.gameOver = true;
+    state.won = won;
+    cancelAnimationFrame(animFrame);
+    const overlay = document.getElementById('overlay-screen');
+    document.getElementById('overlay-title').textContent = won ? '🎉 Victory!' : '💀 Game Over!';
+    document.getElementById('overlay-msg').textContent = `Score: ${state.score} | Waves survived: ${won ? state.maxWaves : state.wave - 1}`;
+    overlay.style.display = 'flex';
+
+    // Save to leaderboard
+    saveToLeaderboard();
+}
+
+function restartGame() {
+    document.getElementById('overlay-screen').style.display = 'none';
+    startGame();
+}
+
+function backToMenu() {
+    cancelAnimationFrame(animFrame);
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('overlay-screen').style.display = 'none';
+    document.getElementById('leaderboard-screen').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'flex';
+}
+
+// ===== LEADERBOARD =====
+function saveToLeaderboard() {
+    const lb = JSON.parse(localStorage.getItem('pvz_leaderboard') || '[]');
+    lb.push({ date: new Date().toLocaleDateString(), score: state.score, wave: state.wave });
+    lb.sort((a, b) => b.score - a.score);
+    localStorage.setItem('pvz_leaderboard', JSON.stringify(lb.slice(0, 20)));
+}
+
+function showLeaderboard() {
+    document.getElementById('menu-screen').style.display = 'none';
+    const lb = JSON.parse(localStorage.getItem('pvz_leaderboard') || '[]');
+    const body = document.getElementById('lb-body');
+    body.innerHTML = '';
+    if (lb.length === 0) {
+        body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">No scores yet. Play a game!</td></tr>';
+    } else {
+        lb.forEach((entry, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${i + 1}</td><td>${entry.date}</td><td style="color:#ffe066">${entry.score}</td><td>${entry.wave}</td>`;
+            body.appendChild(tr);
+        });
+    }
+    document.getElementById('leaderboard-screen').style.display = 'flex';
+}
+
+function showHelp() {
+    alert(
+        '🌻 PLANTS VS ZOMBIES — Mini Edition\n\n' +
+        '• Click a plant card at the bottom, then click a grid cell to place it.\n' +
+        '• Collect ☀️ suns by clicking them (from sky and Sunflowers).\n' +
+        '• Survive 10 waves of increasingly tough zombies!\n\n' +
+        '🌻 Sunflower — produces sun over time\n' +
+        '🌱 Peashooter — shoots peas at zombies in its row\n' +
+        '❄️ Snow Pea — slows zombies while shooting\n' +
+        '🥜 Wall-nut — high HP, blocks zombies\n' +
+        '🍒 Cherry Bomb — explodes in 3x3 area\n\n' +
+        'Zombies eat your plants from right to left!\n' +
+        'Don\'t let them reach the left edge!'
+    );
+}
+
+// ===== SUN CLICK HANDLER (on game field) =====
+document.getElementById('game-field')?.addEventListener('click', (e) => {
+    if (!state.suns.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    state.suns.forEach((s, i) => {
+        const dx = mx - s.x, dy = my - s.y;
+        if (dx * dx + dy * dy < 400) { // 20px radius
+            state.sun += s.value;
+            spawnParticles(s.x, s.y, '#ffe066', 5);
+            showNotification(`+${s.value} ☀️`);
+            state.suns.splice(i, 1);
+            updateUI();
+        }
+    });
+});
+
+// Fix: move sun click handler to be set after game starts
+const origStartGame = startGame;
+startGame = function() {
+    initGame();
+    setupCanvas();
+    buildPlantBar();
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('overlay-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    lastTime = performance.now();
+
+    // Re-bind sun click handler on canvas
+    canvas.addEventListener('click', handleSunClick);
+
+    animFrame = requestAnimationFrame(gameLoop);
+};
+
+function handleSunClick(e) {
+    if (!state.suns.length || state.gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    for (let i = state.suns.length - 1; i >= 0; i--) {
+        const s = state.suns[i];
+        const dx = mx - s.x, dy = my - s.y;
+        if (dx * dx + dy * dy < 400) {
+            state.sun += s.value;
+            spawnParticles(s.x, s.y, '#ffe066', 5);
+            showNotification(`+${s.value} ☀️`);
+            state.suns.splice(i, 1);
+            updateUI();
+        }
+    }
+}
+
+// Fix the projectile row tracking — store row on creation
+const origPlacePlant = placePlant;
+placePlant = function(row, col, typeIdx) {
+    if (state.sun < PLANTS[typeIdx].cost || state.grid[row][col]) return;
+    state.sun -= PLANTS[typeIdx].cost;
+    const plant = { ...PLANTS[typeIdx], typeIdx, hp: PLANTS[typeIdx].hp, maxHp: PLANTS[typeIdx].hp, lastAction: 0, row };
+
+    if (PLANTS[typeIdx].type === 'bomb') {
+        for (let r = Math.max(0, row - 1); r <= Math.min(ROWS-1, row + 1); r++) {
+            for (let c = Math.max(0, col - 1); c <= Math.min(COLS-1, col + 1); c++) {
+                state.zombies.forEach(z => {
+                    if (z.row === r && Math.abs(z.x - (gridOX + c * cellW)) < cellW) {
+                        z.hp -= PLANTS[typeIdx].damage;
+                        spawnParticles(z.x, z.y, '#ff4400', 5);
+                    }
+                });
+            }
+        }
+        const bx = gridOX + col * cellW + cellW/2, by = gridOY + row * cellH + cellH/2;
+        spawnParticles(bx, by, '#ff6600', 15);
+    } else {
+        state.grid[row][col] = plant;
+    }
+    updateUI();
+};
+
+// Fix projectile to track its row properly
+const origUpdate = update;
+update = function(dt) {
+    _timestamp = performance.now();
+
+    // Sun from sunflowers
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const cell = state.grid[r][c];
+            if (cell && cell.type === 'producer') {
+                if (_timestamp - cell.lastAction > 8000) {
+                    cell.lastAction = _timestamp;
+                    const sx = gridOX + c * cellW + cellW / 2 + (Math.random() - 0.5) * 30;
+                    const sy = gridOY + r * cellH + cellH / 2 + (Math.random() - 0.5) * 20;
+                    state.suns.push({ x: sx, y: sy, life: 8000, value: 25 });
+                }
+            }
+        }
+    }
+
+    // Sky suns
+    sunTimer += dt;
+    if (sunTimer > 7000) {
+        sunTimer = 0;
+        state.suns.push({ x: gridOX + Math.random() * COLS * cellW, y: gridOY + Math.random() * ROWS * cellH, life: 8000, value: 25 });
+    }
+
+    // Update suns
+    state.suns.forEach(s => s.life -= dt);
+    state.suns = state.suns.filter(s => s.life > 0);
+
+    // Wave management
+    if (!state.waveActive) {
+        state.waveDelay -= dt;
+        if (state.waveDelay <= 0 && state.wave <= state.maxWaves) startWave();
+    } else {
+        const maxZombies = Math.min(3 + state.wave * 2, 25);
+        state.zombieSpawnTimer += dt;
+        const spawnInterval = Math.max(1500, 4000 - state.wave * 200);
+        if (state.zombieSpawnTimer > spawnInterval && waveZombiesLeft > 0) {
+            state.zombieSpawnTimer = 0;
+            spawnZombie();
+            waveZombiesLeft--;
+        }
+        if (waveZombiesLeft <= 0 && state.zombies.length === 0) endWave();
+    }
+
+    // Update plants — shooters fire at zombies in their row
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const cell = state.grid[r][c];
+            if (!cell || cell.type !== 'shooter') continue;
+            if (_timestamp - cell.lastAction > cell.fireRate) {
+                // Check if any zombie in this row is to the right of the plant
+                const hasTarget = state.zombies.some(z => z.row === r && z.x > gridOX + c * cellW);
+                if (hasTarget) {
+                    cell.lastAction = _timestamp;
+                    const px = gridOX + c * cellW + cellW - 5;
+                    const py = gridOY + r * cellH + cellH / 2;
+                    state.projectiles.push({ x: px, y: py, row: r, damage: cell.damage, slow: !!cell.slow });
+                }
+            }
+        }
+    }
+
+    // Update projectiles
+    state.projectiles.forEach(p => p.x += 4);
+    state.projectiles = state.projectiles.filter(p => p.x < gridOX + COLS * cellW + 20);
+
+    // Projectile-zombie collision
+    for (let i = state.projectiles.length - 1; i >= 0; i--) {
+        const p = state.projectiles[i];
+        let hit = false;
+        for (const z of state.zombies) {
+            if (z.row === p.row && Math.abs(z.x - p.x) < 15) {
+                z.hp -= p.damage;
+                if (p.slow) { z.slow = true; z.slowTimer = 3000; }
+                spawnParticles(p.x, p.y, '#88ff88', 3);
+                hit = true;
+            }
+        }
+        if (hit) state.projectiles.splice(i, 1);
+    }
+
+    // Update zombies
+    for (const z of state.zombies) {
+        z.animPhase += dt * 0.005;
+        if (z.slowTimer > 0) { z.slowTimer -= dt; if (z.slowTimer <= 0) z.slow = false; }
+
+        const zCol = (z.x - gridOX) / cellW;
+        const plantCol = Math.round(zCol);
+        let eating = false;
+        if (plantCol >= 0 && plantCol < COLS && state.grid[z.row] && state.grid[z.row][plantCol]) {
+            eating = true;
+            z.eatTimer += dt;
+            if (z.eatTimer > 500) {
+                z.eatTimer = 0;
+                const plant = state.grid[z.row][plantCol];
+                plant.hp -= z.damage;
+                if (plant.hp <= 0) state.grid[z.row][plantCol] = null;
+            }
+        } else {
+            z.eating = false;
+            z.eatTimer = 0;
+            const speedMult = z.slow ? 0.5 : 1;
+            z.x -= z.speed * speedMult * (dt / 16);
+        }
+
+        if (z.x < gridOX - 20) endGame(false);
+    }
+
+    // Remove dead zombies
+    state.zombies = state.zombies.filter(z => {
+        if (z.hp <= 0) {
+            state.score += z.reward * 10;
+            spawnParticles(z.x, z.y, '#88ff44', 8);
+            return false;
+        }
+        return true;
+    });
+
+    // Update particles
+    state.particles.forEach(p => { p.life -= dt; p.x += p.vx; p.y += p.vy; p.vy += 0.15; });
+    state.particles = state.particles.filter(p => p.life > 0);
+
+    updateUI();
+};
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+    if (state.gameOver) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= PLANTS.length) selectPlant(num - 1);
+    if (e.key === 'Escape') selectedPlant = -1;
+});
+
+// Initial setup — show menu
+document.getElementById('menu-screen').style.display = 'flex';
+</script>
+</body>
+</html>

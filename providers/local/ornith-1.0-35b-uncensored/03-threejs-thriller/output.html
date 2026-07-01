@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Thriller Dance Scene — Three.js</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; font-family: 'Georgia', serif; }
+canvas { display: block; }
+#info {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    color: #ffe066; font-size: 1.1em; text-shadow: 0 0 10px rgba(255,224,102,0.5);
+    z-index: 10; pointer-events: none; letter-spacing: 2px;
+}
+#title-card {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.95); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 100; transition: opacity 2s;
+}
+#title-card h1 { color: #ff4444; font-size: 4em; text-shadow: 0 0 30px rgba(255,68,68,0.7); margin-bottom: 10px; }
+#title-card p { color: #ccc; font-size: 1.3em; letter-spacing: 3px; }
+#title-card .start-hint { color: #888; margin-top: 40px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="title-card">
+    <h1>THRILLER</h1>
+    <p>A CINEMATIC DANCE SCENE</p>
+    <p class="start-hint">Click anywhere to begin</p>
+</div>
+<div id="info">🎵 Thriller Choreography — Michael Jackson, Pepe the Frog, Donald Trump & Elon Musk 🎵</div>
+
+<script>
+// ===== SETUP =====
+let scene, camera, renderer;
+let characters = [];
+let clock = new THREE.Clock();
+let started = false;
+let animTime = 0;
+
+const CHAR_COLORS = {
+    mj: { skin: 0xd4a574, suit: 0x111111, shoe: 0x222222, hair: 0x1a1a1a },
+    pepe: { skin: 0x6abf69, shirt: 0xffffff, shoe: 0x333333, eye: 0xffffff },
+    trump: { skin: 0xf4c282, suit: 0x1a1a5e, tie: 0xcc0000, hair: 0xffaa00 },
+    elon: { skin: 0xd4a574, suit: 0x222222, shoe: 0x111111, hair: 0x8b6914 },
+};
+
+const CHAR_POSITIONS = [
+    new THREE.Vector3(-3.5, 0, 0),
+    new THREE.Vector3(-1.2, 0, 1.5),
+    new THREE.Vector3(1.2, 0, -1.5),
+    new THREE.Vector3(3.5, 0, 0),
+];
+
+const CHAR_NAMES = ['Michael Jackson', 'Pepe the Frog', "Donald Trump", 'Elon Musk'];
+
+function init() {
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0a0a1a, 0.04);
+
+    camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 3.5, 8);
+    camera.lookAt(0, 1.2, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.8;
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x334466, 0.4);
+    scene.add(ambientLight);
+
+    // Main spotlight (moonlight feel)
+    const spotLight = new THREE.SpotLight(0xffeedd, 1.2, 25, Math.PI / 5, 0.5, 1);
+    spotLight.position.set(0, 8, 3);
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.set(2048, 2048);
+    scene.add(spotLight);
+
+    // Colored accent lights
+    const pinkLight = new THREE.PointLight(0xff4488, 0.6, 15);
+    pinkLight.position.set(-5, 3, -3);
+    scene.add(pinkLight);
+
+    const blueLight = new THREE.PointLight(0x4488ff, 0.5, 15);
+    blueLight.position.set(5, 3, -3);
+    scene.add(blueLight);
+
+    const purpleLight = new THREE.PointLight(0x8844ff, 0.4, 12);
+    purpleLight.position.set(0, 5, -5);
+    scene.add(purpleLight);
+
+    // Ground — cobblestone graveyard feel
+    const groundGeo = new THREE.PlaneGeometry(30, 30, 20, 20);
+    const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1a2e, roughness: 0.9, metalness: 0.1
+    });
+    // Add some vertex displacement for uneven ground
+    const posAttr = groundGeo.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i), y = posAttr.getY(i);
+        posAttr.setZ(i, Math.sin(x * 0.5) * Math.cos(y * 0.3) * 0.1 + (Math.random() - 0.5) * 0.05);
+    }
+    groundGeo.computeVertexNormals();
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Tombstones
+    for (let i = 0; i < 15; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 4 + Math.random() * 8;
+        createTombstone(Math.cos(angle) * dist, Math.sin(angle) * dist);
+    }
+
+    // Dead trees
+    for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
+        const dist = 7 + Math.random() * 4;
+        createDeadTree(Math.cos(angle) * dist, Math.sin(angle) * dist);
+    }
+
+    // Mist particles
+    createMist();
+
+    // Create characters
+    createCharacter('mj', CHAR_POSITIONS[0], CHAR_COLORS.mj);
+    createCharacter('pepe', CHAR_POSITIONS[1], CHAR_COLORS.pepe);
+    createCharacter('trump', CHAR_POSITIONS[2], CHAR_COLORS.trump);
+    createCharacter('elon', CHAR_POSITIONS[3], CHAR_COLORS.elon);
+
+    window.addEventListener('resize', onResize);
+}
+
+function createTombstone(x, z) {
+    const h = 0.5 + Math.random() * 0.8;
+    const geo = new THREE.BoxGeometry(0.4, h, 0.15);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x4a4a5a, roughness: 0.9 });
+    const stone = new THREE.Mesh(geo, mat);
+    stone.position.set(x, h / 2 - 0.1, z);
+    stone.rotation.y = Math.random() * 0.3;
+    stone.castShadow = true;
+    scene.add(stone);
+
+    // Cross on top
+    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, 0.06), mat);
+    crossV.position.set(x, h + 0.1, z);
+    scene.add(crossV);
+    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.06, 0.06), mat);
+    crossH.position.set(x, h + 0.15, z);
+    scene.add(crossH);
+}
+
+function createDeadTree(x, z) {
+    const group = new THREE.Group();
+    // Trunk
+    const trunkGeo = new THREE.CylinderGeometry(0.08, 0.12, 2 + Math.random(), 6);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.95 });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 1;
+    trunk.castShadow = true;
+    group.add(trunk);
+
+    // Branches
+    for (let i = 0; i < 4; i++) {
+        const branchGeo = new THREE.CylinderGeometry(0.02, 0.05, 1 + Math.random(), 4);
+        const branch = new THREE.Mesh(branchGeo, trunkMat);
+        branch.position.set(
+            (Math.random() - 0.5) * 0.8,
+            1.5 + Math.random() * 1,
+            (Math.random() - 0.5) * 0.5
+        );
+        branch.rotation.z = (Math.random() - 0.5) * 1.2;
+        branch.rotation.x = (Math.random() - 0.5) * 0.8;
+        group.add(branch);
+    }
+
+    group.position.set(x, 0, z);
+    scene.add(group);
+}
+
+function createMist() {
+    const count = 200;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 1] = Math.random() * 1.5;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0x8899aa, size: 0.15, transparent: true, opacity: 0.4 });
+    const mist = new THREE.Points(geo, mat);
+    mist.userData.isMist = true;
+    scene.add(mist);
+}
+
+function createCharacter(name, position, colors) {
+    const group = new THREE.Group();
+    group.position.copy(position);
+
+    let bodyParts = {};
+
+    if (name === 'pepe') {
+        // Pepe the Frog — rounder, greener, bigger eyes
+        // Body
+        const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        bodyGeo.scale(1, 1.2, 0.9);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.skin, roughness: 0.7 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.85;
+        body.castShadow = true;
+        group.add(body);
+        bodyParts.body = body;
+
+        // Head (larger, rounder)
+        const headGeo = new THREE.SphereGeometry(0.32, 14, 14);
+        headGeo.scale(1.15, 1, 1.05);
+        const headMat = new THREE.MeshStandardMaterial({ color: colors.skin, roughness: 0.6 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.45;
+        head.castShadow = true;
+        group.add(head);
+        bodyParts.head = head;
+
+        // Big eyes (bulging)
+        [-0.13, 0.13].forEach(xOff => {
+            const eyeGeo = new THREE.SphereGeometry(0.12, 10, 10);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: colors.eye || 0xffffff, roughness: 0.3 });
+            const eye = new THREE.Mesh(eyeGeo, eyeMat);
+            eye.position.set(xOff, 1.52, 0.22);
+            eye.scale.set(1, 1.2, 0.6);
+            group.add(eye);
+
+            // Pupil
+            const pupilGeo = new THREE.SphereGeometry(0.05, 8, 8);
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+            pupil.position.set(xOff, 1.53, 0.29);
+            group.add(pupil);
+        });
+
+        // Smile
+        const smileCurve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(-0.12, 1.38, 0.27),
+            new THREE.Vector3(0, 1.34, 0.3),
+            new THREE.Vector3(0.12, 1.38, 0.27)
+        );
+        const smileGeo = new THREE.TubeGeometry(smileCurve, 8, 0.02, 6, false);
+        const smileMat = new THREE.MeshStandardMaterial({ color: 0x2a5a2a });
+        group.add(new THREE.Mesh(smileGeo, smileMat));
+
+        // Arms (shorter, stubbier)
+        [-1, 1].forEach(side => {
+            const armGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.5, 8);
+            const armMat = new THREE.MeshStandardMaterial({ color: colors.skin });
+            const arm = new THREE.Mesh(armGeo, armMat);
+            arm.position.set(side * 0.42, 0.9, 0);
+            arm.rotation.z = side * 0.3;
+            arm.castShadow = true;
+            group.add(arm);
+            bodyParts[`arm${side > 0 ? 'R' : 'L'}`] = arm;
+
+            // Hand (webbed)
+            const handGeo = new THREE.SphereGeometry(0.07, 8, 8);
+            handGeo.scale(1.3, 0.6, 1);
+            const hand = new THREE.Mesh(handGeo, armMat);
+            hand.position.set(side * 0.52, 0.65, 0);
+            group.add(hand);
+        });
+
+        // Legs (short)
+        [-1, 1].forEach(side => {
+            const legGeo = new THREE.CylinderGeometry(0.07, 0.08, 0.4, 8);
+            const legMat = new THREE.MeshStandardMaterial({ color: colors.skin });
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(side * 0.15, 0.35, 0);
+            leg.castShadow = true;
+            group.add(leg);
+            bodyParts[`leg${side > 0 ? 'R' : 'L'}`] = leg;
+
+            // Foot
+            const footGeo = new THREE.SphereGeometry(0.09, 8, 6);
+            footGeo.scale(1.4, 0.7, 1);
+            const foot = new THREE.Mesh(footGeo, new THREE.MeshStandardMaterial({ color: colors.shoe || 0x333333 }));
+            foot.position.set(side * 0.15, 0.12, 0.04);
+            group.add(foot);
+        });
+
+    } else if (name === 'trump') {
+        // Donald Trump — taller, orange skin, big hair, red tie
+        // Body (broader)
+        const bodyGeo = new THREE.CylinderGeometry(0.32, 0.28, 0.7, 10);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.suit, roughness: 0.5 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.9;
+        body.castShadow = true;
+        group.add(body);
+        bodyParts.body = body;
+
+        // Head (slightly larger)
+        const headGeo = new THREE.SphereGeometry(0.25, 14, 14);
+        headGeo.scale(1, 1.1, 0.95);
+        const headMat = new THREE.MeshStandardMaterial({ color: colors.skin, roughness: 0.5 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.48;
+        head.castShadow = true;
+        group.add(head);
+        bodyParts.head = head;
+
+        // Hair (big golden swoosh)
+        const hairGeo = new THREE.SphereGeometry(0.2, 10, 10);
+        hairGeo.scale(1.3, 0.7, 1.1);
+        const hairMat = new THREE.MeshStandardMaterial({ color: colors.hair, roughness: 0.4 });
+        const hair = new THREE.Mesh(hairGeo, hairMat);
+        hair.position.set(0, 1.65, -0.05);
+        group.add(hair);
+
+        // Hair side pieces
+        [-1, 1].forEach(side => {
+            const sideHair = new THREE.Mesh(
+                new THREE.SphereGeometry(0.1, 8, 8),
+                hairMat
+            );
+            sideHair.position.set(side * 0.2, 1.58, -0.05);
+            sideHair.scale.set(0.7, 0.9, 0.8);
+            group.add(sideHair);
+        });
+
+        // Eyes
+        [-0.09, 0.09].forEach(xOff => {
+            const eyeGeo = new THREE.SphereGeometry(0.045, 8, 8);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0x4488ff });
+            group.add(new THREE.Mesh(eyeGeo, eyeMat).translateX(xOff).translateY(1.52).translateZ(0.2));
+
+            const pupilGeo = new THREE.SphereGeometry(0.025, 6, 6);
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111133 });
+            group.add(new THREE.Mesh(pupilGeo, pupilMat).translateX(xOff).translateY(1.52).translateZ(0.23));
+        });
+
+        // Mouth (slight smile)
+        const mouthCurve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(-0.08, 1.4, 0.22),
+            new THREE.Vector3(0, 1.39, 0.24),
+            new THREE.Vector3(0.08, 1.4, 0.22)
+        );
+        const mouthGeo = new THREE.TubeGeometry(mouthCurve, 6, 0.015, 4, false);
+        group.add(new THREE.Mesh(mouthGeo, new THREE.MeshStandardMaterial({ color: 0xcc6666 })));
+
+        // Red tie
+        const tieGeo = new THREE.BoxGeometry(0.08, 0.35, 0.06);
+        const tieMat = new THREE.MeshStandardMaterial({ color: colors.tie });
+        const tie = new THREE.Mesh(tieGeo, tieMat);
+        tie.position.set(0, 1.0, 0.25);
+        group.add(tie);
+
+        // Arms
+        [-1, 1].forEach(side => {
+            const armGeo = new THREE.CylinderGeometry(0.065, 0.07, 0.55, 8);
+            const armMat = new THREE.MeshStandardMaterial({ color: colors.suit });
+            const arm = new THREE.Mesh(armGeo, armMat);
+            arm.position.set(side * 0.4, 0.9, 0);
+            arm.rotation.z = side * 0.2;
+            arm.castShadow = true;
+            group.add(arm);
+            bodyParts[`arm${side > 0 ? 'R' : 'L'}`] = arm;
+
+            // Hand (skin colored)
+            const handGeo = new THREE.SphereGeometry(0.06, 8, 8);
+            const handMat = new THREE.MeshStandardMaterial({ color: colors.skin });
+            group.add(new THREE.Mesh(handGeo, handMat).translateX(side * 0.45).translateY(0.6));
+        });
+
+        // Legs (longer)
+        [-1, 1].forEach(side => {
+            const legGeo = new THREE.CylinderGeometry(0.07, 0.08, 0.55, 8);
+            const legMat = new THREE.MeshStandardMaterial({ color: colors.suit });
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(side * 0.14, 0.35, 0);
+            leg.castShadow = true;
+            group.add(leg);
+            bodyParts[`leg${side > 0 ? 'R' : 'L'}`] = leg;
+
+            // Shoes (black)
+            const shoeGeo = new THREE.BoxGeometry(0.1, 0.06, 0.16);
+            group.add(new THREE.Mesh(shoeGeo, new THREE.MeshStandardMaterial({ color: 0x111111 }))
+                .translateX(side * 0.14).translateY(0.05).translateZ(0.03));
+        });
+
+    } else if (name === 'elon') {
+        // Elon Musk — similar build to MJ but different styling
+        const bodyGeo = new THREE.CylinderGeometry(0.28, 0.25, 0.65, 10);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.suit, roughness: 0.4 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.88;
+        body.castShadow = true;
+        group.add(body);
+        bodyParts.body = body;
+
+        // Head (slightly different shape)
+        const headGeo = new THREE.SphereGeometry(0.23, 14, 14);
+        headGeo.scale(0.95, 1.05, 0.95);
+        const headMat = new THREE.MeshStandardMaterial({ color: colors.skin, roughness: 0.5 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.42;
+        head.castShadow = true;
+        group.add(head);
+        bodyParts.head = head;
+
+        // Hair (shorter, darker)
+        const hairGeo = new THREE.SphereGeometry(0.18, 10, 10);
+        hairGeo.scale(1, 0.7, 1);
+        const hairMat = new THREE.MeshStandardMaterial({ color: colors.hair, roughness: 0.6 });
+        const hair = new THREE.Mesh(hairGeo, hairMat);
+        hair.position.set(0, 1.58, -0.03);
+        group.add(hair);
+
+        // Eyes (slightly different)
+        [-0.08, 0.08].forEach(xOff => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8),
+                new THREE.MeshStandardMaterial({ color: 0x336699 }));
+            eye.position.set(xOff, 1.45, 0.2);
+            group.add(eye);
+            const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6),
+                new THREE.MeshStandardMaterial({ color: 0x111122 }));
+            pupil.position.set(xOff, 1.45, 0.23);
+            group.add(pupil);
+        });
+
+        // Subtle smile
+        const mouthCurve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(-0.07, 1.36, 0.2),
+            new THREE.Vector3(0, 1.35, 0.22),
+            new THREE.Vector3(0.07, 1.36, 0.2)
+        );
+        group.add(new THREE.Mesh(new THREE.TubeGeometry(mouthCurve, 6, 0.012, 4, false),
+            new THREE.MeshStandardMaterial({ color: 0xaa5555 })));
+
+        // Arms (slightly thinner)
+        [-1, 1].forEach(side => {
+            const armGeo = new THREE.CylinderGeometry(0.055, 0.065, 0.5, 8);
+            const armMat = new THREE.MeshStandardMaterial({ color: colors.suit });
+            const arm = new THREE.Mesh(armGeo, armMat);
+            arm.position.set(side * 0.38, 0.88, 0);
+            arm.rotation.z = side * 0.25;
+            arm.castShadow = true;
+            group.add(arm);
+            bodyParts[`arm${side > 0 ? 'R' : 'L'}`] = arm;
+
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8),
+                new THREE.MeshStandardMaterial({ color: colors.skin }));
+            hand.position.set(side * 0.43, 0.62, 0);
+            group.add(hand);
+        });
+
+        // Legs (slimmer)
+        [-1, 1].forEach(side => {
+            const legGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.5, 8);
+            const legMat = new THREE.MeshStandardMaterial({ color: colors.suit });
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(side * 0.13, 0.32, 0);
+            leg.castShadow = true;
+            group.add(leg);
+            bodyParts[`leg${side > 0 ? 'R' : 'L'}`] = leg;
+
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.05, 0.14),
+                new THREE.MeshStandardMaterial({ color: colors.shoe }));
+            shoe.position.set(side * 0.13, 0.04, 0.02);
+            group.add(shoe);
+        });
+
+    } else {
+        // Michael Jackson — iconic look
+        // Body (slim, fitted suit)
+        const bodyGeo = new THREE.CylinderGeometry(0.25, 0.22, 0.65, 10);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: colors.suit, roughness: 0.3, metalness: 0.1 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.88;
+        body.castShadow = true;
+        group.add(body);
+        bodyParts.body = body;
+
+        // Head
+        const headGeo = new THREE.SphereGeometry(0.22, 14, 14);
+        const headMat = new THREE.MeshStandardMaterial({ color: colors.skin, roughness: 0.5 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.38;
+        head.castShadow = true;
+        group.add(head);
+        bodyParts.head = head;
+
+        // Hair (mohawk-ish)
+        const hairGeo = new THREE.BoxGeometry(0.25, 0.12, 0.2);
+        const hairMat = new THREE.MeshStandardMaterial({ color: colors.hair });
+        const hair = new THREE.Mesh(hairGeo, hairMat);
+        hair.position.set(0, 1.56, -0.02);
+        group.add(hair);
+
+        // Eyes
+        [-0.08, 0.08].forEach(xOff => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8),
+                new THREE.MeshStandardMaterial({ color: 0x2a1a0a }));
+            eye.position.set(xOff, 1.42, 0.19);
+            group.add(eye);
+        });
+
+        // Subtle smile
+        const mouthCurve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(-0.06, 1.33, 0.2),
+            new THREE.Vector3(0, 1.32, 0.22),
+            new THREE.Vector3(0.06, 1.33, 0.2)
+        );
+        group.add(new THREE.Mesh(new THREE.TubeGeometry(mouthCurve, 6, 0.012, 4, false),
+            new THREE.MeshStandardMaterial({ color: 0x884444 })));
+
+        // Arms (MJ style — slightly longer)
+        [-1, 1].forEach(side => {
+            const armGeo = new THREE.CylinderGeometry(0.055, 0.065, 0.52, 8);
+            const armMat = new THREE.MeshStandardMaterial({ color: colors.suit });
+            const arm = new THREE.Mesh(armGeo, armMat);
+            arm.position.set(side * 0.37, 0.88, 0);
+            arm.rotation.z = side * 0.2;
+            arm.castShadow = true;
+            group.add(arm);
+            bodyParts[`arm${side > 0 ? 'R' : 'L'}`] = arm;
+
+            // White glove (iconic!)
+            const handGeo = new THREE.SphereGeometry(0.055, 8, 8);
+            const handMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            group.add(new THREE.Mesh(handGeo, handMat).translateX(side * 0.42).translateY(0.6));
+        });
+
+        // Legs (fitted pants)
+        [-1, 1].forEach(side => {
+            const legGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.5, 8);
+            const legMat = new THREE.MeshStandardMaterial({ color: colors.suit });
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(side * 0.13, 0.32, 0);
+            leg.castShadow = true;
+            group.add(leg);
+            bodyParts[`leg${side > 0 ? 'R' : 'L'}`] = leg;
+
+            // Black shoe with white sock hint
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.06, 0.15),
+                new THREE.MeshStandardMaterial({ color: colors.shoe }));
+            shoe.position.set(side * 0.13, 0.04, 0.02);
+            group.add(shoe);
+
+            // Sock
+            const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.07, 0.08, 8),
+                new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            sock.position.set(side * 0.13, 0.1, 0);
+            group.add(sock);
+        });
+
+        // Hat (fedora hint)
+        const hatBrim = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.28, 0.02, 14),
+            new THREE.MeshStandardMaterial({ color: 0x111111 })
+        );
+        hatBrim.position.set(0, 1.53, -0.02);
+        group.add(hatBrim);
+
+        const hatTop = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.14, 0.18, 0.15, 12),
+            new THREE.MeshStandardMaterial({ color: 0x111111 })
+        );
+        hatTop.position.set(0, 1.62, -0.02);
+        group.add(hatTop);
+
+        // Hat band
+        const band = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.185, 0.185, 0.03, 12),
+            new THREE.MeshStandardMaterial({ color: 0xcc0000 })
+        );
+        band.position.set(0, 1.56, -0.02);
+        group.add(band);
+    }
+
+    // Name label (floating text sprite)
+    const canvas2d = document.createElement('canvas');
+    canvas2d.width = 256; canvas2d.height = 48;
+    const ctx2d = canvas2d.getContext('2d');
+    ctx2d.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx2d.roundRect(10, 5, 236, 38, 8);
+    ctx2d.fill();
+    ctx2d.font = 'bold 22px Georgia';
+    ctx2d.fillStyle = '#ffe066';
+    ctx2d.textAlign = 'center';
+    ctx2d.fillText(CHAR_NAMES[characters.length], 128, 32);
+    const texture = new THREE.CanvasTexture(canvas2d);
+    const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.position.set(0, 2.1, 0);
+    sprite.scale.set(1.5, 0.3, 1);
+    group.add(sprite);
+
+    scene.add(group);
+    characters.push({ group, name, parts: bodyParts, basePos: position.clone() });
+}
+
+// ===== THRILLER CHOREOGRAPHY =====
+function getThrillerPose(time) {
+    const cycle = time % 8; // 8-second choreography cycle
+    const t = cycle / 8;
+    const pose = {};
+
+    if (t < 0.15) {
+        // Phase 1: Arms rise slowly (the iconic start)
+        const p = t / 0.15;
+        pose.leftArm = { x: -Math.PI * 0.4 * p, z: -0.3 };
+        pose.rightArm = { x: -Math.PI * 0.4 * p, z: 0.3 };
+        pose.headTilt = 0;
+    } else if (t < 0.3) {
+        // Phase 2: Arms out to sides
+        const p = (t - 0.15) / 0.15;
+        pose.leftArm = { x: -Math.PI * 0.4 + Math.PI * 0.5 * p, z: -0.3 + 0.3 * p };
+        pose.rightArm = { x: -Math.PI * 0.4 + Math.PI * 0.5 * p, z: 0.3 - 0.3 * p };
+        pose.headTilt = Math.sin(p * Math.PI) * 0.2;
+    } else if (t < 0.45) {
+        // Phase 3: The shoulder shimmy
+        const p = (t - 0.3) / 0.15;
+        pose.leftArm = { x: -0.2 + Math.sin(p * Math.PI * 4) * 0.15, z: -0.6 };
+        pose.rightArm = { x: -0.2 + Math.sin(p * Math.PI * 4 + 1) * 0.15, z: 0.6 };
+        pose.headTilt = Math.sin(p * Math.PI * 4) * 0.3;
+    } else if (t < 0.6) {
+        // Phase 4: The zombie walk — arms forward, stiff
+        const p = (t - 0.45) / 0.15;
+        pose.leftArm = { x: -Math.PI * 0.3 + Math.sin(p * Math.PI * 2) * 0.2, z: -0.8 };
+        pose.rightArm = { x: -Math.PI * 0.3 + Math.sin(p * Math.PI * 2 + Math.PI) * 0.2, z: 0.8 };
+        pose.headTilt = p * 0.4;
+    } else if (t < 0.75) {
+        // Phase 5: The turn — body rotation
+        const p = (t - 0.6) / 0.15;
+        pose.leftArm = { x: -Math.PI * 0.2, z: -0.5 };
+        pose.rightArm = { x: -Math.PI * 0.2, z: 0.5 };
+        pose.headTilt = Math.sin(p * Math.PI) * 0.5;
+    } else if (t < 0.9) {
+        // Phase 6: Arms up high — the climax
+        const p = (t - 0.75) / 0.15;
+        pose.leftArm = { x: -Math.PI * 0.8 + Math.sin(p * Math.PI * 3) * 0.2, z: -0.4 };
+        pose.rightArm = { x: -Math.PI * 0.8 + Math.sin(p * Math.PI * 3 + 1) * 0.2, z: 0.4 };
+        pose.headTilt = p * 0.3;
+    } else {
+        // Phase 7: Return to neutral with a flourish
+        const p = (t - 0.9) / 0.1;
+        pose.leftArm = { x: -Math.PI * 0.8 + Math.PI * 0.4 * p, z: -0.4 + 0.1 * p };
+        pose.rightArm = { x: -Math.PI * 0.8 + Math.PI * 0.4 * p, z: 0.4 - 0.1 * p };
+        pose.headTilt = (1 - p) * 0.3;
+    }
+
+    return pose;
+}
+
+function applyPose(charData, pose, isPepe = false, isTrump = false) {
+    const parts = charData.parts;
+    if (!parts.body || !parts.head) return;
+
+    // Body sway
+    parts.body.rotation.y = Math.sin(animTime * 2) * 0.15;
+    parts.body.position.y = 0.88 + Math.sin(animTime * 3) * 0.03;
+
+    // Head movement
+    parts.head.rotation.z = pose.headTilt || 0;
+    parts.head.rotation.x = Math.sin(animTime * 1.5) * 0.1;
+    parts.head.position.y = (isPepe ? 1.45 : isTrump ? 1.48 : 1.38) + Math.sin(animTime * 3) * 0.02;
+
+    // Arms
+    if (parts.armL && pose.leftArm) {
+        parts.armL.rotation.x = pose.leftArm.x || -0.5;
+        parts.armL.position.z = (pose.leftArm.z || -0.5) * 0.3;
+        parts.armL.position.y = 0.88 + Math.sin(animTime * 2.5) * 0.04;
+    }
+    if (parts.armR && pose.rightArm) {
+        parts.armR.rotation.x = pose.rightArm.x || -0.5;
+        parts.armR.position.z = (pose.rightArm.z || 0.5) * 0.3;
+        parts.armR.position.y = 0.88 + Math.sin(animTime * 2.5 + 1) * 0.04;
+    }
+
+    // Legs — subtle shuffle
+    if (parts.legL && parts.legR) {
+        const legAnim = Math.sin(animTime * 3) * 0.15;
+        parts.legL.rotation.x = legAnim;
+        parts.legR.rotation.x = -legAnim;
+    }
+
+    // Pepe-specific: extra bounce
+    if (isPepe) {
+        parts.body.position.y += Math.sin(animTime * 4) * 0.05;
+        parts.head.position.y += Math.sin(animTime * 4 + 0.5) * 0.03;
+    }
+
+    // Trump-specific: the "grab" gesture occasionally
+    if (isTrump && Math.sin(animTime * 1.2) > 0.7) {
+        parts.armR.rotation.x = -1.2;
+        parts.armR.rotation.z = -0.5;
+    }
+
+    // MJ-specific: the lean
+    if (!isPepe && !isTrump) {
+        parts.body.rotation.x = Math.sin(animTime * 1.8) * 0.08;
+    }
+}
+
+// ===== ANIMATION LOOP =====
+function animate() {
+    requestAnimationFrame(animate);
+
+    const dt = clock.getDelta();
+    animTime += dt;
+
+    if (!started) return;
+
+    // Get choreography pose
+    const pose = getThrillerPose(animTime);
+
+    // Apply to all characters with individual variation
+    characters.forEach((charData, i) => {
+        const isPepe = charData.name === 'pepe';
+        const isTrump = charData.name === 'trump';
+
+        // Add slight timing offset per character for organic feel
+        const offset = i * 0.15;
+        const charPose = getThrillerPose(animTime + offset);
+
+        applyPose(charData, charPose, isPepe, isTrump);
+
+        // Subtle position sway
+        charData.group.position.x = charData.basePos.x + Math.sin(animTime * 0.8 + i) * 0.1;
+        charData.group.position.z = charData.basePos.z + Math.cos(animTime * 0.6 + i * 2) * 0.05;
+
+        // Name label always faces camera
+        const sprite = charData.group.children[charData.group.children.length - 1];
+        if (sprite && sprite.isSprite) {
+            sprite.lookAt(camera.position);
+        }
+    });
+
+    // Camera slow orbit
+    const camAngle = animTime * 0.1;
+    camera.position.x = Math.sin(camAngle) * 7;
+    camera.position.z = Math.cos(camAngle) * 6 + 2;
+    camera.position.y = 3 + Math.sin(animTime * 0.15) * 0.5;
+    camera.lookAt(0, 1.2, 0);
+
+    // Animate mist
+    scene.children.forEach(child => {
+        if (child.isPoints && child.userData.isMist) {
+            const positions = child.geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] += Math.sin(animTime + i) * 0.002;
+                positions[i + 1] += Math.cos(animTime * 0.5 + i) * 0.001;
+            }
+            child.geometry.attributes.position.needsUpdate = true;
+        }
+    });
+
+    renderer.render(scene, camera);
+}
+
+function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ===== START =====
+document.getElementById('title-card').addEventListener('click', () => {
+    if (started) return;
+    started = true;
+    const card = document.getElementById('title-card');
+    card.style.opacity = '0';
+    setTimeout(() => card.style.display = 'none', 2000);
+});
+
+init();
+animate();
+</script>
+</body>
+</html>

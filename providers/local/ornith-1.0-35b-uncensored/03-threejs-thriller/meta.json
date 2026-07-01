@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "ornith-1.0-35b-uncensored",
+  "model_display": "Ornith 1.0 35B Uncensored",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-01T00:00:00Z",
+  "runner": "Ornith-1.0-35B-uncensored via pi agent (llama.cpp)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

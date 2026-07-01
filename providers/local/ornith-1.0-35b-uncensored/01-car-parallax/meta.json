@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "ornith-1.0-35b-uncensored",
+  "model_display": "Ornith 1.0 35B Uncensored",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-07-01T00:00:00Z",
+  "runner": "Ornith-1.0-35B-uncensored via pi agent (llama.cpp)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}
