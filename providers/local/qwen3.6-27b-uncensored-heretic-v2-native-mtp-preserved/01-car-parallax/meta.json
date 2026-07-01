@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved",
+  "model_display": "Qwen 3.6 27B Uncensored Heretic v2 Native MTP",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-07-02T00:00:00Z",
+  "runner": "Qwen 3.6 27B via pi agent + llama.cpp",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "Heretic v2 Native MTP Preserved",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

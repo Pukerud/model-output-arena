@@ -311,6 +311,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwopus3.6-27b-coder-mtp/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwopus3.6-27b-coder-mtp/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved",
+      model_display: "Qwen 3.6 27B Uncensored Heretic v2 Native MTP",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved",
+      added: "2026-07-02",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller Dance — MJ × Pepe × Trump × Musk</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #000; font-family: 'Segoe UI', Arial, sans-serif; }
+  canvas { display: block; }
+  #info {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.6); font-size: 13px; text-align: center;
+    pointer-events: none; z-index: 10;
+  }
+  #title {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    color: #ffd700; font-size: 28px; font-weight: bold; text-align: center;
+    text-shadow: 0 0 20px rgba(255,215,0,0.5), 0 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none; z-index: 10; letter-spacing: 3px;
+  }
+</style>
+</head>
+<body>
+<div id="title">🎵 THRILLER 🎵</div>
+<div id="info">Three.js — MJ × Pepe × Trump × Musk Dance Scene</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ============================================================
+// THRILLER DANCE SCENE
+// Michael Jackson, Pepe the Frog, Donald Trump, Elon Musk
+// ============================================================
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0812);
+scene.fog = new THREE.FogExp2(0x0a0812, 0.035);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 4, 12);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.target.set(0, 2, 0);
+controls.maxPolarAngle = Math.PI * 0.7;
+controls.minDistance = 5;
+controls.maxDistance = 30;
+
+// --- Materials ---
+const matSkin = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.6 });
+const matSkinDark = new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: 0.6 });
+const matGreen = new THREE.MeshStandardMaterial({ color: 0x7ec8e0, roughness: 0.5 }); // Pepe teal
+const matSuit = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.4, metalness: 0.3 });
+const matGold = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
+const matRed = new THREE.MeshStandardMaterial({ color: 0xcc2936, roughness: 0.5 }); // Trump red
+const matBlack = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
+const matWhite = new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.6 });
+const matShoe = new THREE.MeshStandardMaterial({ color: 0x2c1810, roughness: 0.4 });
+const matHairBlack = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.7 });
+const matHairGold = new THREE.MeshStandardMaterial({ color: 0xf0d060, roughness: 0.5, metalness: 0.2 });
+
+// --- Helper: create a character group with articulated body parts ---
+function createCharacter(config) {
+  const group = new THREE.Group();
+  const { name } = config;
+
+  // Torso
+  const torsoGeo = new THREE.CylinderGeometry(0.35, 0.3, 1.0, 8);
+  const torsoMat = config.torsoMat || matSuit;
+  const torso = new THREE.Mesh(torsoGeo, torsoMat);
+  torso.position.y = 2.0;
+  torso.castShadow = true;
+  group.add(torso);
+
+  // Head
+  const headGeo = new THREE.SphereGeometry(0.3, 16, 12);
+  const headMat = config.headMat || matSkin;
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 2.85;
+  head.castShadow = true;
+  group.add(head);
+
+  // Hair / headpiece
+  if (config.hairFn) {
+    config.hairFn(group, head.position.clone());
+  }
+
+  // Eyes
+  const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
+  const eyeWhiteMat = matWhite;
+  const pupilGeo = new THREE.SphereGeometry(0.035, 8, 8);
+  const pupilMat = matBlack;
+
+  [-1, 1].forEach(side => {
+    const eye = new THREE.Mesh(eyeGeo, eyeWhiteMat);
+    eye.position.set(side * 0.12, 2.9, 0.25);
+    group.add(eye);
+    const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+    pupil.position.set(side * 0.13, 2.89, 0.3);
+    group.add(pupil);
+  });
+
+  // Mouth
+  if (config.mouthFn) {
+    config.mouthFn(group);
+  }
+
+  // Arms (pivot at shoulder for animation)
+  const armGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.7, 6);
+  const forearmGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.6, 6);
+
+  [-1, 1].forEach(side => {
+    // Upper arm pivot
+    const shoulderPivot = new THREE.Group();
+    shoulderPivot.position.set(side * 0.45, 2.4, 0);
+
+    const upperArm = new THREE.Mesh(armGeo, torsoMat);
+    upperArm.position.y = -0.35;
+    upperArm.castShadow = true;
+    shoulderPivot.add(upperArm);
+
+    // Forearm pivot (elbow)
+    const elbowPivot = new THREE.Group();
+    elbowPivot.position.y = -0.7;
+
+    const forearm = new THREE.Mesh(forearmGeo, config.skinMat || matSkin);
+    forearm.position.y = -0.3;
+    forearm.castShadow = true;
+    elbowPivot.add(forearm);
+
+    // Hand
+    const handGeo = new THREE.SphereGeometry(0.07, 8, 6);
+    const hand = new THREE.Mesh(handGeo, config.skinMat || matSkin);
+    hand.position.y = -0.65;
+    elbowPivot.add(hand);
+
+    shoulderPivot.add(elbowPivot);
+    group.add(shoulderPivot);
+
+    if (side === -1) {
+      group.userData.leftArm = shoulderPivot;
+      group.userData.leftElbow = elbowPivot;
+    } else {
+      group.userData.rightArm = shoulderPivot;
+      group.userData.rightElbow = elbowPivot;
+    }
+  });
+
+  // Legs (pivot at hip)
+  const legGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.8, 6);
+  const shinGeo = new THREE.CylinderGeometry(0.09, 0.08, 0.75, 6);
+
+  [-1, 1].forEach(side => {
+    const hipPivot = new THREE.Group();
+    hipPivot.position.set(side * 0.15, 1.45, 0);
+
+    const legMat = config.legMat || matBlack;
+    const upperLeg = new THREE.Mesh(legGeo, legMat);
+    upperLeg.position.y = -0.4;
+    upperLeg.castShadow = true;
+    hipPivot.add(upperLeg);
+
+    // Knee pivot
+    const kneePivot = new THREE.Group();
+    kneePivot.position.y = -0.8;
+
+    const shin = new THREE.Mesh(shinGeo, legMat);
+    shin.position.y = -0.375;
+    shin.castShadow = true;
+    kneePivot.add(shin);
+
+    // Shoe
+    const shoeGeo = new THREE.BoxGeometry(0.16, 0.12, 0.28);
+    const shoe = new THREE.Mesh(shoeGeo, matShoe);
+    shoe.position.set(0, -0.75, 0.05);
+    kneePivot.add(shoe);
+
+    hipPivot.add(kneePivot);
+    group.add(hipPivot);
+
+    if (side === -1) {
+      group.userData.leftLeg = hipPivot;
+      group.userData.leftKnee = kneePivot;
+    } else {
+      group.userData.rightLeg = hipPivot;
+      group.userData.rightKnee = kneePivot;
+    }
+  });
+
+  // Torso pivot for body lean
+  group.userData.torso = torso;
+  group.userData.head = head;
+  group.userData.name = name;
+
+  return group;
+}
+
+// --- Michael Jackson ---
+function createMJ() {
+  const mj = createCharacter({
+    name: 'Michael Jackson',
+    skinMat: matSkinDark,
+    torsoMat: matSuit,
+    headMat: matSkinDark,
+    legMat: matBlack,
+    hairFn: (group) => {
+      // Afro / pompadour
+      const hairGeo = new THREE.SphereGeometry(0.35, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.6);
+      const hair = new THREE.Mesh(hairGeo, matHairBlack);
+      hair.position.set(0, 2.95, -0.02);
+      group.add(hair);
+
+      // Fedora hat
+      const brimGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.03, 16);
+      const brim = new THREE.Mesh(brimGeo, matBlack);
+      brim.position.set(0, 3.1, 0);
+      group.add(brim);
+
+      const crownGeo = new THREE.CylinderGeometry(0.25, 0.28, 0.25, 12);
+      const crown = new THREE.Mesh(crownGeo, matBlack);
+      crown.position.set(0, 3.22, 0);
+      group.add(crown);
+
+      // Hat band (red)
+      const bandGeo = new THREE.CylinderGeometry(0.29, 0.29, 0.04, 12);
+      const band = new THREE.Mesh(bandGeo, matRed);
+      band.position.set(0, 3.12, 0);
+      group.add(band);
+
+      // White glove on right hand (iconic)
+      const gloveMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+      const gloveGeo = new THREE.SphereGeometry(0.085, 8, 6);
+      const glove = new THREE.Mesh(gloveGeo, gloveMat);
+      // We'll position it relative to the right hand later via animation
+      group.userData.glove = glove;
+    },
+    mouthFn: (group) => {
+      // Smile
+      const smileCurve = new THREE.EllipseCurve(0, 0, 0.12, 0.08, Math.PI * 0.1, Math.PI * 0.9, false);
+      const smilePoints = smileCurve.getPoints(12);
+      const smileGeo = new THREE.BufferGeometry().setFromPoints(smilePoints.map(p => new THREE.Vector3(p.x, p.y, 0)));
+      const smileLine = new THREE.Line(smileGeo, new THREE.LineBasicMaterial({ color: 0x3e2723 }));
+      smileLine.position.set(0, 2.78, 0.28);
+      group.add(smileLine);
+
+      // Sparkly sequins on suit (tiny gold dots)
+      for (let i = 0; i < 15; i++) {
+        const sparkleGeo = new THREE.SphereGeometry(0.015, 4, 4);
+        const sparkle = new THREE.Mesh(sparkleGeo, matGold);
+        sparkle.position.set(
+          (Math.random() - 0.5) * 0.5,
+          1.6 + Math.random() * 0.8,
+          0.25 + Math.random() * 0.1
+        );
+        group.add(sparkle);
+      }
+    },
+  });
+
+  // White socks (MJ style) — small white cylinders above shoes
+  [-1, 1].forEach(side => {
+    const sockGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.2, 8);
+    const sockMat = matWhite;
+    const sock = new THREE.Mesh(sockGeo, sockMat);
+    // Position will be adjusted in animation near the shoe area
+    group_add_sock(mj, sock, side);
+  });
+
+  mj.position.set(-3, 0, 0);
+  return mj;
+}
+
+function group_add_sock(group, sock, side) {
+  sock.position.set(side * 0.15, 0.95, 0);
+  group.add(sock);
+}
+
+// --- Pepe the Frog ---
+function createPepe() {
+  const pepe = createCharacter({
+    name: 'Pepe',
+    skinMat: matGreen,
+    torsoMat: new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.6 }), // Green shirt
+    headMat: matGreen,
+    legMat: new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.6 }),
+    hairFn: (group) => {
+      // Pepe has no hair but big eyes — we'll add eye whites that are larger
+      const eyeWhiteGeo = new THREE.SphereGeometry(0.12, 10, 8);
+      [-1, 1].forEach(side => {
+        const eyeWhite = new THREE.Mesh(eyeWhiteGeo, matWhite);
+        eyeWhite.position.set(side * 0.15, 2.92, 0.24);
+        group.add(eyeWhite);
+
+        // Pupil (looking up — sad Pepe eyes)
+        const pupilGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const pupil = new THREE.Mesh(pupilGeo, matBlack);
+        pupil.position.set(side * 0.15, 2.97, 0.32);
+        group.add(pupil);
+
+        // Remove default eyes (they're already added) — we'll just keep the big ones
+      });
+    },
+    mouthFn: (group) => {
+      // Pepe's wide mouth
+      const mouthGeo = new THREE.SphereGeometry(0.1, 8, 6);
+      mouthGeo.scale(1.5, 0.6, 0.5);
+      const mouthMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32 });
+      const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+      mouth.position.set(0, 2.74, 0.26);
+      group.add(mouth);
+
+      // Tongue
+      const tongueGeo = new THREE.SphereGeometry(0.05, 8, 6);
+      tongueGeo.scale(1.2, 0.5, 0.3);
+      const tongueMat = new THREE.MeshStandardMaterial({ color: 0xe57373 });
+      const tongue = new THREE.Mesh(tongueGeo, tongueMat);
+      tongue.position.set(0, 2.71, 0.28);
+      group.add(tongue);
+    },
+  });
+
+  // Pepe's shirt collar (white V-neck)
+  const collarGeo = new THREE.TorusGeometry(0.32, 0.04, 6, 12, Math.PI * 1.2);
+  const collar = new THREE.Mesh(collarGeo, matWhite);
+  collar.position.set(0, 2.5, 0.05);
+  collar.rotation.x = -Math.PI * 0.3;
+  pepe.add(collar);
+
+  pepe.position.set(-1, 0, 0);
+  return pepe;
+}
+
+// --- Donald Trump ---
+function createTrump() {
+  const trump = createCharacter({
+    name: 'Donald Trump',
+    skinMat: matSkin,
+    torsoMat: new THREE.MeshStandardMaterial({ color: 0x1a237e, roughness: 0.4 }), // Navy suit
+    headMat: matSkin,
+    legMat: new THREE.MeshStandardMaterial({ color: 0x1a237e, roughness: 0.4 }),
+    hairFn: (group) => {
+      // Trump's iconic golden hair — a messy pompadour
+      const hairGroup = new THREE.Group();
+
+      for (let i = 0; i < 20; i++) {
+        const strandGeo = new THREE.SphereGeometry(0.1 + Math.random() * 0.08, 6, 4);
+        strandGeo.scale(1.5, 0.8, 1);
+        const strand = new THREE.Mesh(strandGeo, matHairGold);
+        strand.position.set(
+          (Math.random() - 0.5) * 0.5,
+          2.9 + Math.random() * 0.3,
+          (Math.random() - 0.4) * 0.3
+        );
+        hairGroup.add(strand);
+      }
+
+      // Main hair block
+      const mainHairGeo = new THREE.SphereGeometry(0.38, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55);
+      const mainHair = new THREE.Mesh(mainHairGeo, matHairGold);
+      mainHair.position.set(0, 3.0, -0.05);
+      hairGroup.add(mainHair);
+
+      group.add(hairGroup);
+    },
+    mouthFn: (group) => {
+      // Trump's mouth — slightly open
+      const mouthGeo = new THREE.BoxGeometry(0.18, 0.06, 0.05);
+      const mouthMat = new THREE.MeshStandardMaterial({ color: 0xd4a574 });
+      const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+      mouth.position.set(0, 2.73, 0.28);
+      group.add(mouth);
+
+      // Red tie
+      const tieGeo = new THREE.CylinderGeometry(0.06, 0.1, 0.7, 6);
+      const tie = new THREE.Mesh(tieGeo, matRed);
+      tie.position.set(0, 2.05, 0.2);
+      group.add(tie);
+
+      // Tie knot
+      const knotGeo = new THREE.SphereGeometry(0.07, 8, 6);
+      const knot = new THREE.Mesh(knotGeo, matRed);
+      knot.position.set(0, 2.45, 0.22);
+      group.add(knot);
+
+      // Collar (white)
+      const collarGeo = new THREE.TorusGeometry(0.3, 0.05, 6, 12, Math.PI * 1.3);
+      const collar = new THREE.Mesh(collarGeo, matWhite);
+      collar.position.set(0, 2.55, 0.08);
+      collar.rotation.x = -Math.PI * 0.25;
+      group.add(collar);
+
+      // Arm gesture — Trump hands (fanned out)
+      // We'll animate this in the dance loop
+    },
+  });
+
+  trump.position.set(1, 0, 0);
+  return trump;
+}
+
+// --- Elon Musk ---
+function createElon() {
+  const elon = createCharacter({
+    name: 'Elon Musk',
+    skinMat: matSkin,
+    torsoMat: new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.5 }), // Dark grey hoodie
+    headMat: matSkin,
+    legMat: matBlack,
+    hairFn: (group) => {
+      // Short dark hair with slight messiness
+      const hairGeo = new THREE.SphereGeometry(0.32, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5);
+      const hair = new THREE.Mesh(hairGeo, matHairBlack);
+      hair.position.set(0, 2.95, -0.02);
+      group.add(hair);
+
+      // Slight receding hairline effect — add a few strands on top
+      for (let i = 0; i < 8; i++) {
+        const strandGeo = new THREE.SphereGeometry(0.06, 4, 3);
+        strandGeo.scale(1.5, 0.7, 1);
+        const strand = new THREE.Mesh(strandGeo, matHairBlack);
+        strand.position.set(
+          (Math.random() - 0.5) * 0.35,
+          3.0 + Math.random() * 0.15,
+          Math.random() * 0.1
+        );
+        group.add(strand);
+      }
+
+      // Light stubble effect — tiny dots on lower face
+      for (let i = 0; i < 20; i++) {
+        const dotGeo = new THREE.SphereGeometry(0.008, 3, 3);
+        const dotMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+        const dot = new THREE.Mesh(dotGeo, dotMat);
+        const angle = Math.random() * Math.PI * 2;
+        const r = 0.15 + Math.random() * 0.15;
+        dot.position.set(
+          Math.cos(angle) * r * 0.7,
+          2.7 + Math.random() * 0.15,
+          0.25 + Math.sin(angle) * r * 0.3
+        );
+        group.add(dot);
+      }
+    },
+    mouthFn: (group) => {
+      // Slight smirk
+      const smileCurve = new THREE.EllipseCurve(0, 0, 0.1, 0.06, Math.PI * 0.2, Math.PI * 0.8, false);
+      const smilePoints = smileCurve.getPoints(10);
+      const smileGeo = new THREE.BufferGeometry().setFromPoints(smilePoints.map(p => new THREE.Vector3(p.x, p.y, 0)));
+      const smileLine = new THREE.Line(smileGeo, new THREE.LineBasicMaterial({ color: 0x5d4037 }));
+      smileLine.position.set(0, 2.76, 0.28);
+      group.add(smileLine);
+
+      // Hoodie strings
+      const stringMat = matWhite;
+      [-1, 1].forEach(side => {
+        const stringGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.35, 4);
+        const str = new THREE.Mesh(stringGeo, stringMat);
+        str.position.set(side * 0.12, 2.2, 0.28);
+        group.add(str);
+      });
+
+      // Hoodie pocket
+      const pocketGeo = new THREE.BoxGeometry(0.35, 0.2, 0.04);
+      const pocketMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.6 });
+      const pocket = new THREE.Mesh(pocketGeo, pocketMat);
+      pocket.position.set(0, 1.7, 0.3);
+      group.add(pocket);
+    },
+  });
+
+  // Sneakers instead of dress shoes
+  elon.userData.leftLeg.children[el.on?.userData?.leftKnee ? 1 : 1]?.children.forEach(c => {
+    if (c.geometry && c.geometry.type === 'BoxGeometry') {
+      c.material = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.5 });
+    }
+  });
+
+  elon.position.set(3, 0, 0);
+  return elon;
+}
+
+// --- Create all characters ---
+const mj = createMJ();
+const pepe = createPepe();
+const trump = createTrump();
+const elon = createElon();
+
+scene.add(mj, pepe, trump, elon);
+const dancers = [mj, pepe, trump, elon];
+
+// --- Ground (dance floor) ---
+const groundGeo = new THREE.PlaneGeometry(30, 30);
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1a2e,
+  roughness: 0.3,
+  metalness: 0.5,
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Floor grid lines (retro effect)
+const gridHelper = new THREE.GridHelper(30, 30, 0x3a3a5e, 0x1a1a3e);
+gridHelper.position.y = 0.01;
+scene.add(gridHelper);
+
+// --- Lighting ---
+// Key light (warm)
+const keyLight = new THREE.SpotLight(0xffeedd, 80, 25, Math.PI / 4, 0.5, 1);
+keyLight.position.set(5, 10, 5);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.width = 2048;
+keyLight.shadow.mapSize.height = 2048;
+scene.add(keyLight);
+
+// Fill light (cool blue)
+const fillLight = new THREE.PointLight(0x6699ff, 30, 20);
+fillLight.position.set(-5, 6, -3);
+scene.add(fillLight);
+
+// Rim / back light (golden)
+const rimLight = new THREE.SpotLight(0xffd700, 40, 20, Math.PI / 5, 0.6, 1);
+rimLight.position.set(0, 8, -6);
+scene.add(rimLight);
+
+// Ambient (subtle)
+const ambient = new THREE.AmbientLight(0x3a3a5e, 2);
+scene.add(ambient);
+
+// Colored accent lights for drama
+const redAccent = new THREE.PointLight(0xff4444, 15, 12);
+redAccent.position.set(-6, 3, 4);
+scene.add(redAccent);
+
+const blueAccent = new THREE.PointLight(0x4488ff, 15, 12);
+blueAccent.position.set(6, 3, 4);
+scene.add(blueAccent);
+
+// Flashing disco lights
+const discoLights = [];
+for (let i = 0; i < 4; i++) {
+  const color = [0xff0066, 0x00ff88, 0xffaa00, 0x6600ff][i];
+  const light = new THREE.PointLight(color, 20, 15);
+  light.position.set(Math.cos(i * Math.PI/2) * 7, 6, Math.sin(i * Math.PI/2) * 7);
+  scene.add(light);
+  discoLights.push({ light, baseColor: color, phase: i * Math.PI / 2 });
+}
+
+// --- Smoke / fog particles ---
+const smokeParticles = [];
+for (let i = 0; i < 40; i++) {
+  const geo = new THREE.SphereGeometry(0.15 + Math.random() * 0.3, 6, 4);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x8888aa,
+    transparent: true,
+    opacity: 0.08 + Math.random() * 0.12,
+  });
+  const smoke = new THREE.Mesh(geo, mat);
+  smoke.position.set(
+    (Math.random() - 0.5) * 14,
+    0.3 + Math.random() * 3,
+    (Math.random() - 0.5) * 8
+  );
+  scene.add(smoke);
+  smokeParticles.push({
+    mesh: smoke,
+    speedX: (Math.random() - 0.5) * 0.3,
+    speedY: Math.random() * 0.2 + 0.1,
+    baseY: smoke.position.y,
+    phase: Math.random() * Math.PI * 2,
+  });
+}
+
+// --- Thriller Dance Animation System ---
+const danceMoves = [
+  // Each move has a duration and animation function
+  {
+    name: 'arm_wave',
+    duration: 3.0,
+    animate(dancer, t) {
+      const phase = dancer.position.x * 0.5; // stagger by position
+      const s = (t + phase) % 1;
+
+      // Arms wave up and down in sequence
+      if (dancer.userData.leftArm) {
+        dancer.userData.leftArm.rotation.z = Math.sin(s * Math.PI * 2) * 0.8 - 0.3;
+        dancer.userData.rightArm.rotation.z = -Math.sin(s * Math.PI * 2 + 0.5) * 0.8 + 0.3;
+      }
+      if (dancer.userData.leftElbow) {
+        dancer.userData.leftElbow.rotation.x = -0.5 + Math.sin(s * Math.PI * 4) * 0.3;
+        dancer.userData.rightElbow.rotation.x = -0.5 + Math.sin(s * Math.PI * 4 + 1) * 0.3;
+      }
+
+      // Subtle body sway
+      if (dancer.userData.torso) {
+        dancer.userData.torso.rotation.y = Math.sin(s * Math.PI * 2) * 0.15;
+      }
+    },
+  },
+  {
+    name: 'thriller_pose',
+    duration: 3.5,
+    animate(dancer, t) {
+      const s = (t + dancer.position.x * 0.3) % 1;
+
+      // Classic Thriller pose — arms out, claws
+      if (dancer.userData.leftArm) {
+        dancer.userData.leftArm.rotation.z = Math.PI * 0.6 + Math.sin(s * Math.PI * 2) * 0.2;
+        dancer.userData.rightArm.rotation.z = -Math.PI * 0.6 - Math.sin(s * Math.PI * 2) * 0.2;
+      }
+      if (dancer.userData.leftElbow) {
+        dancer.userData.leftElbow.rotation.x = -1.2 + Math.sin(s * Math.PI * 3) * 0.4;
+        dancer.userData.rightElbow.rotation.x = -1.2 + Math.sin(s * Math.PI * 3 + 1) * 0.4;
+      }
+
+      // Head tilt
+      if (dancer.userData.head) {
+        dancer.userData.head.rotation.z = Math.sin(s * Math.PI * 2) * 0.2;
+        dancer.userData.head.rotation.x = Math.sin(s * Math.PI * 3) * 0.15;
+      }
+
+      // Body lean forward (zombie lurch)
+      if (dancer.userData.torso) {
+        dancer.userData.torso.rotation.x = -0.2 + Math.sin(s * Math.PI * 2) * 0.1;
+      }
+    },
+  },
+  {
+    name: 'step_touch',
+    duration: 4.0,
+    animate(dancer, t) {
+      const s = (t + dancer.position.x * 0.4) % 1;
+
+      // Step-touch leg movement
+      if (dancer.userData.leftLeg) {
+        dancer.userData.leftLeg.rotation.z = Math.sin(s * Math.PI * 2) * 0.3;
+        dancer.userData.rightLeg.rotation.z = -Math.sin(s * Math.PI * 2 + Math.PI) * 0.3;
+      }
+      if (dancer.userData.leftKnee) {
+        dancer.userData.leftKnee.rotation.x = Math.max(0, Math.sin(s * Math.PI * 4)) * 0.5;
+        dancer.userData.rightKnee.rotation.x = Math.max(0, Math.sin(s * Math.PI * 4 + Math.PI)) * 0.5;
+      }
+
+      // Arms swing with steps
+      if (dancer.userData.leftArm) {
+        dancer.userData.leftArm.rotation.x = Math.sin(s * Math.PI * 2) * 0.6;
+        dancer.userData.rightArm.rotation.x = -Math.sin(s * Math.PI * 2 + Math.PI) * 0.6;
+      }
+
+      // Body bounce
+      dancer.position.y = Math.abs(Math.sin(s * Math.PI * 4)) * 0.15;
+    },
+  },
+  {
+    name: 'head_roll',
+    duration: 3.0,
+    animate(dancer, t) {
+      const s = (t + dancer.position.x * 0.6) % 1;
+
+      // Dramatic head roll
+      if (dancer.userData.head) {
+        dancer.userData.head.rotation.z = Math.sin(s * Math.PI * 4) * 0.5;
+        dancer.userData.head.rotation.y = Math.sin(s * Math.PI * 2) * 0.8;
+        dancer.userData.head.rotation.x = Math.cos(s * Math.PI * 3) * 0.3;
+      }
+
+      // Arms extended, slight wave
+      if (dancer.userData.leftArm) {
+        dancer.userData.leftArm.rotation.z = 0.5 + Math.sin(s * Math.PI * 2) * 0.3;
+        dancer.userData.rightArm.rotation.z = -0.5 - Math.sin(s * Math.PI * 2) * 0.3;
+      }
+      if (dancer.userData.leftElbow) {
+        dancer.userData.leftElbow.rotation.x = -0.8 + Math.sin(s * Math.PI * 4) * 0.2;
+        dancer.userData.rightElbow.rotation.x = -0.8 + Math.sin(s * Math.PI * 4 + 1) * 0.2;
+      }
+
+      // Subtle body rotation
+      if (dancer.userData.torso) {
+        dancer.userData.torso.rotation.y = Math.sin(s * Math.PI * 2) * 0.3;
+      }
+    },
+  },
+  {
+    name: 'zombie_lurch',
+    duration: 4.5,
+    animate(dancer, t) {
+      const s = (t + dancer.position.x * 0.2) % 1;
+
+      // Slow zombie lurch forward and back
+      if (dancer.userData.torso) {
+        dancer.userData.torso.rotation.x = -0.3 + Math.sin(s * Math.PI * 2) * 0.25;
+        dancer.userData.torso.rotation.y = Math.sin(s * Math.PI * 1.5) * 0.4;
+      }
+
+      // Arms reach forward slowly
+      if (dancer.userData.leftArm) {
+        const armSwing = Math.sin(s * Math.PI * 2) * 0.8;
+        dancer.userData.leftArm.rotation.x = -1.0 + armSwing;
+        dancer.userData.rightArm.rotation.x = -1.0 - armSwing;
+      }
+      if (dancer.userData.leftElbow) {
+        dancer.userData.leftElbow.rotation.x = -0.6 + Math.sin(s * Math.PI * 3) * 0.5;
+        dancer.userData.rightElbow.rotation.x = -0.6 - Math.sin(s * Math.PI * 3) * 0.5;
+      }
+
+      // Slow leg movement
+      if (dancer.userData.leftLeg) {
+        dancer.userData.leftLeg.rotation.x = Math.sin(s * Math.PI * 2) * 0.4;
+        dancer.userData.rightLeg.rotation.x = -Math.sin(s * Math.PI * 2 + Math.PI) * 0.4;
+      }
+
+      // Head follows body
+      if (dancer.userData.head) {
+        dancer.userData.head.rotation.x = -0.15 + Math.sin(s * Math.PI * 2) * 0.1;
+      }
+    },
+  },
+];
+
+let currentMoveIndex = 0;
+let moveTime = 0;
+
+function resetPose(dancer) {
+  if (dancer.userData.leftArm) {
+    dancer.userData.leftArm.rotation.set(0, 0, 0);
+    dancer.userData.rightArm.rotation.set(0, 0, 0);
+  }
+  if (dancer.userData.leftElbow) {
+    dancer.userData.leftElbow.rotation.set(0, 0, 0);
+    dancer.userData.rightElbow.rotation.set(0, 0, 0);
+  }
+  if (dancer.userData.leftLeg) {
+    dancer.userData.leftLeg.rotation.set(0, 0, 0);
+    dancer.userData.rightLeg.rotation.set(0, 0, 0);
+  }
+  if (dancer.userData.leftKnee) {
+    dancer.userData.leftKnee.rotation.set(0, 0, 0);
+    dancer.userData.rightKnee.rotation.set(0, 0, 0);
+  }
+  if (dancer.userData.torso) {
+    dancer.userData.torso.rotation.set(0, 0, 0);
+  }
+  if (dancer.userData.head) {
+    dancer.userData.head.rotation.set(0, 0, 0);
+  }
+  dancer.position.y = 0;
+}
+
+// --- Camera animation ---
+let cameraAngle = 0;
+const cameraRadius = 12;
+const cameraHeight = 4.5;
+
+// --- Main render loop ---
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const elapsed = clock.getElapsedTime();
+
+  // Update dance moves
+  moveTime += dt;
+  const currentMove = danceMoves[currentMoveIndex];
+  if (moveTime >= currentMove.duration) {
+    moveTime = 0;
+    currentMoveIndex = (currentMoveIndex + 1) % danceMoves.length;
+    dancers.forEach(d => resetPose(d));
+  }
+
+  // Animate each dancer
+  const normalizedT = moveTime / currentMove.duration;
+  dancers.forEach(dancer => {
+    currentMove.animate(dancer, normalizedT);
+  });
+
+  // Camera orbit (slow cinematic pan)
+  cameraAngle += dt * 0.15;
+  camera.position.x = Math.cos(cameraAngle) * cameraRadius;
+  camera.position.z = Math.sin(cameraAngle) * cameraRadius + 2;
+  camera.position.y = cameraHeight + Math.sin(elapsed * 0.3) * 0.8;
+  camera.lookAt(0, 2, 0);
+
+  // Update controls target to follow the scene center
+  controls.target.set(0, 2, 0);
+  controls.update();
+
+  // Animate disco lights
+  discoLights.forEach((dl, i) => {
+    const intensity = 15 + Math.sin(elapsed * (2 + i * 0.5) + dl.phase) * 15;
+    dl.light.intensity = Math.max(0, intensity);
+
+    // Color shift
+    const hue = ((elapsed * 0.1 + i / discoLights.length) % 1);
+    dl.light.color.setHSL(hue, 0.8, 0.6);
+  });
+
+  // Animate smoke particles
+  smokeParticles.forEach(sp => {
+    sp.mesh.position.x += sp.speedX * dt;
+    sp.mesh.position.y = sp.baseY + Math.sin(elapsed * 0.5 + sp.phase) * 0.5;
+    sp.mesh.material.opacity = 0.06 + Math.sin(elapsed * 0.3 + sp.phase) * 0.04;
+
+    // Wrap around
+    if (sp.mesh.position.x > 10) sp.mesh.position.x = -10;
+    if (sp.mesh.position.x < -10) sp.mesh.position.x = 10;
+  });
+
+  // Subtle red accent light pulse (Thriller vibe)
+  redAccent.intensity = 15 + Math.sin(elapsed * 3) * 8;
+  blueAccent.intensity = 15 + Math.cos(elapsed * 2.5) * 8;
+
+  renderer.render(scene, camera);
+}
+
+// --- Handle resize ---
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Start!
+animate();
+</script>
+</body>
+</html>
