@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-fable-5",
+  "model_display": "Claude Fable 5",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-07-01T23:30:00Z",
+  "runner": "Claude Fable 5 via Claude Code (VS Code extension)",
+  "notes": "Single self-contained HTML, no libraries, DPR-aware full-page canvas. Infinite procedural parallax (nothing tiles): sum-of-sines mountain/hill ridges with warm crest rim light, hashed pine/round tree band, telephone poles with sagging wires, hashed road cracks, scrolling centre dashes, and a fastest foreground silhouette strip (grass tufts, cattails, fence posts) that passes in front of the car. Sunset grade with sun disc + haze bands, twinkling stars, drifting two-tone clouds, occasional bird flocks. Coupe with no-slip wheel spin (omega = v/r, spoked rims + valve dot), suspension bob and pitch decoupled from the wheels, headlight beam and taillight glow (additive), exhaust particles, driver silhouette, vignette + colour-grade overlay. During authoring a stray malformed draft line and an unused helper were removed before finalizing; JS was machine syntax-checked.",
+  "hosting": "api",
+  "weights": "closed"
+}

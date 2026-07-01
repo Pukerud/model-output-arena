@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-fable-5",
+  "model_display": "Claude Fable 5",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-01T23:40:00Z",
+  "runner": "Claude Fable 5 via Claude Code (VS Code extension)",
+  "notes": "Three.js r128 via CDN (global build so it runs from file://). Four stylized caricature figures (MJ: fedora + banded red jacket + white glove + toe-stand; Pepe: stacked frog eyes + wide lips; Trump: gold swoop + long red tie; Musk: open jacket + smirk) with fully articulated primitive rigs (shoulder/elbow/wrist/hip/knee/spine/neck/hips joint groups). Beat-clocked procedural Thriller routine (~118 bpm): grave-rise, zombie sway, claw march, shoulder-shrug side steps, overhead claws, hip thrusts, a spin (MJ doubles it), a per-character freeze pose, and a shuffle regroup, blended by exponential joint easing with per-character amplitude/phase personality. Cinematic: 6-shot auto camera with dolly moves and handheld breath, letterbox bars, title card, foggy graveyard set (tombstones, gnarled trees, iron fence, moon + glow sprite, stars, additive ground-mist particle sheets), hue-drifting spotlight pair with volumetric cones pulsing on the beat, moon key light with PCF soft shadows, ACES tone mapping, periodic lightning strobes. Optional WebAudio synth groove (kick/snare/hats/bass riff/eerie stab) on a click toggle for autoplay compliance. JS machine syntax-checked.",
+  "hosting": "api",
+  "weights": "closed"
+}

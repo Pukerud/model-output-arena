@@ -66,6 +66,7 @@ Two independent axes are labelled:
 
 | Provider | Model | Type | Weights | Path |
 |----------|-------|------|---------|------|
+| Anthropic | Claude Fable 5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-fable-5`](./providers/anthropic/claude-fable-5) |
 | Anthropic | Claude Haiku 4.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
 | Anthropic | Claude Opus 4.8 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
 | Anthropic | Claude Opus 4.8 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8-native`](./providers/anthropic/claude-opus-4-8-native) |

@@ -326,6 +326,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-fable-5",
+      model_display: "Claude Fable 5",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/anthropic/claude-fable-5",
+      added: "2026-07-02",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-fable-5/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-fable-5/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-fable-5/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
