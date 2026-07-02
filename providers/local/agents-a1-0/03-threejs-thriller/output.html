@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thriller Dance Scene - Three.js</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+        
+        #scene-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff0000;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ff0000;
+            color: #ff0000;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 15px #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div id="scene-container"></div>
+    <div class="overlay">🎵 THRILLER DANCE SCENE 🕺</div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.getElementById('scene-container').appendChild(renderer.domElement);
+        
+        // Lighting setup
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        scene.add(ambientLight);
+        
+        const spotLight = new THREE.SpotLight(0xff0000, 2);
+        spotLight.position.set(0, 30, 20);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.5;
+        scene.add(spotLight);
+        
+        const blueLight = new THREE.PointLight(0x0088ff, 1, 20);
+        blueLight.position.set(-5, 5, -5);
+        scene.add(blueLight);
+        
+        const redLight = new THREE.PointLight(0xff0000, 1, 20);
+        redLight.position.set(5, 5, -5);
+        scene.add(redLight);
+        
+        // Floor with disco effect
+        const floorGeometry = new THREE.PlaneGeometry(30, 30);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x1a1a2e,
+            roughness: 0.4,
+            metalness: 0.6
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        // Disco ball
+        const discoBallGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const discoBallMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            metalness: 1.0,
+            roughness: 0.1
+        });
+        const discoBall = new THREE.Mesh(discoBallGeometry, discoBallMaterial);
+        discoBall.position.set(0, 25, 0);
+        scene.add(discoBall);
+        
+        // Disco ball light beams
+        for (let i = 0; i < 8; i++) {
+            const beamGeometry = new THREE.ConeGeometry(0.5, 15, 32);
+            const beamMaterial = new THREE.MeshBasicMaterial({ 
+                color: Math.random() > 4 ? 0xff0000 : 0x0088ff,
+                transparent: true,
+                opacity: 0.3
+            });
+            const beam = new THREE.Mesh(beamGeometry, beamMaterial);
+            beam.rotation.x = Math.PI;
+            beam.position.set(
+                Math.cos(i * Math.PI / 4) * 5,
+                20,
+                Math.sin(i * Math.PI / 4) * 5
+            );
+            scene.add(beam);
+        }
+        
+        // Character creation functions
+        function createCharacter(color, height, width, name) {
+            const characterGroup = new THREE.Group();
+            
+            // Body
+            const bodyGeometry = new THREE.CylinderGeometry(width, width * 1.2, height, 8);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = height / 2;
+            body.castShadow = true;
+            characterGroup.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(width * 0.8, 16, 16);
+            const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffdcb4 });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = height + width;
+            head.castShadow = true;
+            characterGroup.add(head);
+            
+            // Arms
+            const armGeometry = new THREE.CylinderGeometry(width * 0.3, width * 0.25, height * 0.6, 8);
+            const leftArm = new THREE.Mesh(armGeometry, bodyMaterial);
+            leftArm.position.set(-width * 1.5, height / 2 + width, 0);
+            leftArm.rotation.z = Math.PI / 6;
+            leftArm.castShadow = true;
+            characterGroup.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(armGeometry, bodyMaterial);
+            rightArm.position.set(width * 1.5, height / 2 + width, 0);
+            rightArm.rotation.z = -Math.PI / 6;
+            rightArm.castShadow = true;
+            characterGroup.add(rightArm);
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(width * 0.35, width * 0.3, height * 0.7, 8);
+            const leftLeg = new THREE.Mesh(legGeometry, bodyMaterial);
+            leftLeg.position.set(-width * 0.6, height * 0.35, 0);
+            leftLeg.castShadow = true;
+            characterGroup.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(legGeometry, bodyMaterial);
+            rightLeg.position.set(width * 0.6, height * 0.35, 0);
+            rightLeg.castShadow = true;
+            characterGroup.add(rightLeg);
+            
+            // Special features based on name
+            if (name === 'Michael Jackson') {
+                // Black hat and jacket
+                const hatGeometry = new THREE.CylinderGeometry(width * 1.2, width * 0.8, height * 0.2, 16);
+                const hatMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                const hat = new THREE.Mesh(hatGeometry, hatMaterial);
+                hat.position.y = height + width + height * 0.3;
+                characterGroup.add(hat);
+                
+                // White shirt details
+                const shirtDetail = new THREE.Mesh(
+                    new THREE.PlaneGeometry(width * 1.8, height * 0.6),
+                    new THREE.MeshStandardMaterial({ color: 0xffffff })
+                );
+                shirtDetail.position.set(0, height / 2 + width * 0.5, width * 0.4);
+                characterGroup.add(shirtDetail);
+            } else if (name === 'Pepe the Frog') {
+                // Green color scheme
+                bodyMaterial.color.setHex(0x7cb342);
+                headMaterial.color.setHex(0x9ccc65);
+                
+                // Big eyes
+                const eyeGeometry = new THREE.SphereGeometry(width * 0.2, 8, 8);
+                const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+                leftEye.position.set(-width * 0.3, height + width * 0.8, width * 0.6);
+                characterGroup.add(leftEye);
+                
+                const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+                rightEye.position.set(width * 0.3, height + width * 0.8, width * 0.6);
+                characterGroup.add(rightEye);
+            } else if (name === 'Donald Trump') {
+                // Red tie and blue suit
+                bodyMaterial.color.setHex(0x1e3a5f);
+                
+                const tieGeometry = new THREE.ConeGeometry(width * 0.1, height * 0.8, 4);
+                const tieMaterial = new THREE.MeshStandardMaterial({ color: 0xcc0000 });
+                const tie = new THREE.Mesh(tieGeometry, tieMaterial);
+                tie.position.set(0, height / 2 + width * 0.3, width * 0.85);
+                characterGroup.add(tie);
+                
+                // Orange hair (using a different geometry)
+                const hairGeometry = new THREE.SphereGeometry(width * 1.1, 8, 8);
+                const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xffb347 });
+                const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+                hair.position.y = height + width * 1.2;
+                characterGroup.add(hair);
+            } else if (name === 'Elon Musk') {
+                // Dark suit and glasses
+                bodyMaterial.color.setHex(0x1a1a1a);
+                
+                // Glasses
+                const glassGeometry = new THREE.SphereGeometry(width * 0.3, 8, 8);
+                const glassMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                const leftGlass = new THREE.Mesh(glassGeometry, glassMaterial);
+                leftGlass.position.set(-width * 0.2, height + width * 0.7, width * 1.05);
+                characterGroup.add(leftGlass);
+                
+                const rightGlass = new THREE.Mesh(glassGeometry, glassMaterial);
+                rightGlass.position.set(width * 0.2, height + width * 0.7, width * 1.05);
+                characterGroup.add(rightGlass);
+            }
+            
+            return characterGroup;
+        }
+        
+        // Create characters
+        const characters = [];
+        
+        const michaelJackson = createCharacter(0x000000, 8, 2.5, 'Michael Jackson');
+        michaelJackson.position.set(-6, 0, 0);
+        scene.add(michaelJackson);
+        characters.push({ group: michaelJackson, name: 'Michael Jackson', baseRotation: 0 });
+        
+        const pepeFrog = createCharacter(0x7cb342, 7, 2.2, 'Pepe the Frog');
+        pepeFrog.position.set(-2, 0, 2);
+        scene.add(pepeFrog);
+        characters.push({ group: pepeFrog, name: 'Pepe the Frog', baseRotation: 0 });
+        
+        const donaldTrump = createCharacter(0x1e3a5f, 9, 3.0, 'Donald Trump');
+        donaldTrump.position.set(2, 0, -1);
+        scene.add(donaldTrump);
+        characters.push({ group: donaldTrump, name: 'Donald Trump', baseRotation: 0 });
+        
+        const elonMusk = createCharacter(0x1a1a1a, 8.5, 2.7, 'Elon Musk');
+        elonMusk.position.set(6, 0, 1);
+        scene.add(elonMusk);
+        characters.push({ group: elonMusk, name: 'Elon Musk', baseRotation: 0 });
+        
+        // Camera setup
+        camera.position.z = 25;
+        camera.position.y = 8;
+        camera.lookAt(0, 0, 0);
+        
+        // Animation variables
+        let time = 0;
+        const danceMoves = [
+            'thriller-walk', 'arm-pose', 'spin', 'wave'
+        ];
+        let currentMove = 0;
+        let moveTimer = 0;
+        
+        // Dance animation function
+        function animateDance(character, time) {
+            const baseY = character.group.position.y;
+            
+            switch (danceMoves[currentMove]) {
+                case 'thriller-walk':
+                    character.baseRotation += Math.sin(time * 3) * 0.1;
+                    
+                    if (character.group === michaelJackson) {
+                        character.group.rotation.z = Math.sin(time * 5) * 0.2;
+                        character.group.position.y = baseY + Math.abs(Math.sin(time * 8)) * 0.5;
+                        
+                        // Arms
+                        const armRot = Math.sin(time * 4) * 1.5;
+                        character.group.children[2].rotation.z = Math.PI / 6 + armRot;
+                        character.group.children[3].rotation.z = -Math.PI / 6 - armRot;
+                        
+                        // Leg movement
+                        const legOffset = Math.abs(Math.sin(time * 8)) * 1.5;
+                        character.group.children[4].position.x = -2.7 + legOffset;
+                        character.group.children[5].position.x = 2.7 - legOffset;
+                    } else {
+                        character.group.rotation.z = Math.sin(time * 3 + character.baseRotation) * 0.1;
+                        
+                        // Simplified dance for other characters
+                        const armSwing = Math.sin(time * 4 + character.baseRotation) * 1.2;
+                        character.group.children[2].rotation.z = Math.PI / 6 + armSwing;
+                        character.group.children[3].rotation.z = -Math.PI / 6 - armSwing;
+                        
+                        const bounce = Math.abs(Math.sin(time * 5)) * 0.3;
+                        character.group.position.y = baseY + bounce;
+                    }
+                    break;
+                    
+                case 'arm-pose':
+                    if (character.group === michaelJackson) {
+                        character.group.rotation.z = Math.sin(time * 2) * 0.3;
+                        
+                        // Dramatic arm poses
+                        character.group.children[2].rotation.z = Math.PI / 4 + Math.sin(time * 3) * 0.8;
+                        character.group.children[3].rotation.z = -Math.PI / 2 - Math.cos(time * 3) * 1.2;
+                        
+                        // Lean effect
+                        character.group.position.y = baseY + Math.sin(time * 2) * 0.4;
+                    } else {
+                        character.group.children[2].rotation.z = Math.sin(time * 3 + character.baseRotation) * 2;
+                        character.group.children[3].rotation.z = -Math.cos(time * 3 + character.baseRotation) * 2;
+                        
+                        const poseBounce = Math.abs(Math.sin(time * 4)) * 0.5;
+                        character.group.position.y = baseY + poseBounce;
+                    }
+                    break;
+                    
+                case 'spin':
+                    character.baseRotation += 0.1;
+                    character.group.rotation.y = character.baseRotation;
+                    
+                    // Spin effect with slight jump
+                    const spinHeight = Math.abs(Math.sin(time * 8)) * 0.8;
+                    character.group.position.y = baseY + spinHeight;
+                    
+                    // Arm spread during spin
+                    if (character.group === michaelJackson) {
+                        character.group.children[2].rotation.z = Math.PI / 2;
+                        character.group.children[3].rotation.z = -Math.PI / 2;
+                    } else {
+                        character.group.children[2].rotation.z = Math.PI / 3 + Math.sin(time * 5) * 0.5;
+                        character.group.children[3].rotation.z = -Math.PI / 3 - Math.cos(time * 5) * 0.5;
+                    }
+                    break;
+                    
+                case 'wave':
+                    // Swaying motion for all characters
+                    character.baseRotation += Math.sin(time * 2) * 0.2;
+                    character.group.rotation.y = character.baseRotation;
+                    
+                    const waveHeight = Math.abs(Math.sin(time * 3)) * 1.5;
+                    character.group.position.y = baseY + waveHeight;
+                    
+                    // Arm waving
+                    if (character.group === michaelJackson) {
+                        character.group.children[2].rotation.z = Math.PI / 4 + Math.sin(time * 4) * 0.8;
+                        character.group.children[3].rotation.z = -Math.PI / 6 - Math.cos(time * 4) * 0.6;
+                    } else {
+                        character.group.children[2].rotation.z = Math.sin(time * 3 + character.baseRotation) * 1.5;
+                        character.group.children[3].rotation.z = -Math.sin(time * 3 + character.baseRotation) * 1.5;
+                    }
+                    break;
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            moveTimer += 0.01;
+            
+            // Change dance moves every 3 seconds
+            if (moveTimer > 3) {
+                currentMove = (currentMove + 1) % danceMoves.length;
+                moveTimer = 0;
+            }
+            
+            // Animate disco ball and lights
+            discoBall.rotation.y += 0.02;
+            discoBall.rotation.x += 0.01;
+            
+            blueLight.intensity = 1 + Math.sin(time * 3) * 0.5;
+            redLight.intensity = 1 + Math.cos(time * 2) * 0.5;
+            
+            // Animate each character
+            characters.forEach(character => {
+                animateDance(character, time);
+            });
+            
+            // Camera movement (slow orbit)
+            camera.position.x = Math.sin(time * 0.3) * 15;
+            camera.position.z = Math.cos(time * 0.3) * 15;
+            camera.lookAt(0, 0, 0);
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>

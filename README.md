@@ -89,6 +89,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | QwOpus 3.6 27B Coder MTP | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwopus3.6-27b-coder-mtp`](./providers/local/qwopus3.6-27b-coder-mtp) |
 | Local (llama.cpp) | Qwen 3.6 27B Uncensored Heretic v2 Native MTP | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved`](./providers/local/qwen3.6-27b-uncensored-heretic-v2-native-mtp-preserved) |
 | Local (llama.cpp) | Qwen 3.6 27B Claude Opus/Sonnet Distilled v2 MTP (brian6145) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp`](./providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp) |
+| Local (llama.cpp) | Agents A1 0 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/agents-a1-0`](./providers/local/agents-a1-0) |
 
 ## How outputs were generated
 

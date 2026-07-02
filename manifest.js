@@ -356,6 +356,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "agents-a1-0",
+      model_display: "Agents A1 0",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/agents-a1-0",
+      added: "2026-07-02",
+      outputs: {
+        "01-car-parallax":      "providers/local/agents-a1-0/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/agents-a1-0/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/agents-a1-0/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

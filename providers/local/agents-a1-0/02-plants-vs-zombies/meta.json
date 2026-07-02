@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "agents-a1-0",
+  "model_display": "Agents A1 0",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-07-02T12:00:00Z",
+  "runner": "Agents A1 0 via llama.cpp in pi agent",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "QAT",
+    "variant": "agents-a1-0",
+    "engine": "llama.cpp",
+    "gpu": "RTX 4090"
+  }
+}
