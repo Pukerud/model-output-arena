@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp",
+  "model_display": "Qwen 3.6 27B Claude Opus/Sonnet Distilled v2 MTP (brian6145)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-02T07:00:00Z",
+  "runner": "Qwen 3.6 27B Claude Opus/Sonnet Distilled v2 MTP via llama.cpp in pi agent",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "brian6145 Claude Opus/Sonnet Distilled v2 MTP",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

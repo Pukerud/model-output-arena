@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Thriller Dance — Three.js</title><style>*{margin:0;padding:0;overflow:hidden}body{background:#000}</style></head><body>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.165.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.165.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+// ── Scene setup ──
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0308, 0.025);
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 4, 14); camera.lookAt(0, 1.2, 0);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight); renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+// ── Lighting (cinematic) ──
+scene.add(new THREE.AmbientLight(0x1a0b2e, 0.4));
+const moon = new THREE.DirectionalLight(0xc8d6ff, 0.7);
+moon.position.set(-15, 30, 10); moon.castShadow = true; scene.add(moon);
+
+// red spotlights (Thriller vibe)
+[-9, -3, 3, 9].forEach((x, i) => {
+  const s = new THREE.SpotLight(0xff2222, 3, 40, Math.PI/5, 0.6);
+  s.position.set(x, 18, 8 + (i%2)*5); s.target.position.set(x, 0, 0);
+  scene.add(s, s.target);
+});
+
+// ── Ground (moonlit dirt) ──
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(100, 100),
+  new THREE.MeshStandardMaterial({color:0x3d2b1f, roughness:1})
+);
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+
+// ── Character builder (low-poly figures) ──
+function makeCharacter(height, bodyColor, headColor, xZ) {
+  const g = new THREE.Group();
+  // legs
+  [-0.25, 0.25].forEach(dx => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.3, height*0.45, 0.3),
+      new THREE.MeshStandardMaterial({color: bodyColor}));
+    leg.position.set(dx, height*0.22, 0); g.add(leg);
+  });
+  // torso
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.85, height*0.4, 0.5),
+    new THREE.MeshStandardMaterial({color: bodyColor}));
+  torso.position.y = height * 0.6; g.add(torso);
+  // arms (two — will animate)
+  const armGeo = new THREE.BoxGeometry(0.22, height*0.38, 0.22);
+  [-1,1].forEach(side => {
+    const arm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({color: bodyColor}));
+    arm.position.set((side<0?-1:1)*0.65, height*0.58, 0); arm.userData.side = side; g.add(arm);
+  });
+  // head
+  const headGeo = (headColor === 'pepe') ? new THREE.ConeGeometry(0.35, 0.7, 4) : new THREE.BoxGeometry(0.55, 0.6, 0.55);
+  const headMat = new THREE.MeshStandardMaterial({color: headColor});
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = height + 0.3; g.add(head);
+
+  // eyes
+  [-0.12, 0.12].forEach(dx => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({color:0x00ff44}));
+    eye.position.set(dx, height+0.35, 0.28); g.add(eye);
+  });
+
+  g.position.set(xZ[0], 0, xZ[1]);
+  g.castShadow = true; scene.add(g); return g;
+}
+
+const mj = makeCharacter(1.7, 0x1a1a1a, '#2d1b10', [-9, -4]);   // MJ — black suit, dark hair
+const pepe = makeCharacter(1.1, '#56ab2f', 'pepe', [-3, 4]);    // Pepe — green cone head
+const trump = makeCharacter(1.8, '#c0a03e', '#ffd700', [3, -4]);// Trump — gold hair/suit
+const musk = makeCharacter(1.75, '#264d73', '#ffccaa', [9, 4]); // Elon — blue suit
+
+// ── Graveyard props (a few tombstones) ──
+for (let i=0;i<12;i++){
+  const t = new THREE.Mesh(new THREE.BoxGeometry(0.8+Math.random()*0.5, 1+Math.random(), 0.3),
+    new THREE.MeshStandardMaterial({color:0x6b6b7e}));
+  t.position.set(-30 + Math.random()*60, 0.4, -20 - Math.random()*8); scene.add(t);
+}
+
+// ── Animate (Thriller-style choreography) ──
+const chars = [mj, pepe, trump, musk];
+function animate(time) {
+  requestAnimationFrame(animate);
+  const t = time * 0.001;
+
+  // slow circular walk + Thriller arm swing
+  chars.forEach((c, i) => {
+    const angle = t*0.35 + (i*Math.PI/2);
+    c.position.x += Math.cos(angle)*0.02;
+    c.position.z += Math.sin(angle)*0.02;
+
+    // Thriller arm thrust / head tilt
+    const phase = Math.sin(t*1.8 + i);
+    c.rotation.y = phase * 0.35;
+    c.children.forEach(child => {
+      if (child.userData.side) {
+        child.rotation.z = -phase * 0.9; // arms swing outward/inward
+      }
+    });
+  });
+
+  camera.position.x = Math.sin(t*0.08)*14;
+  camera.position.z = 12 + Math.cos(t*0.12)*3;
+  camera.lookAt(0, 1.2, -2);
+  renderer.render(scene, camera);
+}
+animate(0);
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script></body></html>

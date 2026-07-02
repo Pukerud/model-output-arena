@@ -341,6 +341,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/anthropic/claude-fable-5/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/anthropic/claude-fable-5/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp",
+      model_display: "Qwen 3.6 27B Claude Opus/Sonnet Distilled v2 MTP (brian6145)",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp",
+      added: "2026-07-02",
+      outputs: {
+        "01-car-parallax":      "providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp",
+  "model_display": "Qwen 3.6 27B Claude Opus/Sonnet Distilled v2 MTP (brian6145)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-07-02T07:00:00Z",
+  "runner": "Qwen 3.6 27B Claude Opus/Sonnet Distilled v2 MTP via llama.cpp in pi agent",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "brian6145 Claude Opus/Sonnet Distilled v2 MTP",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parallax Car Animation</title>
+<style>
+body,html{margin:0;padding:0;overflow:hidden;background:#0a0a2e}canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let W,H,roadY,groundY;
+function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;roadY=H*0.72;groundY=roadY+18;}
+resize();window.addEventListener('resize',resize);
+
+const t={};t.carX=W*0.38;t.bobPhase=0;t.speed=2.5;t.wheelAngle=0;
+t.elements=[];function initEl(){
+  for(let i=0;i<7;i++)t.elements.push({type:'tree',lane:Math.random()*0.4+0.1,x:-Math.random()*W-W});
+  for(let i=0;i<5;i++)t.elements.push({type:'pole',x:-Math.random()*W-W*2,yOff:Math.random()*12});
+  for(let i=0;i<8;i++)t.elements.push({type:'bush',lane:Math.random()*0.3+0.05,x:-Math.random()*W*2-H});
+}initEl();
+
+function drawSky(){
+  const g=x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#1a0a3e');g.addColorStop(0.35,'#4a1942');g.addColorStop(0.55,'#c84b31');
+  g.addColorStop(0.7,'#f7a440');g.addColorStop(0.78,'#fceabb');g.addColorStop(1,'#d4a574');
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  // sun
+  const sx=W*0.6,sy=roadY-30,sr=Math.min(W,H)*0.04;
+  const sg=x.createRadialGradient(sx,sy,0,sx,sy,sr*5);
+  sg.addColorStop(0,'rgba(255,200,100,0.9)');sg.addColorStop(0.3,'rgba(255,140,60,0.4)');
+  sg.addColorStop(1,'rgba(255,80,40,0)');x.fillStyle=sg;x.fillRect(sx-sr*5,sy-sr*5,sr*10,sr*10);
+}
+
+function drawMountains(offset){
+  x.beginPath();x.moveTo(-10,H+10);
+  const pts=[[0.0,roadY-60],[0.08,roadY-140],[0.15,roadY-90],[0.22,roadY-170],[0.3,roadY-80],
+    [0.38,roadY-130],[0.45,roadY-180],[0.52,roadY-70],[0.6,roadY-150],[0.68,roadY-95],
+    [0.75,roadY-200],[0.83,roadY-110],[0.9,roadY-160],[0.98,roadY-80],[1.0,H]];
+  pts.forEach(p=>x.lineTo((p[0]*W-offset*0.02)%W,p[1]));
+  x.closePath();x.fillStyle='#3b2d4a';x.fill();
+}
+
+function drawHills(offset){
+  x.beginPath();x.moveTo(-10,H+10);
+  for(let i=0;i<=60;i++){const px=(i/60)*W;const py=roadY-8-Math.sin((px+offset*0.05)/40)*22;}
+  // simpler approach
+  x.beginPath();x.moveTo(-10,roadY+5);
+  for(let px=-10;px<=W+10;px+=3){const py=roadY-6-Math.sin((px+offset*0.08)/60)*28;x.lineTo(px,py);}
+  x.lineTo(W+10,H);x.lineTo(-10,H);x.closePath();x.fillStyle='#5a4d3f';x.fill();
+}
+
+function drawGround(){
+  const g=x.createLinearGradient(0,roadY,0,H);g.addColorStop(0,'#6b7c4e');g.addColorStop(1,'#2a3328');
+  x.fillStyle=g;x.fillRect(0,roadY,W,H-roadY+100);
+}
+
+function drawRoad(){
+  // road base
+  x.fillStyle='#555';x.fillRect(0,roadY,W,46);
+  // top edge line
+  x.strokeStyle='#ddd';x.lineWidth=2;x.beginPath();x.moveTo(0,roadY+1);x.lineTo(W,roadY+1);x.stroke();
+  // bottom edge
+  x.beginPath();x.moveTo(0,roadY+45);x.lineTo(W,roadY+45);x.stroke();
+  // dashed center
+  const dashLen=30;const totalDash=dashLen*2;
+  for(let d=-t.speed%totalDash;d<W;d+=totalDash){x.fillStyle='#f4d52d';x.fillRect(d+t.wheelAngle*0.1,roadY+21,dashLen,3);}
+}
+
+function drawTree(px,py,scale){
+  const tw=8*scale,th=70*scale;
+  x.fillStyle='#6b4e2a';x.fillRect(px-tw/2,py-th,tw,th);
+  x.beginPath();x.arc(px,py-th-15*scale,22*scale,0,Math.PI*2);x.fillStyle='#3a6b35';x.fill();
+  x.beginPath();x.arc(px-8*scale,py-th+5*scale,17*scale,0,Math.PI*2);x.fill();
+}
+
+function drawPole(px,py){
+  x.strokeStyle='#aaa';x.lineWidth=3;x.beginPath();x.moveTo(px,py+15);x.lineTo(px,py-60);x.stroke();
+  // light on top
+  x.fillStyle='rgba(255,240,200,0.8)';x.beginPath();x.arc(px,py-63,4,0,Math.PI*2);x.fill();
+}
+
+function drawBush(px,py){
+  const r=10+Math.random()*5;
+  x.fillStyle='#4a7c3f';x.beginPath();x.ellipse(px,py,r,r*0.6,0,0,Math.PI*2);x.fill();
+}
+
+function updateElements(){
+  t.elements.forEach(el=>{el.x+=t.speed;if(el.type==='pole')el.x+=t.speed*1.8;});
+  t.elements=t.elements.filter(e=>e.x< W+50);
+  if(Math.random()<0.02)t.elements.push({type:'tree',lane:Math.random()*0.35+0.08,x:W+50});
+  if(Math.random()<0.015)t.elements.push({type:'pole',x:W+50,yOff:Math.random()*10});
+}
+
+function drawElements(){
+  t.elements.forEach(el=>{
+    if(el.type==='tree'){const ly=roadY-2-el.lane*60;drawTree(el.x,ly,0.7+el.lane);}
+    else if(el.type==='pole')drawPole(el.x,roadY-5);
+    else drawBush(el.x,roadY-3);
+  });
+}
+
+function drawCar(){
+  const cx=t.carX,cy=roadY-2;
+  t.bobPhase+=0.06;t.bodyBob=Math.sin(t.bobPhase)*1.8;const by=cy+t.bodyBob;
+  // shadow
+  x.fillStyle='rgba(0,0,0,0.3)';x.beginPath();x.ellipse(cx+4,cy+2,72,10,0,0,Math.PI*2);x.fill();
+  
+  const g=x.createLinearGradient(cx-60,by-55,cx+80,by);g.addColorStop(0,'#c0392b');g.addColorStop(1,'#e74c3c');
+  
+  // wheels (behind body)
+  drawWheel(cx-42,by+2,t.wheelAngle);drawWheel(cx+52,by+2,t.wheelAngle);
+  
+  // lower body
+  x.fillStyle=g;x.beginPath();x.moveTo(cx-60,by-8);x.lineTo(cx-55,by-35);x.quadraticCurveTo(cx,by-42,cx+60,by-38);
+  x.lineTo(cx+75,by-28);x.lineTo(cx+78,by-5);x.lineTo(cx-58,by-3);x.closePath();x.fill();
+  
+  // windows
+  x.fillStyle='rgba(140,200,240,0.7)';x.beginPath();x.moveTo(cx-38,by-33);x.lineTo(cx-15,by-36);
+  x.lineTo(cx+42,by-34);x.lineTo(cx+40,by-22);x.lineTo(cx-35,by-22);x.closePath();x.fill();
+  
+  // headlight glow
+  const hg=x.createRadialGradient(cx+78,by-15,0,cx+78,by-15,60);
+  hg.addColorStop(0,'rgba(255,230,150,0.4)');hg.addColorStop(1,'rgba(255,200,100,0)');
+  x.fillStyle=hg;x.fillRect(cx+78,by-70,60,90);
+}
+
+function drawWheel(px,py,angle){
+  const r=13;x.save();x.translate(px,py);x.rotate(angle);
+  // tire
+  x.beginPath();x.arc(0,0,r,0,Math.PI*2);x.fillStyle='#2c2c2c';x.fill();
+  x.strokeStyle='#444';x.lineWidth=2;x.stroke();
+  // rim spokes
+  x.strokeStyle='#bbb';x.lineWidth=1.5;for(let s=0;s<6;s++){const a=s*Math.PI/3;
+    x.beginPath();x.moveTo(Math.cos(a)*4,Math.sin(a)*4);x.lineTo(Math.cos(a)*(r-2),Math.sin(a)*(r-2));x.stroke();}
+  // hub cap
+  x.fillStyle='#ccc';x.beginPath();x.arc(0,0,3.5,0,Math.PI*2);x.fill();
+  x.restore();
+}
+
+function drawDust(){
+  if(Math.random()>0.1)return;
+  const dx=t.carX-60+Math.random()*15,dy=roadY+Math.random()*4,dv=Math.random()*30;
+  x.fillStyle='rgba(180,160,130,0.25)';x.beginPath();x.arc(dx-dv,dy,1+Math.random(),0,Math.PI*2);x.fill();
+}
+
+function loop(){
+  x.clearRect(0,0,W,H);drawSky();
+  const off=t.wheelAngle;
+  drawMountains(off);drawHills(off);drawGround();drawElements();drawRoad();drawCar();drawDust();
+  t.elements.forEach(el=>{if(el.type==='pole')el.x+=t.speed*0.8;}); // move poles slower
+  updateElements();t.wheelAngle+=0.12+Math.random()*0.04;t.carX=W*0.38; // keep car centered
+  requestAnimationFrame(loop);
+}loop();
+</script>
+</body>
+</html>
