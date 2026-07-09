@@ -386,6 +386,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/openai/gpt-5.6-sol/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/openai/gpt-5.6-sol/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-5.6-terra",
+      model_display: "GPT-5.6 Terra",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-5.6-terra",
+      added: "2026-07-10",
+      outputs: {
+        "01-car-parallax":      "providers/openai/gpt-5.6-terra/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-5.6-terra/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/openai/gpt-5.6-terra/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

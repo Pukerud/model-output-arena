@@ -81,6 +81,7 @@ Two independent axes are labelled:
 | OpenAI | GPT-5.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
 | OpenAI | GPT-5.5 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5-native`](./providers/openai/gpt-5.5-native) |
 | OpenAI | GPT-5.6 Sol | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-sol`](./providers/openai/gpt-5.6-sol) |
+| OpenAI | GPT-5.6 Terra | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-terra`](./providers/openai/gpt-5.6-terra) |
 | Qwen | Qwen 3.6 27B Heretic v2 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
 | Z.AI | GLM 5 Turbo | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
 | Z.AI | GLM 5.1 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thriller — Midnight Rehearsal</title>
+<style>
+  html,body{margin:0;overflow:hidden;background:#03060d;color:#fff;font-family:Arial,sans-serif}canvas{display:block}
+  #hud{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 43%,#01030ab8 100%);mix-blend-mode:normal}
+  #title{position:absolute;top:28px;left:32px;font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:#f5e6c2bb}#title b{display:block;margin-top:5px;font-family:Georgia,serif;font-weight:400;letter-spacing:.08em;font-size:28px;color:#fff5dc;text-shadow:0 0 18px #cf2c50}
+  #credit{position:absolute;bottom:25px;left:32px;font-size:10px;letter-spacing:.18em;color:#d7c4ab88;text-transform:uppercase}#cue{position:absolute;right:31px;bottom:25px;font-size:11px;letter-spacing:.18em;color:#fff9;text-transform:uppercase;text-align:right;line-height:1.6}
+  #cue b{color:#f25865;font-size:13px}@media(max-width:600px){#title{top:18px;left:18px}#title b{font-size:21px}#credit{left:18px;bottom:16px}#cue{right:18px;bottom:16px;font-size:9px}}
+</style>
+</head>
+<body>
+<div id="hud"><div id="title">Riverside Theatre — 1983<b>Thriller / midnight rehearsal</b></div><div id="credit">Stylized Three.js performance</div><div id="cue"><b id="phase">ENTER THE NIGHT</b><br>four icons / one graveyard groove</div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+<script>
+(() => {
+  const scene=new THREE.Scene(), clock=new THREE.Clock();
+  scene.background=new THREE.Color(0x050713);scene.fog=new THREE.FogExp2(0x050713,.072);
+  const camera=new THREE.PerspectiveCamera(39,innerWidth/innerHeight,.1,100);camera.position.set(0,4.2,12.5);
+  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.24;document.body.prepend(renderer.domElement);
+  const hemi=new THREE.HemisphereLight(0x445d9b,0x15100d,1.35);scene.add(hemi);
+  const moon=new THREE.DirectionalLight(0x9ab8ff,2.4);moon.position.set(-5,9,5);moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);moon.shadow.camera.left=-9;moon.shadow.camera.right=9;moon.shadow.camera.top=9;moon.shadow.camera.bottom=-4;scene.add(moon);
+  const red=new THREE.SpotLight(0xff294f,950,27,Math.PI*.24,.45,1.1);red.position.set(-8,8,5);red.target.position.set(0,1,0);red.castShadow=true;scene.add(red,red.target);
+  const blue=new THREE.SpotLight(0x4276ff,850,25,Math.PI*.26,.48,1.2);blue.position.set(8,7,3);blue.target.position.set(0,1,0);scene.add(blue,blue.target);
+  function mat(color,rough,metal){return new THREE.MeshStandardMaterial({color:color,roughness:rough===undefined?.65:rough,metalness:metal||0})}
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(42,28),new THREE.MeshStandardMaterial({color:0x111827,roughness:.29,metalness:.55}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+  const grid=new THREE.GridHelper(34,34,0x42506d,0x172233);grid.position.y=.012;grid.material.transparent=true;grid.material.opacity=.42;scene.add(grid);
+  const back=new THREE.Mesh(new THREE.PlaneGeometry(34,12),new THREE.MeshStandardMaterial({color:0x090d1b,roughness:.9,metalness:0}));back.position.set(0,5,-5.4);scene.add(back);
+  function addMesh(parent,geo,material,x,y,z){const m=new THREE.Mesh(geo,material);m.position.set(x||0,y||0,z||0);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+  function limb(parent,x,y,z,len,width,material){
+    const p=new THREE.Group();p.position.set(x,y,z);parent.add(p);const m=addMesh(p,new THREE.BoxGeometry(width,len,width),material,0,-len/2,0);m.castShadow=true;return p;
+  }
+  function label(text,color){
+    const cv=document.createElement('canvas');cv.width=512;cv.height=128;const c=cv.getContext('2d');c.clearRect(0,0,512,128);c.font='700 44px Arial';c.textAlign='center';c.fillStyle='rgba(5,8,16,.8)';c.fillRect(50,20,412,75);c.strokeStyle='#'+color.toString(16).padStart(6,'0');c.lineWidth=3;c.strokeRect(50,20,412,75);c.fillStyle='#fff8e9';c.fillText(text,256,71);const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false}));s.scale.set(1.9,.47,1);return s;
+  }
+  function createDancer(data){
+    const g=new THREE.Group();g.position.set(data.x,0,0);scene.add(g);const skin=mat(data.skin,.72), suit=mat(data.suit,.5,.1), shoe=mat(0x11131a,.4,.2), shirt=mat(data.shirt||0xf3eee2,.8), accent=mat(data.accent||0xb51f34,.4,.1);
+    const hip=new THREE.Group();hip.position.y=1.32;g.add(hip);addMesh(hip,new THREE.BoxGeometry(.78,.35,.38),suit,0,0,0);
+    const legL=limb(hip,-.23,-.05,0,.92,.28,suit),legR=limb(hip,.23,-.05,0,.92,.28,suit);addMesh(legL,new THREE.BoxGeometry(.34,.16,.55),shoe,0,-.98,.1);addMesh(legR,new THREE.BoxGeometry(.34,.16,.55),shoe,0,-.98,.1);
+    const torso=new THREE.Group();torso.position.y=1.75;g.add(torso);addMesh(torso,new THREE.CylinderGeometry(.51,.64,.92,12),suit,0,0,0);addMesh(torso,new THREE.BoxGeometry(.18,.58,.67),shirt,0,.05,.36);
+    if(data.tie){addMesh(torso,new THREE.BoxGeometry(.09,.42,.045),accent,0,.02,.71).rotation.z=.09}
+    const armL=limb(torso,-.58,.35,0,.92,.22,suit),armR=limb(torso,.58,.35,0,.92,.22,suit);addMesh(armL,new THREE.SphereGeometry(.15,12,8),skin,0,-1.0,0);addMesh(armR,new THREE.SphereGeometry(.15,12,8),skin,0,-1.0,0);
+    const neck=addMesh(torso,new THREE.CylinderGeometry(.13,.14,.23,10),skin,0,.61,0);const head=new THREE.Group();head.position.y=2.55;g.add(head);addMesh(head,new THREE.SphereGeometry(data.pepe ? .44 : .36,18,14),skin,0,0,0);
+    if(data.pepe){const white=mat(0xf5f9dc,.7),black=mat(0x121a18,.3);[-.18,.18].forEach(xx=>{addMesh(head,new THREE.SphereGeometry(.15,12,8),white,xx,.12,.34);addMesh(head,new THREE.SphereGeometry(.07,10,8),black,xx,.12,.46)});const mouth=addMesh(head,new THREE.TorusGeometry(.18,.025,6,14,Math.PI),black,0,-.16,.37);mouth.rotation.z=Math.PI;addMesh(torso,new THREE.BoxGeometry(.72,.35,.07),mat(0xe7e4d6,.8),0,.1,.54)}
+    else {const eye=mat(0x111319,.3);[-.12,.12].forEach(xx=>addMesh(head,new THREE.SphereGeometry(.035,8,6),eye,xx,.06,.34));addMesh(head,new THREE.BoxGeometry(.12,.035,.025),accent,0,-.1,.35)}
+    if(data.hair==='mj'){const hair=mat(0x101015,.9);addMesh(head,new THREE.SphereGeometry(.37,16,10),hair,0,.13,-.03).scale.set(1.06,.58,1.04);const hat=addMesh(head,new THREE.CylinderGeometry(.34,.38,.12,16),hair,0,.32,0);addMesh(head,new THREE.CylinderGeometry(.5,.5,.025,20),hair,0,.26,0)}
+    if(data.hair==='trump'){const hair=mat(0xe4bb65,.65);addMesh(head,new THREE.SphereGeometry(.34,14,10),hair,0,.3,.02).scale.set(1.13,.38,1.05);for(let i=-2;i<3;i++)addMesh(head,new THREE.BoxGeometry(.09,.19,.08),hair,i*.1,.23,.25).rotation.z=i*.18}
+    if(data.hair==='elon'){addMesh(head,new THREE.SphereGeometry(.35,15,10),mat(0x7c5236,.9),0,.27,-.06).scale.set(1,.24,1)}
+    const tag=label(data.name,data.tag);tag.position.set(0,3.35,.04);g.add(tag);
+    return {g:g,hip:hip,torso:torso,head:head,armL:armL,armR:armR,legL:legL,legR:legR,base:data.x,offset:data.offset,tag:tag};
+  }
+  const dancers=[
+    createDancer({name:'MICHAEL',x:-3.15,offset:0,skin:0x8a563b,suit:0x141620,shirt:0xf2eeee,accent:0xb92334,hair:'mj',tag:0xe93f52}),
+    createDancer({name:'PEPE',x:-1.05,offset:.55,skin:0x4f9d62,suit:0x2b507f,shirt:0xf5f1dc,pepe:true,tag:0x65d982}),
+    createDancer({name:'DONALD',x:1.05,offset:1.1,skin:0xe0a275,suit:0x182d61,shirt:0xf9faf0,accent:0xd92837,tie:true,hair:'trump',tag:0xedaf54}),
+    createDancer({name:'ELON',x:3.15,offset:1.65,skin:0xc88865,suit:0x20232c,shirt:0xebebeb,accent:0x33363b,hair:'elon',tag:0x8da7ff})
+  ];
+  const particles=new THREE.Group();scene.add(particles);const dotGeo=new THREE.SphereGeometry(.027,6,6),dots=[];for(let i=0;i<260;i++){const d=new THREE.Mesh(dotGeo,new THREE.MeshBasicMaterial({color:i%3?0x89aaff:0xe84e66,transparent:true,opacity:.2+Math.random()*.5}));d.position.set((Math.random()-.5)*16,Math.random()*7,(Math.random()-.5)*8-2);d.userData={y:d.position.y,s:.2+Math.random()*.8,o:Math.random()*6};particles.add(d);dots.push(d)}
+  const phaseNames=['ENTER THE NIGHT','THE HAUNTED REACH','ZOMBIE WALK','MIDNIGHT FREEZE'];
+  function dance(d,t,index){
+    const beat=t*1.98+d.offset,phase=Math.floor(beat/8)%4,step=Math.sin(beat*Math.PI),pulse=(Math.sin(beat*Math.PI*2)+1)/2;
+    d.g.position.y=.04+Math.abs(step)*.08;d.g.rotation.y=Math.sin(t*.45+d.offset)*.08;
+    d.hip.rotation.y=Math.sin(beat*Math.PI)*.045;d.torso.rotation.z=Math.sin(beat*Math.PI)*.045;d.head.rotation.z=Math.sin(beat*Math.PI+.4)*.08;
+    d.legL.rotation.x=step*.48;d.legR.rotation.x=-step*.48;d.armL.rotation.z=.12;d.armR.rotation.z=-.12;d.armL.rotation.x=0;d.armR.rotation.x=0;
+    if(phase===0){d.g.position.x=d.base+Math.sin(beat*Math.PI)*.18;d.armL.rotation.z=-.25+step*.2;d.armR.rotation.z=.25-step*.2}
+    if(phase===1){d.armL.rotation.z=-1.58+pulse*.26;d.armR.rotation.z=1.58-pulse*.26;d.armL.rotation.x=.75;d.armR.rotation.x=.75;d.head.rotation.z=Math.sin(beat*Math.PI)*.17}
+    if(phase===2){d.g.position.x=d.base-Math.sin(beat*Math.PI)*.34;d.torso.rotation.z=Math.sin(beat*Math.PI)*.16;d.armL.rotation.z=-.93;d.armR.rotation.z=.93;d.armL.rotation.x=-.7;d.armR.rotation.x=-.7;d.legL.rotation.x=.2+step*.25;d.legR.rotation.x=.2-step*.25}
+    if(phase===3){d.g.position.x=d.base+Math.sin(beat*Math.PI)*.18;d.g.rotation.y=Math.sin(beat*Math.PI*.5)*.5;d.armL.rotation.z=-.68-step*.35;d.armR.rotation.z=.68+step*.35;d.legL.rotation.x=-step*.32;d.legR.rotation.x=step*.32}
+    d.tag.material.opacity=.6+Math.abs(step)*.4;return phase;
+  }
+  let lastPhase=-1;function render(){
+    const t=clock.getElapsedTime(),phase=dance(dancers[0],t,0);for(let i=1;i<dancers.length;i++)dance(dancers[i],t,i);
+    if(phase!==lastPhase){document.getElementById('phase').textContent=phaseNames[phase];lastPhase=phase}
+    red.intensity=720+Math.sin(t*3)*230;blue.intensity=690+Math.cos(t*2.3)*190;
+    dots.forEach(d=>{d.position.y=d.userData.y+Math.sin(t*d.userData.s+d.userData.o)*.22;d.material.opacity=.16+Math.abs(Math.sin(t+d.userData.o))*.38});
+    camera.position.x=Math.sin(t*.18)*1.15;camera.position.y=4.05+Math.sin(t*.27)*.18;camera.lookAt(0,1.65,-.1);renderer.render(scene,camera);requestAnimationFrame(render);
+  }render();
+  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+})();
+</script>
+</body>
+</html>

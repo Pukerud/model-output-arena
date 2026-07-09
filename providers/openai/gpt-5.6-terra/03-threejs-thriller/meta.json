@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-5.6-terra",
+  "model_display": "GPT-5.6 Terra",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-09T23:50:06Z",
+  "runner": "GPT-5.6 Terra via VS Code Codex plugin",
+  "notes": "Single-file Three.js scene using a CDN-hosted runtime and stylized procedural character rigs.",
+  "hosting": "api",
+  "weights": "closed"
+}

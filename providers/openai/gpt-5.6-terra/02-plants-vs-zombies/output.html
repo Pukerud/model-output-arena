@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verdant Stand</title>
+<style>
+  :root{--ink:#12251e;--leaf:#2c9d58;--lime:#c8eb5a;--gold:#ffd95a;--paper:#f8f1d9;--red:#e45b50}
+  *{box-sizing:border-box} body{margin:0;min-height:100vh;color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,sans-serif;background:#1e503e;overflow-x:hidden}
+  body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 20% 10%,#d9f08d66,transparent 28%),linear-gradient(130deg,#1f5a47,#112b31 70%);z-index:-2}
+  .shell{width:min(1170px,94vw);margin:22px auto}.top{display:flex;justify-content:space-between;align-items:center;color:#fff;margin:0 3px 14px}.brand{font-size:clamp(23px,4vw,39px);font-weight:900;letter-spacing:-.06em;text-shadow:0 3px #163d34}.brand i{font-style:normal;color:var(--lime)}.status{display:flex;gap:10px}.pill{background:#ffffff1c;border:1px solid #ffffff45;border-radius:99px;padding:8px 13px;font-size:12px;font-weight:800;backdrop-filter:blur(8px)}
+  .playfield{position:relative;aspect-ratio:16/9;min-height:490px;border:8px solid #e8d196;border-radius:20px;overflow:hidden;box-shadow:0 25px 70px #061c1baa,0 0 0 3px #67482c;background:#8ece52}
+  .lawn{position:absolute;inset:0;display:grid;grid-template:repeat(5,1fr)/repeat(9,1fr);padding-left:8.5%;background:linear-gradient(90deg,#dde49b 0 8.5%,transparent 8.5%),repeating-linear-gradient(0deg,#7ec747 0 20%,#70ba41 20% 40%),repeating-linear-gradient(90deg,transparent 0 10.9%,#ffffff20 10.9% 11.1%)}
+  .cell{border:1px solid #e4f37a44;cursor:crosshair;position:relative;transition:background .15s}.cell:hover{background:#ffffff17}.cell:after{content:"";position:absolute;inset:13%;border-radius:50%;background:#194b2517;transform:skewX(-18deg)}
+  .lane{position:absolute;left:1.25%;width:6%;height:13%;border-radius:9px;background:linear-gradient(#f5dd7b,#d5a65b);box-shadow:inset 0 0 0 3px #98734a,0 3px 4px #0004;z-index:3}.lane:before{content:"✦";position:absolute;inset:4px;text-align:center;color:#fff7b5;font-size:30px}.lane.used{filter:grayscale(1);opacity:.5}
+  .plant,.zombie,.pea,.sun{position:absolute;z-index:5;user-select:none}.plant{width:9.8%;height:17%;transform:translate(-50%,-50%);filter:drop-shadow(0 5px 2px #1236);transition:filter .15s}.plant:hover{filter:drop-shadow(0 0 8px #fff8)}.plant .emoji{font-size:clamp(28px,5.4vw,66px);line-height:1;text-align:center;display:block;text-shadow:0 3px #194c2d}.plant .health{position:absolute;left:14%;right:14%;bottom:-1px;height:5px;border-radius:5px;background:#173a29;overflow:hidden}.plant .health i{display:block;height:100%;background:#e6ef75}
+  .zombie{width:10%;height:18%;transform:translate(-50%,-50%);font-size:clamp(34px,6.5vw,76px);text-align:center;line-height:1;filter:drop-shadow(0 5px 2px #2438);transition:transform .08s}.zombie .bar{position:absolute;left:15%;right:15%;top:-7px;height:5px;background:#29332d;border-radius:6px;overflow:hidden}.zombie .bar i{display:block;height:100%;background:#ed7868}.zombie.eating{animation:nibble .32s infinite alternate}.zombie.dead{animation:fall .45s forwards;pointer-events:none}@keyframes nibble{to{transform:translate(-50%,-50%) rotate(-5deg)}}@keyframes fall{to{opacity:0;transform:translate(-50%,-28%) rotate(87deg)}}
+  .pea{width:1.35%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4ffaf,#60b64d 55%,#237c3c);box-shadow:0 0 8px #d9ff8a;transform:translate(-50%,-50%)}.sun{width:8%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,#fffadb 22%,#ffc83d 26% 50%,#ed9d25 53%);color:#754309;font-size:clamp(15px,2.2vw,26px);font-weight:900;box-shadow:0 4px 8px #573b344d;transform:translate(-50%,-50%);cursor:pointer;animation:float 1.5s ease-in-out infinite alternate}.sun:hover{filter:brightness(1.15);transform:translate(-50%,-50%) scale(1.1)}@keyframes float{to{margin-top:-5px}}
+  .cards{position:absolute;left:10.5%;top:2.2%;z-index:12;display:flex;gap:6px}.card{width:66px;border:2px solid #5e773b;border-radius:8px;padding:5px 4px 4px;background:#f3edbf;text-align:center;color:#29432b;font-size:9px;font-weight:900;box-shadow:0 3px #4d6034;cursor:pointer;transition:.15s}.card .icon{display:block;font-size:27px;line-height:26px}.card b{font-size:10px;color:#a1512a}.card.selected{transform:translateY(-5px);outline:3px solid #fff8a5}.card.locked{filter:grayscale(1);opacity:.48;cursor:not-allowed}
+  .meter{position:absolute;right:2.2%;top:2.4%;z-index:12;background:#173b2cdd;color:#fff;border:2px solid #a3d35a;border-radius:10px;padding:7px 10px;min-width:144px;box-shadow:0 4px #0e281d}.meter .row{display:flex;justify-content:space-between;font-size:12px;font-weight:900}.meter strong{color:#ffe066}.meter .progress{height:6px;border-radius:5px;background:#0005;margin-top:5px;overflow:hidden}.meter .progress i{display:block;background:linear-gradient(90deg,#ffe567,#e58b42);height:100%;width:0;transition:width .2s}
+  .overlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:linear-gradient(#0b3420b8,#071c24d9);padding:20px}.panel{width:min(590px,92%);padding:clamp(20px,4vw,42px);border-radius:24px;text-align:center;background:var(--paper);box-shadow:0 14px 0 #9e804f,0 30px 65px #001a19aa;border:3px solid #fff7c7}.panel h1{margin:0;color:#237342;font-size:clamp(40px,8vw,72px);letter-spacing:-.08em;line-height:.86}.panel h1 span{color:#e9a93a}.panel p{font-size:14px;line-height:1.5}.name{display:flex;gap:8px;margin:18px auto 12px;width:min(340px,100%)}input{min-width:0;width:100%;border:2px solid #b9a46b;border-radius:10px;padding:12px;font:700 15px inherit;color:#29432b;background:#fffbea}.btn{border:0;border-radius:11px;padding:13px 18px;color:#fff;background:linear-gradient(#48b95b,#248746);font:900 15px inherit;cursor:pointer;box-shadow:0 5px #146035;transition:.12s}.btn:hover{transform:translateY(-2px);box-shadow:0 7px #146035}.btn:active{transform:translateY(3px);box-shadow:0 2px #146035}.btn.alt{background:linear-gradient(#ffcf57,#da8a30);box-shadow:0 5px #af5a22}.plan{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:left;margin:20px 0}.step{background:#e3f0bd;border-radius:10px;padding:9px;font-size:11px;line-height:1.3}.step b{display:block;color:#277947;font-size:15px}.leaders{margin:18px auto 0;text-align:left;background:#dce9b6;border-radius:12px;padding:12px;max-width:410px}.leaders h2{margin:0 0 7px;font-size:14px}.leaders ol{margin:0;padding-left:24px;font-size:12px;line-height:1.6}.leaders li span{float:right;font-weight:900}.pause{display:none}.tiny{font-size:11px;color:#5d6745}.controls{display:flex;gap:9px;justify-content:center;margin-top:16px}.hidden{display:none!important}
+  @media(max-width:680px){.shell{width:100%;margin:0}.top{padding:13px 15px;margin:0}.playfield{border-radius:0;border-width:4px;min-height:470px}.cards{top:1.2%;left:9.5%;gap:3px}.card{width:49px;padding:2px;font-size:7px}.card .icon{font-size:22px}.meter{right:1%;padding:5px;min-width:112px}.meter .row{font-size:10px}.status .pill:last-child{display:none}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="top"><div class="brand">VERDANT <i>STAND</i></div><div class="status"><span class="pill" id="waveTop">DAY 1</span><button class="pill" id="pauseBtn">Ⅱ PAUSE</button></div></header>
+  <section class="playfield" id="field">
+    <div class="lawn" id="lawn"></div><div class="cards" id="cards"></div>
+    <div class="meter"><div class="row"><span>☀ SUN</span><strong id="sunCount">150</strong></div><div class="row"><span>WAVE <span id="wave">1</span></span><span id="kills">0 defeated</span></div><div class="progress"><i id="waveFill"></i></div></div>
+    <div class="overlay" id="menu"><div class="panel"><h1>VERDANT<br><span>STAND</span></h1><p>Build a bright little defense before the lawn goes dark. Sun fuels plants; plants hold five lanes.</p><div class="name"><input id="playerName" maxlength="14" value="Gardener" aria-label="Player name"><button class="btn" id="start">START GROWING</button></div><div class="plan"><div class="step"><b>01 / Grow</b>Start with Sunflowers. Their warmth funds every lane.</div><div class="step"><b>02 / Hold</b>Place Peashooters where zombies are advancing.</div><div class="step"><b>03 / Bloom</b>Use Wall-nuts and Cherry Bombs to survive the rush.</div></div><div class="leaders"><h2>Garden Legends</h2><ol id="leaderboard"></ol></div><p class="tiny">Click a seed packet, then click a lawn tile. Keyboard: 1–4 cards · Space pause.</p></div></div>
+    <div class="overlay pause" id="pause"><div class="panel"><h1>TAKE A<br><span>BREATH</span></h1><p>The garden is frozen. Your plants are still counting on you.</p><button class="btn" id="resume">RESUME</button><div class="controls"><button class="btn alt" id="restart">RESTART</button><button class="btn alt" id="home">MENU</button></div></div></div>
+    <div class="overlay hidden" id="result"><div class="panel"><h1 id="resultTitle">THE LAWN<br><span>ENDURES</span></h1><p id="resultText"></p><button class="btn" id="again">GROW AGAIN</button><div class="leaders"><h2>Garden Legends</h2><ol id="leaderboardResult"></ol></div></div></div>
+  </section>
+</main>
+<script>
+(() => {
+  const lawn=document.getElementById('lawn'), cards=document.getElementById('cards'), field=document.getElementById('field');
+  const ui={sun:document.getElementById('sunCount'),wave:document.getElementById('wave'),kills:document.getElementById('kills'),fill:document.getElementById('waveFill'),top:document.getElementById('waveTop'),menu:document.getElementById('menu'),pause:document.getElementById('pause'),result:document.getElementById('result'),title:document.getElementById('resultTitle'),text:document.getElementById('resultText')};
+  const types=[{id:'sun',name:'Sunflower',icon:'🌻',cost:50,hp:100,rate:8},{id:'pea',name:'Peashooter',icon:'🌱',cost:100,hp:120,rate:1.22},{id:'wall',name:'Wall-nut',icon:'🥜',cost:50,hp:720},{id:'cherry',name:'Cherry Bomb',icon:'🍒',cost:150,hp:1}];
+  let game, selected=null, raf=0;
+  function pos(row,col){return {x:8.5+(col+.5)*91.5/9,y:(row+.5)*20};}
+  function cells(){lawn.innerHTML=''; for(let r=0;r<5;r++)for(let c=0;c<9;c++){let e=document.createElement('button');e.className='cell';e.setAttribute('aria-label','row '+(r+1)+', column '+(c+1));e.onclick=()=>plantAt(r,c);lawn.appendChild(e);}}
+  function renderCards(){cards.innerHTML='';types.forEach((t,i)=>{let e=document.createElement('button');e.className='card';e.dataset.id=t.id;e.innerHTML='<span class="icon">'+t.icon+'</span>'+t.name+'<br><b>☀ '+t.cost+'</b>';e.onclick=()=>choose(t.id);cards.appendChild(e);});}
+  function leaders(){try{return JSON.parse(localStorage.getItem('verdant-stand-leaders')||'[]')}catch(e){return[]}}
+  function showLeaders(ids){let list=leaders();if(!list.length)list=[{name:'Sun Sage',score:840},{name:'Mossy Mae',score:610},{name:'Sprout',score:380}];ids.forEach(id=>document.getElementById(id).innerHTML=list.slice(0,5).map(a=>'<li>'+escapeHtml(a.name)+' <span>'+a.score+'</span></li>').join(''))}
+  function escapeHtml(s){return s.replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function start(){
+    cancelAnimationFrame(raf);game={run:true,last:performance.now(),sun:150,score:0,wave:1,kills:0,spawned:0,quota:7,nextSpawn:3,sunAt:2,plants:[],zombies:[],peas:[],suns:[],mowers:[true,true,true,true,true],name:(document.getElementById('playerName').value||'Gardener').trim().slice(0,14),elapsed:0};
+    cells();renderCards();for(let r=0;r<5;r++){let m=document.createElement('div');m.className='lane';m.style.top=(r*20+3.6)+'%';m.dataset.row=r;lawn.appendChild(m)}
+    ui.menu.classList.add('hidden');ui.pause.style.display='none';ui.result.classList.add('hidden');selected=null;update();raf=requestAnimationFrame(loop);
+  }
+  function choose(id){if(!game||!game.run)return;let t=types.find(a=>a.id===id);if(game.sun<t.cost)return;selected=selected===id?null:id;document.querySelectorAll('.card').forEach(e=>e.classList.toggle('selected',e.dataset.id===selected));}
+  function plantAt(r,c){
+    if(!game||!game.run||!selected)return;let t=types.find(a=>a.id===selected);if(game.sun<t.cost||game.plants.some(p=>p.row===r&&p.col===c))return;
+    game.sun-=t.cost;let p={type:t,row:r,col:c,hp:t.hp,next:game.elapsed+(t.rate||999)};let q=pos(r,c);let e=document.createElement('div');e.className='plant';e.style.left=q.x+'%';e.style.top=q.y+'%';e.innerHTML='<span class="emoji">'+t.icon+'</span><span class="health"><i></i></span>';e.title=t.name;lawn.appendChild(e);p.el=e;game.plants.push(p);if(t.id==='cherry'){setTimeout(()=>boom(p),120);selected=null;document.querySelectorAll('.card').forEach(e=>e.classList.remove('selected'))} update();
+  }
+  function boom(p){if(!game||!p.el)return;game.zombies.filter(z=>Math.abs(z.row-p.row)<=1&&Math.abs(z.x-(pos(p.row,p.col).x))<27).forEach(z=>hurt(z,999));removePlant(p);}
+  function removePlant(p){if(p.el)p.el.remove();game.plants=game.plants.filter(a=>a!==p)}
+  function spawn(){
+    let row=Math.floor(Math.random()*5), tough=game.wave>2&&Math.random()<.24, cone=game.wave>3&&Math.random()<.17;
+    let z={row:row,x:104,hp:cone?250:tough?180:100,max:cone?250:tough?180:100,speed:(.48+Math.random()*.18+game.wave*.035)*(tough?.72:1),bite:0,kind:cone?'🧟‍♂️':tough?'🧟':'🧟'};let e=document.createElement('div');e.className='zombie';e.innerHTML=z.kind+'<span class="bar"><i></i></span>';e.style.left=z.x+'%';e.style.top=(row*20+10)+'%';lawn.appendChild(e);z.el=e;game.zombies.push(z);
+  }
+  function shoot(p){let q=pos(p.row,p.col),pea={row:p.row,x:q.x+4,damage:20};let e=document.createElement('div');e.className='pea';e.style.left=pea.x+'%';e.style.top=q.y+'%';lawn.appendChild(e);pea.el=e;game.peas.push(pea)}
+  function createSun(xp,yp,value){let s={x:xp,y:yp,value:value||25};let e=document.createElement('button');e.className='sun';e.textContent='☀ '+s.value;e.style.left=s.x+'%';e.style.top=s.y+'%';e.onclick=()=>collect(s);lawn.appendChild(e);s.el=e;game.suns.push(s);setTimeout(()=>collect(s),6500)}
+  function collect(s){if(!game||!s.el)return;game.sun+=s.value;s.el.remove();game.suns=game.suns.filter(a=>a!==s);update()}
+  function hurt(z,n){z.hp-=n;if(z.hp<=0){z.el.classList.add('dead');setTimeout(()=>z.el.remove(),430);game.zombies=game.zombies.filter(a=>a!==z);game.kills++;game.score+=40;update()}}
+  function mower(row){game.mowers[row]=false;let e=[...document.querySelectorAll('.lane')].find(a=>+a.dataset.row===row);e.classList.add('used');game.zombies.filter(z=>z.row===row&&z.x<15).forEach(z=>hurt(z,999));}
+  function update(){
+    if(!game)return;ui.sun.textContent=game.sun;ui.wave.textContent=game.wave;ui.kills.textContent=game.kills+' defeated';ui.top.textContent='DAY '+game.wave;ui.fill.style.width=(game.spawned/game.quota*100)+'%';
+    document.querySelectorAll('.card').forEach(e=>{let t=types.find(a=>a.id===e.dataset.id);e.classList.toggle('locked',game.sun<t.cost)});
+  }
+  function winWave(){
+    game.wave++;game.spawned=0;game.quota=6+game.wave*3;game.nextSpawn=game.elapsed+3;game.sun+=50;createSun(54,11,50);update();
+  }
+  function end(victory){
+    game.run=false;cancelAnimationFrame(raf);let board=leaders(),old=board.find(a=>a.name===game.name);if(!old||game.score>old.score){if(old)old.score=game.score;else board.push({name:game.name,score:game.score});board.sort((a,b)=>b.score-a.score);localStorage.setItem('verdant-stand-leaders',JSON.stringify(board.slice(0,10)))}
+    ui.title.innerHTML=victory?'THE LAWN<br><span>ENDURES</span>':'THE HEDGE<br><span>FELL</span>';ui.text.textContent=victory?'A full moon rises over a safe garden. Final score: '+game.score+'.':'You held through day '+game.wave+' with '+game.kills+' defeated. Score: '+game.score+'.';showLeaders(['leaderboardResult']);ui.result.classList.remove('hidden');
+  }
+  function loop(now){
+    if(!game||!game.run)return;let dt=Math.min(45,now-game.last);game.last=now;game.elapsed+=dt/1000;
+    if(game.elapsed>game.sunAt){createSun(15+Math.random()*75,13+Math.random()*72,25);game.sunAt=game.elapsed+5+Math.random()*3}
+    if(game.spawned<game.quota&&game.elapsed>game.nextSpawn){spawn();game.spawned++;game.nextSpawn=game.elapsed+Math.max(.95,3.2-game.wave*.12)}
+    game.plants.slice().forEach(p=>{let bar=p.el.querySelector('.health i');bar.style.width=Math.max(0,p.hp/p.type.hp*100)+'%';if(p.type.id==='sun'&&game.elapsed>p.next){let q=pos(p.row,p.col);createSun(q.x,q.y-5,25);p.next=game.elapsed+p.type.rate}if(p.type.id==='pea'&&game.elapsed>p.next&&game.zombies.some(z=>z.row===p.row&&z.x>pos(p.row,p.col).x)){shoot(p);p.next=game.elapsed+p.type.rate}});
+    game.peas.slice().forEach(p=>{p.x+=dt*.020;p.el.style.left=p.x+'%';let z=game.zombies.find(z=>z.row===p.row&&Math.abs(z.x-p.x)<2.4);if(z){hurt(z,p.damage);p.el.remove();game.peas=game.peas.filter(a=>a!==p)}else if(p.x>104){p.el.remove();game.peas=game.peas.filter(a=>a!==p)}});
+    game.zombies.slice().forEach(z=>{let close=game.plants.find(p=>p.row===z.row&&z.x<(pos(p.row,p.col).x+5.6)&&z.x>(pos(p.row,p.col).x-4));if(close){z.el.classList.add('eating');close.hp-=dt*.018;if(close.hp<=0)removePlant(close)}else{z.el.classList.remove('eating');z.x-=z.speed*dt/1000}z.el.style.left=z.x+'%';z.el.querySelector('i').style.width=Math.max(0,z.hp/z.max*100)+'%';if(z.x<5){if(game.mowers[z.row])mower(z.row);else end(false)}});
+    if(game.spawned>=game.quota&&!game.zombies.length){if(game.wave>=6){end(true);return}winWave()}update();raf=requestAnimationFrame(loop);
+  }
+  document.getElementById('start').onclick=start;document.getElementById('again').onclick=start;document.getElementById('resume').onclick=()=>{ui.pause.style.display='none';if(game){game.run=true;game.last=performance.now();raf=requestAnimationFrame(loop)}};
+  document.getElementById('restart').onclick=start;document.getElementById('home').onclick=()=>{if(game)game.run=false;ui.pause.style.display='none';ui.result.classList.add('hidden');ui.menu.classList.remove('hidden');showLeaders(['leaderboard'])};
+  document.getElementById('pauseBtn').onclick=togglePause;function togglePause(){if(!game||!game.run)return;game.run=false;cancelAnimationFrame(raf);ui.pause.style.display='grid'}addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();togglePause()}let n=+e.key;if(n>0&&n<5)choose(types[n-1].id)});showLeaders(['leaderboard']);
+})();
+</script>
+</body>
+</html>
