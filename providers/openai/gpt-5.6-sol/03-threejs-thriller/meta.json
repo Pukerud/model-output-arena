@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-5.6-sol",
+  "model_display": "GPT-5.6 Sol",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-09T23:36:02Z",
+  "runner": "GPT-5.6 Sol via VS Code Codex plugin",
+  "notes": "",
+  "hosting": "api",
+  "weights": "closed"
+}
