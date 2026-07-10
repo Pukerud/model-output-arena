@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thriller · Midnight Rehearsal</title>
+  <style>
+    :root { color-scheme:dark; font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#03040a; }
+    #stage { display:block; width:100%; height:100%; }
+    .ui { position:fixed; inset:0; pointer-events:none; padding:28px clamp(20px,4vw,64px); display:flex; flex-direction:column; justify-content:space-between; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; gap:30px; }
+    .kicker { color:#a9b1c7; font-size:9px; letter-spacing:.34em; text-transform:uppercase; }.title { color:#f2ecde; font:700 clamp(24px,3.5vw,45px)/.92 Georgia,serif; letter-spacing:-.055em; margin-top:8px; }.title em { color:#c99362; font-style:normal; }
+    .console { pointer-events:auto; text-align:right; }.console small { display:block; color:#7c8499; font-size:9px; letter-spacing:.2em; text-transform:uppercase; margin-bottom:11px; }.console button { border:1px solid #b99a733f; background:#0a0c14ad; color:#e9dfce; padding:10px 13px; border-radius:3px; font:700 9px Inter,sans-serif; text-transform:uppercase; letter-spacing:.14em; cursor:pointer; margin-left:5px; backdrop-filter:blur(8px); }.console button:hover { border-color:#c99362; color:#fff; }
+    .footer { display:flex; justify-content:space-between; gap:22px; align-items:end; }.cast { display:flex; gap:8px; flex-wrap:wrap; max-width:650px; }.cast span { border:1px solid #d3bc9630; background:#080b12a8; color:#b9c0d0; padding:7px 9px; border-radius:3px; font-size:9px; letter-spacing:.12em; text-transform:uppercase; backdrop-filter:blur(6px); }.cast i { display:inline-block; width:5px; height:5px; border-radius:50%; margin-right:6px; vertical-align:1px; background:#c99362; box-shadow:0 0 8px #c99362; }.note { color:#80899d; font-size:9px; letter-spacing:.16em; text-transform:uppercase; text-align:right; line-height:1.8; }
+    .vignette { position:fixed; inset:0; pointer-events:none; box-shadow:inset 0 0 150px 30px #02030a; }
+    @media (max-width:650px) { .ui { padding:19px; }.console small,.note { display:none; }.footer { align-items:start; flex-direction:column; }.cast span { font-size:8px; }.title { font-size:29px; } }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas><div class="vignette"></div>
+  <div class="ui"><div class="header"><div><div class="kicker">A Three.js performance study · 1983 / 00:00</div><div class="title">MIDNIGHT <em>THRILLER</em></div></div><div class="console"><small id="readout">live choreography · take 01</small><button id="pause">Pause</button><button id="camera">Cinematic camera</button></div></div><div class="footer"><div class="cast"><span><i></i>Michael Jackson</span><span><i></i>Pepe the Frog</span><span><i></i>Donald Trump</span><span><i></i>Elon Musk</span></div><div class="note">drag to orbit · scroll to dolly<br>procedural performers / no external assets</div></div></div>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"}}
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const canvas = document.getElementById('stage');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x04050b);
+    scene.fog = new THREE.FogExp2(0x070914, 0.028);
+    const camera = new THREE.PerspectiveCamera(39, 1, .1, 100);
+    camera.position.set(10, 6.6, 14.5);
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.22; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    const controls = new OrbitControls(camera,canvas); controls.target.set(0,2.15,0); controls.enableDamping=true; controls.dampingFactor=.07; controls.minDistance=8; controls.maxDistance=23; controls.maxPolarAngle=Math.PI*.48; controls.autoRotate=true; controls.autoRotateSpeed=.22;
+    const clock = new THREE.Clock(); let elapsed=0, paused=false, cinema=true;
+    const actors=[]; const mats={};
+    const M = (color, rough=.62, metal=0) => new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
+    mats.skin=M(0x8f5b43); mats.darkSkin=M(0x5f362c); mats.black=M(0x11151f,.38); mats.white=M(0xf3e9d2,.45); mats.red=M(0x9f302e,.42); mats.green=M(0x6fae62,.8); mats.frogDark=M(0x315943,.8); mats.gold=M(0xd8a65f,.3, .25); mats.navy=M(0x172c4a,.42); mats.blond=M(0xd5aa61,.75); mats.orange=M(0xbd6d43,.7); mats.purple=M(0x5b477b,.55);
+    function add(mesh,parent){ mesh.castShadow=true; mesh.receiveShadow=true; parent.add(mesh); return mesh; }
+    function box(w,h,d,mat,parent){ const m=add(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat),parent); return m; }
+    function sphere(r,mat,parent,scale=[1,1,1]){ const m=add(new THREE.Mesh(new THREE.SphereGeometry(r,20,14),mat),parent);m.scale.set(...scale);return m; }
+    function cylinder(r1,r2,h,mat,parent,radial=18){return add(new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,radial),mat),parent);}
+    function limb(mat,length=.88){ const pivot=new THREE.Group();const mesh=box(.24,length,.25,mat,pivot);mesh.position.y=-length/2; sphere(.15,mat,pivot,[1,.8,1]).position.y=-length;return pivot; }
+    function makeActor(config){
+      const root=new THREE.Group(); root.position.set(config.x,0,config.z||0); root.scale.setScalar(config.scale||1); scene.add(root);
+      const body=new THREE.Group();body.position.y=1.76;root.add(body); const torso=add(new THREE.Mesh(new THREE.CapsuleGeometry(.48,.98,6,14),config.suit),body); torso.scale.set(1,.96,.7); torso.castShadow=true;
+      const head=sphere(config.frog? .58:.48,config.frog?mats.green:config.skin||mats.skin,root,[config.frog?1.12:1,1,config.frog?1.04:1]);head.position.y=3.22;
+      const neck=cylinder(.15,.16,.26,config.skin||mats.skin,root);neck.position.y=2.64;
+      const leftArm=limb(config.suit,1.02),rightArm=limb(config.suit,1.02);leftArm.position.set(-.48,2.25,0);rightArm.position.set(.48,2.25,0);root.add(leftArm,rightArm);
+      const leftLeg=limb(config.trouser||config.suit,1.04),rightLeg=limb(config.trouser||config.suit,1.04);leftLeg.position.set(-.23,1.12,0);rightLeg.position.set(.23,1.12,0);root.add(leftLeg,rightLeg);
+      const leftFoot=box(.42,.17,.72,config.shoe||mats.black,root),rightFoot=box(.42,.17,.72,config.shoe||mats.black,root);leftFoot.position.set(-.26,.05,.12);rightFoot.position.set(.26,.05,.12);
+      const face=new THREE.Group();face.position.set(0,3.22,.45);root.add(face); if(config.frog){ sphere(.2,THREE.MeshBasicMaterial?new THREE.MeshStandardMaterial({color:0xf7f0ca,roughness:.4}):mats.white,face,[1,1.3,.45]).position.set(-.28,.27,0);sphere(.2,mats.white,face,[1,1.3,.45]).position.set(.28,.27,0);sphere(.08,mats.black,face).position.set(-.28,.28,.13);sphere(.08,mats.black,face).position.set(.28,.28,.13);const mouth=new THREE.Mesh(new THREE.TorusGeometry(.24,.035,8,18,Math.PI),mats.frogDark);mouth.rotation.x=Math.PI/2;mouth.position.set(0,-.16,.13);face.add(mouth); } else { sphere(.045,mats.black,face).position.set(-.16,.02,0);sphere(.045,mats.black,face).position.set(.16,.02,0); }
+      if(config.hat){const brim=cylinder(.63,.63,.09,config.hat,root,32);brim.position.y=3.7;const crown=cylinder(.42,.35,.42,config.hat,root,24);crown.position.y=3.92;}
+      if(config.hair){for(let i=-2;i<=2;i++){const h=sphere(.17,config.hair,root,[1,.72,1]);h.position.set(i*.16,3.64+Math.abs(i)*.035,-.02);}}
+      if(config.tie){const tie=box(.13,.72,.05,config.tie,root);tie.position.set(0,2.12,.37);const knot=box(.22,.18,.06,config.tie,root);knot.position.set(0,2.5,.37);}
+      if(config.collar){const c=box(.4,.12,.1,config.collar,root);c.position.set(0,2.55,.33);}
+      if(config.frog){const hoodie=box(1.04,.78,.77,config.hoodie||mats.red,body);hoodie.position.y=.05;hoodie.scale.set(1,.9,1);}
+      const label=new THREE.Group();root.add(label); label.position.y=4.38; const ring=new THREE.Mesh(new THREE.RingGeometry(.3,.31,32),new THREE.MeshBasicMaterial({color:config.labelColor||0xc99362,transparent:true,opacity:.42,side:THREE.DoubleSide}));ring.rotation.x=Math.PI/2;label.add(ring);
+      const actor={root,body,head,leftArm,rightArm,leftLeg,rightLeg,leftFoot,rightFoot,phase:config.phase||0,style:config.style||'groove',name:config.name};actors.push(actor);return actor;
+    }
+    const michael=makeActor({name:'Michael Jackson',x:-4.6,z:0,scale:1.04,suit:mats.black,trouser:mats.black,shoe:mats.white,skin:mats.darkSkin,hat:mats.black,style:'sharp',phase:0});
+    const pepe=makeActor({name:'Pepe the Frog',x:-1.55,z:.45,scale:1.02,suit:mats.red,trouser:mats.purple,shoe:mats.black,skin:mats.green,frog:true,hoodie:mats.red,style:'elastic',phase:.21});
+    const trump=makeActor({name:'Donald Trump',x:1.55,z:.2,scale:1.03,suit:mats.navy,trouser:mats.navy,shoe:mats.black,skin:mats.skin,hair:mats.blond,tie:mats.red,style:'strut',phase:.42});
+    const musk=makeActor({name:'Elon Musk',x:4.6,z:-.05,scale:1.03,suit:mats.black,trouser:mats.black,shoe:mats.black,skin:mats.skin,hair:mats.black,collar:mats.gold,style:'robotic',phase:.63});
+
+    function stage(){
+      const floor=new THREE.Mesh(new THREE.CylinderGeometry(8.8,8.8,.26,96),new THREE.MeshStandardMaterial({color:0x0b111b,roughness:.45,metalness:.48}));floor.position.y=-.2;floor.receiveShadow=true;scene.add(floor);
+      const inset=new THREE.Mesh(new THREE.CylinderGeometry(7.85,7.85,.035,96),new THREE.MeshStandardMaterial({color:0x111b27,roughness:.29,metalness:.58}));inset.position.y=-.04;inset.receiveShadow=true;scene.add(inset);
+      for(let i=0;i<16;i++){const a=i*Math.PI/8;const light=new THREE.Mesh(new THREE.BoxGeometry(.12,.04,1.15),new THREE.MeshBasicMaterial({color:i%2?0x784d31:0xd3a161}));light.position.set(Math.cos(a)*6.8,-.005,Math.sin(a)*6.8);light.rotation.y=-a;scene.add(light);}
+      const back=new THREE.Mesh(new THREE.CircleGeometry(14,64),new THREE.MeshBasicMaterial({color:0x070b16,side:THREE.DoubleSide}));back.position.set(0,5,-5.8);back.rotation.x=0;scene.add(back);
+      const arch=cylinder(6.8,6.8,.08,new THREE.MeshBasicMaterial({color:0x25324a}),new THREE.Group(),64);arch.rotation.x=Math.PI/2;arch.position.set(0,4.8,-5.55);scene.add(arch);
+      for(let i=0;i<7;i++){const spot=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),new THREE.MeshBasicMaterial({color:0xd4a26d}));spot.position.set(-5.2+i*1.73,4.1+Math.sin(i)*.3,-5.4);scene.add(spot);}
+    }
+    stage();
+    const hemi=new THREE.HemisphereLight(0x667a9f,0x090b10,1.35);scene.add(hemi);const key=new THREE.SpotLight(0xffd3a1,55,26,Math.PI/7,.45,1.5);key.position.set(-5,9,6);key.target.position.set(0,1.4,0);key.castShadow=true;key.shadow.mapSize.set(2048,2048);scene.add(key,key.target);
+    const rim=new THREE.SpotLight(0x7899ff,48,24,Math.PI/8,.5,1.2);rim.position.set(6,7,-5);rim.target.position.set(1,2,0);scene.add(rim,rim.target);const red=new THREE.PointLight(0x8e2630,14,10);red.position.set(-5,1,-2);scene.add(red);
+    const particleGeo=new THREE.BufferGeometry(), particleCount=400, particlePos=new Float32Array(particleCount*3);for(let i=0;i<particleCount;i++){particlePos[i*3]=(Math.random()-.5)*18;particlePos[i*3+1]=Math.random()*7;particlePos[i*3+2]=(Math.random()-.5)*10-2;}particleGeo.setAttribute('position',new THREE.BufferAttribute(particlePos,3));const particles=new THREE.Points(particleGeo,new THREE.PointsMaterial({color:0xc5a77b,size:.035,transparent:true,opacity:.47}));scene.add(particles);
+    function dance(a,t){const q=t*1.18+a.phase*1.7, beat=Math.sin(q*TAU), half=Math.sin(q*TAU/2), count=Math.floor(((q%1)+1)%1*8);a.root.position.y=.02+Math.abs(Math.sin(q*TAU))* .08; a.root.rotation.y=Math.sin(q*TAU*.5+a.phase)*.08;
+      const style=a.style==='sharp'?1.15:a.style==='elastic'?.88:a.style==='strut'?.98:1.07; a.leftArm.rotation.z=-.48+beat*.62*style; a.rightArm.rotation.z=.48-beat*.62*style; a.leftArm.rotation.x=half*.2; a.rightArm.rotation.x=-half*.2;
+      a.leftLeg.rotation.z=half*.24*style; a.rightLeg.rotation.z=-half*.24*style; a.leftLeg.rotation.x=Math.max(0,beat)*.2; a.rightLeg.rotation.x=Math.max(0,-beat)*.2; a.leftFoot.rotation.y=-.08+beat*.11; a.rightFoot.rotation.y=.08-beat*.11;
+      if(count===2||count===6){a.leftArm.rotation.z=-1.4*style;a.rightArm.rotation.z=1.4*style;a.root.rotation.y+=.12*beat;} if(count===4){a.leftLeg.rotation.x=.38;a.rightLeg.rotation.x=-.2;a.root.rotation.z=beat*.035;} if(a.style==='robotic'){a.leftArm.rotation.z=Math.round(a.leftArm.rotation.z*4)/4;a.rightArm.rotation.z=Math.round(a.rightArm.rotation.z*4)/4;} if(a.style==='elastic'){a.root.scale.y=(a.root.scale.y||1)+Math.sin(q*TAU)*.025;}
+    }
+    function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}addEventListener('resize',resize);resize();
+    function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);if(!paused){elapsed+=dt;actors.forEach(a=>dance(a,elapsed));particles.rotation.y+=dt*.012;red.intensity=13+Math.sin(elapsed*2.2)*3;key.intensity=52+Math.sin(elapsed*1.3)*5;}controls.autoRotate=cinema&&!paused;controls.update();renderer.render(scene,camera);}
+    document.getElementById('pause').addEventListener('click',()=>{paused=!paused;document.getElementById('pause').textContent=paused?'Resume':'Pause';document.getElementById('readout').textContent=paused?'choreography held · take 01':'live choreography · take 01';});document.getElementById('camera').addEventListener('click',()=>{cinema=!cinema;controls.autoRotate=cinema;document.getElementById('camera').textContent=cinema?'Cinematic camera':'Free camera';});
+    animate();
+  </script>
+</body>
+</html>

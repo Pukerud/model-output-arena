@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-5.6-luna",
+  "model_display": "GPT-5.6 Luna",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370D2DEFC794D3D07F4C4418522C696DE35AADEE54E0A59D6DE15CA4084",
+  "generated_at": "2026-07-10T00:04:08Z",
+  "runner": "GPT-5.6 Luna via VS Code Codex plugin",
+  "notes": "Procedural Three.js stage with four named performers, synchronized choreography, orbit controls, and animated lighting.",
+  "hosting": "api",
+  "weights": "closed"
+}

@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-5.6-luna",
+  "model_display": "GPT-5.6 Luna",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395FED74330CB35CF75DD70537F3C446F9BDF071FA398F05B6081DB5DA2D0A5D",
+  "generated_at": "2026-07-10T00:04:08Z",
+  "runner": "GPT-5.6 Luna via VS Code Codex plugin",
+  "notes": "Vanilla canvas scene with layered sunset parallax and a fixed foreground car.",
+  "hosting": "api",
+  "weights": "closed"
+}

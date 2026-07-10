@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Afterglow Drive</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #101521; }
+    body { position: relative; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .hud { position: fixed; inset: 0; pointer-events: none; padding: clamp(18px, 3vw, 42px); display: flex; flex-direction: column; justify-content: space-between; }
+    .topline { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; text-transform: uppercase; letter-spacing: .18em; font-size: 10px; color: rgba(255,246,221,.72); }
+    .brand { color: #fff8e8; font-size: 12px; letter-spacing: .28em; font-weight: 700; }
+    .brand span { display: block; margin-top: 7px; color: rgba(255,246,221,.5); font-size: 9px; letter-spacing: .2em; font-weight: 500; }
+    .status { display: flex; gap: 18px; align-items: center; }
+    .status i { width: 7px; height: 7px; border-radius: 99px; display: inline-block; background: #e7bb69; box-shadow: 0 0 14px #e7bb69; margin-right: 8px; }
+    .bottomline { display: flex; justify-content: space-between; align-items: end; gap: 24px; color: rgba(255,246,221,.62); font-size: 11px; letter-spacing: .1em; }
+    .caption { max-width: 290px; line-height: 1.7; }
+    .caption b { color: #fff8e8; display: block; font-size: 13px; letter-spacing: .14em; margin-bottom: 5px; }
+    .hint { text-align: right; white-space: nowrap; }
+    button { pointer-events: auto; border: 1px solid rgba(255,246,221,.32); background: rgba(12,17,29,.28); color: #fff8e8; border-radius: 999px; padding: 9px 14px; text-transform: uppercase; letter-spacing: .15em; font-size: 10px; cursor: pointer; backdrop-filter: blur(8px); }
+    button:hover { background: rgba(255,246,221,.15); }
+    @media (max-width: 600px) { .status { display: none; } .bottomline { align-items: start; flex-direction: column; } .hint { text-align: left; } }
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-label="A sunset road with a moving car"></canvas>
+  <div class="hud">
+    <div class="topline">
+      <div class="brand">AFTERGLOW<span>an endless drive</span></div>
+      <div class="status"><span><i></i>road 07</span><span id="clock">19:42</span><button id="pause" type="button">Pause</button></div>
+    </div>
+    <div class="bottomline">
+      <div class="caption"><b>Somewhere west</b>Warm light, low traffic, and a road that keeps unfolding.</div>
+      <div class="hint">SPACE TO PAUSE&nbsp;&nbsp;·&nbsp;&nbsp;SIT BACK &amp; WATCH</div>
+    </div>
+  </div>
+  <script>
+    'use strict';
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const clockEl = document.getElementById('clock');
+    const pauseButton = document.getElementById('pause');
+    let width = 0, height = 0, dpr = 1, paused = false, travel = 0, previous = performance.now();
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth; height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr); canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize, { passive: true }); resize();
+
+    const TAU = Math.PI * 2;
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    const fract = n => n - Math.floor(n);
+    const hash = n => fract(Math.sin(n * 127.1 + 311.7) * 43758.5453123);
+    const mix = (a, b, t) => a + (b - a) * t;
+    function loop(value, range) { return ((value % range) + range) % range; }
+    function rr(x, y, w, h, r) { const q = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.roundRect(x, y, w, h, q); }
+
+    function drawSky(t) {
+      const horizon = height * .54;
+      const sky = ctx.createLinearGradient(0, 0, 0, horizon);
+      sky.addColorStop(0, '#18233c'); sky.addColorStop(.42, '#4f4b6d'); sky.addColorStop(.75, '#d07867'); sky.addColorStop(1, '#f2b178');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, width, horizon + 2);
+      const sunX = width * .76, sunY = horizon * .57;
+      const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, Math.max(width, height) * .27);
+      glow.addColorStop(0, 'rgba(255,234,164,.9)'); glow.addColorStop(.08, 'rgba(255,202,125,.4)'); glow.addColorStop(1, 'rgba(255,174,105,0)');
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, width, horizon);
+      ctx.fillStyle = '#ffe9a6'; ctx.beginPath(); ctx.arc(sunX, sunY, Math.max(9, width * .018), 0, TAU); ctx.fill();
+      drawClouds(t, horizon);
+    }
+
+    function drawClouds(t, horizon) {
+      ctx.save(); ctx.globalAlpha = .12; ctx.fillStyle = '#fff1d0';
+      for (let i = 0; i < 7; i++) {
+        const span = width * 1.5, x = loop(i * width * .27 - travel * (2 + i % 3), span) - width * .2;
+        const y = horizon * (.18 + (i % 3) * .09), s = 30 + hash(i * 9) * 55;
+        ctx.beginPath(); ctx.ellipse(x, y, s * 1.8, s * .22, 0, 0, TAU); ctx.ellipse(x + s, y - s * .12, s, s * .27, 0, 0, TAU); ctx.ellipse(x - s * .7, y - s * .04, s * .9, s * .2, 0, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function mountainLayer(depth, base, color, peaks) {
+      const horizon = height * .54, shift = loop(travel * depth, width * 1.8);
+      ctx.save(); ctx.translate(-shift, 0); ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(-width, height);
+      for (let pass = -1; pass < 3; pass++) {
+        const origin = pass * width * .9;
+        ctx.moveTo(origin, horizon + 18);
+        for (let i = 0; i <= peaks.length; i++) { const px = origin + i * width * .14; const py = horizon - peaks[i % peaks.length] * height * depth * .13; ctx.lineTo(px, py); }
+        ctx.lineTo(origin + width * .9, height); ctx.lineTo(origin, height);
+      }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+      ctx.fillStyle = `rgba(255,197,133,${.10 + depth * .06})`; ctx.fillRect(0, horizon + base, width, 10);
+    }
+
+    function drawGround() {
+      const horizon = height * .54;
+      const ground = ctx.createLinearGradient(0, horizon, 0, height);
+      ground.addColorStop(0, '#56634c'); ground.addColorStop(.18, '#384839'); ground.addColorStop(1, '#131c21');
+      ctx.fillStyle = ground; ctx.fillRect(0, horizon, width, height - horizon);
+      ctx.fillStyle = 'rgba(255,189,113,.11)'; ctx.fillRect(0, horizon, width, height * .045);
+      ctx.fillStyle = 'rgba(18,28,29,.32)';
+      for (let i = 0; i < 20; i++) { const x = loop(i * width * .16 - travel * 1.8, width * 1.2) - width * .1; const y = horizon + height * (.08 + hash(i) * .12); ctx.fillRect(x, y, width * (.04 + hash(i + 2) * .08), 2); }
+    }
+
+    function drawRoad() {
+      const horizon = height * .57, vanishingX = width * .48;
+      ctx.fillStyle = '#252d31'; ctx.beginPath(); ctx.moveTo(vanishingX - 7, horizon); ctx.lineTo(vanishingX + 7, horizon); ctx.lineTo(width * .98, height); ctx.lineTo(-width * .04, height); ctx.closePath(); ctx.fill();
+      const roadGlow = ctx.createLinearGradient(0, horizon, 0, height); roadGlow.addColorStop(0, 'rgba(255,184,113,.18)'); roadGlow.addColorStop(.35, 'rgba(255,184,113,.03)'); roadGlow.addColorStop(1, 'rgba(0,0,0,.22)');
+      ctx.fillStyle = roadGlow; ctx.fill();
+      ctx.strokeStyle = 'rgba(235,208,160,.58)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(vanishingX - 3, horizon); ctx.lineTo(-width * .015, height); ctx.moveTo(vanishingX + 3, horizon); ctx.lineTo(width * 1.01, height); ctx.stroke();
+      const dashPeriod = 100, offset = loop(travel * 1.65, dashPeriod);
+      for (let i = -1; i < 14; i++) {
+        const p = loop(i * dashPeriod - offset, height * .86) / (height * .86), y = horizon + p * (height - horizon);
+        const half = mix(3, 32, p * p), dashH = mix(2, 17, p);
+        ctx.fillStyle = `rgba(246,220,169,${.18 + p * .55})`; ctx.fillRect(width * .48 - half, y, half * 2, dashH);
+      }
+    }
+
+    function tree(x, base, scale, dark) {
+      ctx.save(); ctx.translate(x, base); ctx.scale(scale, scale);
+      ctx.fillStyle = dark ? '#172a29' : '#263c32'; ctx.fillRect(-3, -52, 6, 52);
+      ctx.fillStyle = dark ? '#203936' : '#344b39';
+      for (const [dx, dy, rx, ry] of [[0,-70,25,44],[-18,-50,18,30],[18,-47,19,34],[0,-104,13,24]]) { ctx.beginPath(); ctx.ellipse(dx, dy, rx, ry, 0, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = 'rgba(238,174,110,.14)'; ctx.beginPath(); ctx.ellipse(-8, -77, 8, 27, -.25, 0, TAU); ctx.fill(); ctx.restore();
+    }
+    function pole(x, base, scale) {
+      ctx.save(); ctx.translate(x, base); ctx.scale(scale, scale); ctx.strokeStyle = '#2a3636'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-112); ctx.lineTo(28,-112); ctx.stroke(); ctx.fillStyle = '#ffe9b0'; ctx.shadowColor = '#ffd77f'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(28,-108,4,0,TAU); ctx.fill(); ctx.restore();
+    }
+    function roadside(t) {
+      const horizon = height * .57, treePeriod = 220, polePeriod = 420;
+      for (let i = -2; i < 30; i++) {
+        const wx = i * treePeriod + 50, sx = loop(wx - travel * .46, treePeriod * 30) / (treePeriod * 30) * width * 3 - width;
+        const depth = .5 + hash(i * 8.7) * .5, base = horizon + height * (.13 + hash(i + 1) * .1);
+        tree(sx, base, .42 + depth * .55, depth < .68);
+      }
+      for (let i = -2; i < 14; i++) {
+        const wx = i * polePeriod + 130, sx = loop(wx - travel * .83, polePeriod * 14) / (polePeriod * 14) * width * 2.4 - width * .55;
+        pole(sx, horizon + height * .22 + hash(i + 50) * 18, .38 + hash(i + 3) * .3);
+      }
+      ctx.fillStyle = '#bc9566';
+      const postOffset = loop(travel * 1.15, 82);
+      for (let i = -2; i < 30; i++) { const x = i * 82 - postOffset, y = height * .74 + (x / width) ** 2 * height * .17; ctx.fillRect(x, y, 3, 16); ctx.fillStyle = 'rgba(255,221,165,.55)'; ctx.fillRect(x + 3, y + 4, 7, 2); ctx.fillStyle = '#bc9566'; }
+    }
+
+    function wheel(x, y, radius, spin) {
+      ctx.save(); ctx.translate(x,y); ctx.rotate(spin); ctx.fillStyle = '#10171b'; ctx.beginPath(); ctx.arc(0,0,radius,0,TAU); ctx.fill();
+      ctx.fillStyle = '#303c40'; ctx.beginPath(); ctx.arc(0,0,radius*.69,0,TAU); ctx.fill(); ctx.strokeStyle = '#697276'; ctx.lineWidth = Math.max(1, radius*.07); ctx.beginPath(); ctx.arc(0,0,radius*.62,0,TAU); ctx.stroke();
+      ctx.strokeStyle = '#a7a59a'; ctx.lineWidth = Math.max(1, radius*.045); for(let i=0;i<8;i++){ctx.rotate(Math.PI/4);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(radius*.53,0);ctx.stroke();} ctx.fillStyle='#171e22';ctx.beginPath();ctx.arc(0,0,radius*.16,0,TAU);ctx.fill(); ctx.restore();
+    }
+    function drawCar(t) {
+      const carX = width * .47, baseline = height * .78, bob = Math.sin(t * 4.2) * 1.3 + Math.sin(t * 1.9) * .7, scale = clamp(width / 1020, .63, 1.18);
+      ctx.save(); ctx.translate(carX, baseline + bob); ctx.scale(scale, scale);
+      ctx.fillStyle = 'rgba(4,8,10,.42)'; ctx.beginPath(); ctx.ellipse(0, 35, 285, 19, 0, 0, TAU); ctx.fill();
+      ctx.translate(0, -32); ctx.rotate(Math.sin(t * 2) * .006);
+      const wheelR = 43; wheel(-147, 48, wheelR, travel * .14); wheel(143, 48, wheelR, travel * .14);
+      ctx.fillStyle = '#29353b'; rr(-227,-18,460,75,22); ctx.fill();
+      const body = ctx.createLinearGradient(0,-26,0,47); body.addColorStop(0,'#e8ded0'); body.addColorStop(.38,'#9fabb0'); body.addColorStop(.68,'#5d6d75'); body.addColorStop(1,'#303d45'); ctx.fillStyle = body;
+      ctx.beginPath(); ctx.moveTo(-225, 12); ctx.quadraticCurveTo(-213,-22,-165,-28); ctx.lineTo(-86,-35); ctx.quadraticCurveTo(-42,-96,35,-96); ctx.lineTo(107,-90); ctx.quadraticCurveTo(145,-82,176,-34); ctx.lineTo(212,-28); ctx.quadraticCurveTo(229,-14,226,25); ctx.lineTo(199,35); ctx.lineTo(-208,35); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.34)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-180,-22);ctx.quadraticCurveTo(-100,-37,-48,-39);ctx.stroke();
+      const glass = ctx.createLinearGradient(0,-85,0,-28); glass.addColorStop(0,'#172d3a'); glass.addColorStop(1,'#42606b'); ctx.fillStyle=glass;
+      ctx.beginPath();ctx.moveTo(-78,-41);ctx.lineTo(-40,-83);ctx.quadraticCurveTo(-32,-90,5,-91);ctx.lineTo(8,-42);ctx.closePath();ctx.fill(); ctx.beginPath();ctx.moveTo(16,-91);ctx.lineTo(101,-85);ctx.quadraticCurveTo(126,-77,145,-42);ctx.lineTo(15,-42);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(226,239,234,.36)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(13,-90);ctx.lineTo(12,-42);ctx.stroke();
+      ctx.fillStyle='#d6dfda';rr(-208,6,410,23,8);ctx.fill();ctx.fillStyle='#4a5960';rr(-183,15,85,4,2);ctx.fill();rr(96,15,78,4,2);ctx.fill();
+      ctx.fillStyle='#f5c96f';ctx.shadowColor='#ffbd5b';ctx.shadowBlur=18;rr(202,-5,18,13,6);ctx.fill();ctx.shadowBlur=0; ctx.fillStyle='#c94e4b';rr(-225,0,12,15,5);ctx.fill();
+      ctx.fillStyle='#202a2f';rr(-38,-21,27,5,3);ctx.fill();rr(105,-20,27,5,3);ctx.fill();
+      ctx.fillStyle='#172127';ctx.beginPath();ctx.arc(-147,48,11,0,TAU);ctx.arc(143,48,11,0,TAU);ctx.fill();
+      ctx.restore();
+    }
+
+    function frame(now) {
+      const dt = Math.min((now - previous) / 1000, .05); previous = now;
+      if (!paused) travel += dt * 94;
+      const t = now / 1000;
+      drawSky(t); mountainLayer(.12, 17, '#333952', [3,6,4,8,3,5,2]); mountainLayer(.22, 8, '#394359', [2,5,3,7,4,6,2,4]); drawGround(); roadside(t); drawRoad(); drawCar(t);
+      const minutes = Math.floor((19 * 60 + 42 + travel * .008) % (24 * 60)); clockEl.textContent = String(Math.floor(minutes / 60)).padStart(2,'0') + ':' + String(minutes % 60).padStart(2,'0');
+      requestAnimationFrame(frame);
+    }
+    function togglePause() { paused = !paused; pauseButton.textContent = paused ? 'Resume' : 'Pause'; }
+    pauseButton.addEventListener('click', togglePause); window.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); togglePause(); } });
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

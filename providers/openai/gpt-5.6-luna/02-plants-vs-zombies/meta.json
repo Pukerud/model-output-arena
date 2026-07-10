@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-5.6-luna",
+  "model_display": "GPT-5.6 Luna",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:8F1E5687419505D78246F3595884E6A38C40307B032CB576A327AEEFC5E6D906",
+  "generated_at": "2026-07-10T00:04:08Z",
+  "runner": "GPT-5.6 Luna via VS Code Codex plugin",
+  "notes": "Playable five-lane defense game with menus, waves, pause flow, and local leaderboard.",
+  "hosting": "api",
+  "weights": "closed"
+}
