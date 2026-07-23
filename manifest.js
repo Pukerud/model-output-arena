@@ -416,6 +416,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/openai/gpt-5.6-luna/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/openai/gpt-5.6-luna/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "laguna-s-2.1",
+      model_display: "Laguna S 2.1",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/laguna-s-2.1",
+      added: "2026-07-23",
+      outputs: {
+        "01-car-parallax":      "providers/local/laguna-s-2.1/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/laguna-s-2.1/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/laguna-s-2.1/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

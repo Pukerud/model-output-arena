@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "laguna-s-2.1",
+  "model_display": "Laguna S 2.1",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-07-23T23:00:00Z",
+  "runner": "Laguna S 2.1 via pi agent",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ3_XXS",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

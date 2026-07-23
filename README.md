@@ -83,6 +83,7 @@ Two independent axes are labelled:
 | OpenAI | GPT-5.6 Sol | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-sol`](./providers/openai/gpt-5.6-sol) |
 | OpenAI | GPT-5.6 Terra | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-terra`](./providers/openai/gpt-5.6-terra) |
 | OpenAI | GPT-5.6 Luna | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-luna`](./providers/openai/gpt-5.6-luna) |
+| Local (llama.cpp) | Laguna S 2.1 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/laguna-s-2.1`](./providers/local/laguna-s-2.1) |
 | Qwen | Qwen 3.6 27B Heretic v2 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
 | Z.AI | GLM 5 Turbo | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
 | Z.AI | GLM 5.1 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |

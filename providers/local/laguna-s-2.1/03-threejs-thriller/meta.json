@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "laguna-s-2.1",
+  "model_display": "Laguna S 2.1",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-07-23T23:00:00Z",
+  "runner": "Laguna S 2.1 via pi agent",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ3_XXS",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}
