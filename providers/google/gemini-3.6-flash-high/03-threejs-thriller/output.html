@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Thriller Arena - MJ, Pepe, Trump & Musk</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #030712;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    /* Cinematic Overlay HUD */
+    .hud {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 40px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+      color: #f8fafc;
+      z-index: 10;
+    }
+    .hud-title {
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #ef4444 0%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      padding-right: 12px;
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .btn.active {
+      background: #ef4444;
+      border-color: #f87171;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+    }
+    .letterbox-top, .letterbox-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #000;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .letterbox-top { top: 0; }
+    .letterbox-bottom { bottom: 0; }
+  </style>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div class="letterbox-top"></div>
+  <div class="letterbox-bottom"></div>
+
+  <div id="canvas-container"></div>
+
+  <div class="hud">
+    <span class="hud-title">THRILLER ARENA</span>
+    <button class="btn active" id="camBtn">Cam: Cinematic</button>
+    <button class="btn" id="audioBtn">Audio Synth: ON</button>
+    <button class="btn" id="lightBtn">Strobe: ON</button>
+  </div>
+
+  <script>
+    // Web Audio Synthesizer for Thriller Groove
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let audioPlaying = true;
+
+    function playBassNote(freq, duration) {
+      if (!audioPlaying || audioCtx.state === 'suspended') return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Simple looping 8-note synth bassline pattern
+    const bassNotes = [146.83, 146.83, 174.61, 146.83, 196.00, 174.61, 146.83, 130.81];
+    let noteIdx = 0;
+    setInterval(() => {
+      if (audioPlaying) {
+        playBassNote(bassNotes[noteIdx], 0.22);
+        noteIdx = (noteIdx + 1) % bassNotes.length;
+      }
+    }, 280);
+
+    // Three.js Scene Setup
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040612);
+    scene.fog = new THREE.FogExp2(0x090d22, 0.014);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 4, 18);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x1e293b, 0.8);
+    scene.add(ambientLight);
+
+    const moonLight = new THREE.DirectionalLight(0x93c5fd, 1.2);
+    moonLight.position.set(20, 40, -20);
+    moonLight.castShadow = true;
+    moonLight.shadow.mapSize.width = 2048;
+    moonLight.shadow.mapSize.height = 2048;
+    scene.add(moonLight);
+
+    // Glowing Moon Mesh
+    const moonGeo = new THREE.SphereGeometry(6, 32, 32);
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const moon = new THREE.Mesh(moonGeo, moonMat);
+    moon.position.set(30, 45, -60);
+    scene.add(moon);
+
+    // Stage Spotlights
+    const redSpot = new THREE.SpotLight(0xef4444, 4, 40, Math.PI / 6, 0.5);
+    redSpot.position.set(-12, 18, 10);
+    scene.add(redSpot);
+
+    const purpleSpot = new THREE.SpotLight(0xa855f7, 4, 40, Math.PI / 6, 0.5);
+    purpleSpot.position.set(12, 18, 10);
+    scene.add(purpleSpot);
+
+    // Graveyard Floor & Tombstones
+    const floorGeo = new THREE.PlaneGeometry(120, 120);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.2 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Gravestone Props
+    const stoneGeo = new THREE.BoxGeometry(1.2, 2.2, 0.4);
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+
+    for (let i = 0; i < 24; i++) {
+      const stone = new THREE.Mesh(stoneGeo, stoneMat);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 14 + Math.random() * 25;
+      stone.position.set(Math.cos(angle) * dist, 1.1, Math.sin(angle) * dist);
+      stone.rotation.y = (Math.random() - 0.5) * 0.8;
+      stone.castShadow = true;
+      scene.add(stone);
+    }
+
+    // Floating Mist Particles
+    const particleCount = 200;
+    const particleGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      positions[i] = (Math.random() - 0.5) * 60;
+      positions[i+1] = Math.random() * 8;
+      positions[i+2] = (Math.random() - 0.5) * 60;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particleMat = new THREE.PointsMaterial({ color: 0x818cf8, size: 0.35, transparent: true, opacity: 0.4 });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
+
+    // Procedural Character Builder
+    function createCharacter(type) {
+      const group = new THREE.Group();
+
+      // Materials
+      let bodyMat, headMat, pantsMat;
+      if (type === 'mj') {
+        bodyMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 }); // Red Thriller Jacket
+        headMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 });
+        pantsMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+      } else if (type === 'pepe') {
+        bodyMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.5 }); // Blue shirt
+        headMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 }); // Green Pepe
+        pantsMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 });
+      } else if (type === 'trump') {
+        bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 }); // Blue Suit
+        headMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.6 }); // Hair/Skin
+        pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 });
+      } else if (type === 'musk') {
+        bodyMat = new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.8, roughness: 0.2 }); // Sci-fi jacket
+        headMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.5 });
+        pantsMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.3 });
+      }
+
+      // Torso
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.7), bodyMat);
+      torso.position.y = 2.4;
+      torso.castShadow = true;
+      group.add(torso);
+
+      // MJ V-Stripe detail
+      if (type === 'mj') {
+        const vStripe = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.3, 0.72), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+        vStripe.position.y = 0.5;
+        torso.add(vStripe);
+      }
+
+      // Trump Red Tie
+      if (type === 'trump') {
+        const tie = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.1, 0.1), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+        tie.position.set(0, -0.1, 0.38);
+        torso.add(tie);
+      }
+
+      // Head
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), headMat);
+      head.position.set(0, 1.3, 0);
+      head.castShadow = true;
+      torso.add(head);
+
+      // Pepe Big Eyes
+      if (type === 'pepe') {
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+        const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), eyeMat);
+        eyeL.position.set(-0.25, 0.15, 0.48);
+        head.add(eyeL);
+
+        const pupilL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), pupilMat);
+        pupilL.position.set(-0.25, 0.15, 0.65);
+        head.add(pupilL);
+
+        const eyeR = eyeL.clone();
+        eyeR.position.x = 0.25;
+        head.add(eyeR);
+
+        const pupilR = pupilL.clone();
+        pupilR.position.x = 0.25;
+        head.add(pupilR);
+      }
+
+      // MJ Fedora Hat
+      if (type === 'mj') {
+        const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.08, 16), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+        hatBrim.position.y = 0.52;
+        head.add(hatBrim);
+
+        const hatCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.5, 16), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+        hatCrown.position.y = 0.78;
+        head.add(hatCrown);
+      }
+
+      // Trump Hair
+      if (type === 'trump') {
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.35, 1.1), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.9 }));
+        hair.position.set(0, 0.5, 0.05);
+        head.add(hair);
+      }
+
+      // Musk Visor
+      if (type === 'musk') {
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.25, 0.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.1 }));
+        visor.position.set(0, 0.1, 0.45);
+        head.add(visor);
+      }
+
+      // Left Arm
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.4, 0.38), bodyMat);
+      armL.position.set(-0.85, 0.2, 0);
+      armL.castShadow = true;
+      torso.add(armL);
+
+      // Right Arm
+      const armR = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.4, 0.38), bodyMat);
+      armR.position.set(0.85, 0.2, 0);
+      armR.castShadow = true;
+      torso.add(armR);
+
+      // Silver Sequin Glove for MJ
+      if (type === 'mj') {
+        const glove = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.35, 0.42), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 }));
+        glove.position.y = -0.6;
+        armR.add(glove);
+      }
+
+      // Left Leg
+      const legL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.5, 0.45), pantsMat);
+      legL.position.set(-0.35, -1.5, 0);
+      legL.castShadow = true;
+      group.add(legL);
+
+      // Right Leg
+      const legR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.5, 0.45), pantsMat);
+      legR.position.set(0.35, -1.5, 0);
+      legR.castShadow = true;
+      group.add(legR);
+
+      return { group, torso, head, armL, armR, legL, legR };
+    }
+
+    // Instantiate Character Troupe
+    const characters = [
+      { char: createCharacter('mj'), x: -4, z: 0 },
+      { char: createCharacter('pepe'), x: -1.3, z: 1.5 },
+      { char: createCharacter('trump'), x: 1.3, z: 1.5 },
+      { char: createCharacter('musk'), x: 4, z: 0 }
+    ];
+
+    characters.forEach(c => {
+      c.char.group.position.set(c.x, 0, c.z);
+      scene.add(c.char.group);
+    });
+
+    // Animation Controls
+    let camMode = 'cinematic';
+    const camBtn = document.getElementById('camBtn');
+    const audioBtn = document.getElementById('audioBtn');
+    const lightBtn = document.getElementById('lightBtn');
+
+    camBtn.addEventListener('click', () => {
+      if (camMode === 'cinematic') camMode = 'front';
+      else if (camMode === 'front') camMode = 'side';
+      else camMode = 'cinematic';
+      camBtn.textContent = `Cam: ${camMode.charAt(0).toUpperCase() + camMode.slice(1)}`;
+    });
+
+    audioBtn.addEventListener('click', () => {
+      audioPlaying = !audioPlaying;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      audioBtn.textContent = `Audio Synth: ${audioPlaying ? 'ON' : 'OFF'}`;
+    });
+
+    let strobeEnabled = true;
+    lightBtn.addEventListener('click', () => {
+      strobeEnabled = !strobeEnabled;
+      lightBtn.textContent = `Strobe: ${strobeEnabled ? 'ON' : 'OFF'}`;
+    });
+
+    // Thriller Choreography Math Loop
+    let clock = new THREE.Clock();
+
+    function animate() {
+      const time = clock.getElapsedTime();
+
+      // Synchronized Thriller Choreography Poses
+      const danceCycle = (time * 2.2) % (Math.PI * 4);
+
+      characters.forEach((c, idx) => {
+        const char = c.char;
+        const offset = idx * 0.15; // subtle stagger
+
+        // 1. Zombie Thriller Claw Arms
+        char.armL.rotation.x = -Math.PI * 0.45 + Math.sin(danceCycle + offset) * 0.25;
+        char.armL.rotation.z = Math.sin(danceCycle * 0.5) * 0.15;
+
+        char.armR.rotation.x = -Math.PI * 0.45 + Math.cos(danceCycle + offset) * 0.25;
+        char.armR.rotation.z = -Math.sin(danceCycle * 0.5) * 0.15;
+
+        // 2. Head Snap & Tilt
+        char.head.rotation.y = Math.sin(danceCycle * 2) * 0.4;
+        char.head.rotation.z = Math.cos(danceCycle) * 0.15;
+
+        // 3. Side-to-Side Zombie Strut & Hip Sway
+        char.torso.position.x = Math.sin(danceCycle) * 0.35;
+        char.torso.rotation.z = Math.cos(danceCycle) * 0.08;
+
+        // 4. Knee Bends & Legs
+        char.legL.rotation.x = Math.sin(danceCycle) * 0.3;
+        char.legR.rotation.x = -Math.sin(danceCycle) * 0.3;
+      });
+
+      // Dynamic Spotlights & Strobe
+      if (strobeEnabled) {
+        redSpot.intensity = 3 + Math.sin(time * 8) * 2;
+        purpleSpot.intensity = 3 + Math.cos(time * 8) * 2;
+        redSpot.position.x = -12 + Math.sin(time * 2) * 4;
+        purpleSpot.position.x = 12 + Math.cos(time * 2) * 4;
+      }
+
+      // Camera System
+      if (camMode === 'cinematic') {
+        const radius = 18;
+        camera.position.x = Math.sin(time * 0.3) * radius;
+        camera.position.z = Math.cos(time * 0.3) * radius;
+        camera.position.y = 4 + Math.sin(time * 0.5) * 2;
+        camera.lookAt(0, 2.5, 0);
+      } else if (camMode === 'front') {
+        camera.position.set(0, 3.5, 14);
+        camera.lookAt(0, 2.5, 0);
+      } else if (camMode === 'side') {
+        camera.position.set(-12, 3, 6);
+        camera.lookAt(0, 2.5, 0);
+      }
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

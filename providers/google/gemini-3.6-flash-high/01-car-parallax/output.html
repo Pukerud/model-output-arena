@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinematic Parallax Car Simulation</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0a10;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    .hud {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 22px;
+      background: rgba(18, 16, 26, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      color: #e2e8f0;
+      font-size: 14px;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+    .hud-title {
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      padding-right: 8px;
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-group label {
+      font-size: 12px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input[type="range"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 100px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #ff7e5f;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(255, 126, 95, 0.8);
+      transition: transform 0.1s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .speed-badge {
+      font-family: monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      width: 50px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span class="hud-title">GRAND TOUR · SUNSET</span>
+    <div class="control-group">
+      <label for="speedSlider">Speed</label>
+      <input type="range" id="speedSlider" min="0" max="180" value="95">
+      <span id="speedValue" class="speed-badge">95 km/h</span>
+    </div>
+    <div class="control-group">
+      <button class="btn" id="timeBtn">Time: Sunset</button>
+      <button class="btn" id="headlightsBtn">Lights: ON</button>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    const timeBtn = document.getElementById('timeBtn');
+    const headlightsBtn = document.getElementById('headlightsBtn');
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    let currentSpeed = 95;
+    let targetSpeed = 95;
+    let distanceTraveled = 0;
+    let wheelAngle = 0;
+
+    let timeOfDay = 'sunset'; // sunset, night, day
+    let headlightsOn = true;
+
+    speedSlider.addEventListener('input', (e) => {
+      targetSpeed = parseFloat(e.target.value);
+      speedValue.textContent = `${Math.round(targetSpeed)} km/h`;
+    });
+
+    timeBtn.addEventListener('click', () => {
+      if (timeOfDay === 'sunset') timeOfDay = 'night';
+      else if (timeOfDay === 'night') timeOfDay = 'day';
+      else timeOfDay = 'sunset';
+
+      timeBtn.textContent = `Time: ${timeOfDay.charAt(0).toUpperCase() + timeOfDay.slice(1)}`;
+    });
+
+    headlightsBtn.addEventListener('click', () => {
+      headlightsOn = !headlightsOn;
+      headlightsBtn.textContent = `Lights: ${headlightsOn ? 'ON' : 'OFF'}`;
+    });
+
+    // Color Palettes
+    const PALETTES = {
+      sunset: {
+        skyTop: '#13112c',
+        skyMid: '#482852',
+        skyBottom: '#d96552',
+        sun: '#ffd07b',
+        sunGlow: 'rgba(255, 140, 66, 0.4)',
+        clouds: 'rgba(92, 53, 94, 0.45)',
+        mountainsFar: '#2b1b38',
+        mountainsMid: '#1e162d',
+        trees: '#161224',
+        grass: '#1a162b',
+        road: '#15131f',
+        roadMarking: '#f59e0b',
+        lightBeam: 'rgba(254, 240, 138, 0.25)'
+      },
+      night: {
+        skyTop: '#040612',
+        skyMid: '#0a1026',
+        skyBottom: '#17223b',
+        sun: 'transparent',
+        sunGlow: 'transparent',
+        clouds: 'rgba(20, 30, 55, 0.4)',
+        mountainsFar: '#0d1527',
+        mountainsMid: '#080d19',
+        trees: '#050812',
+        grass: '#060a14',
+        road: '#090c15',
+        roadMarking: '#cbd5e1',
+        lightBeam: 'rgba(255, 255, 255, 0.35)'
+      },
+      day: {
+        skyTop: '#0284c7',
+        skyMid: '#38bdf8',
+        skyBottom: '#bae6fd',
+        sun: '#fef08a',
+        sunGlow: 'rgba(253, 224, 71, 0.5)',
+        clouds: 'rgba(255, 255, 255, 0.7)',
+        mountainsFar: '#64748b',
+        mountainsMid: '#475569',
+        trees: '#166534',
+        grass: '#15803d',
+        road: '#334155',
+        roadMarking: '#fef08a',
+        lightBeam: 'rgba(255, 255, 255, 0.15)'
+      }
+    };
+
+    // Distant scenery generation
+    const generatePeaks = (count, maxH) => {
+      const points = [];
+      for (let i = 0; i <= count; i++) {
+        points.push(Math.random() * maxH);
+      }
+      return points;
+    };
+
+    const farPeaks = generatePeaks(40, 160);
+    const midPeaks = generatePeaks(60, 100);
+
+    // Roadside elements (trees, poles, streetlights)
+    const objects = [];
+    const NUM_OBJECTS = 40;
+    for (let i = 0; i < NUM_OBJECTS; i++) {
+      objects.push({
+        x: i * (4000 / NUM_OBJECTS) + Math.random() * 80,
+        type: Math.random() > 0.4 ? 'tree' : (Math.random() > 0.5 ? 'pole' : 'bush'),
+        height: 60 + Math.random() * 70,
+        width: 30 + Math.random() * 40
+      });
+    }
+
+    // Particle System (Exhaust smoke & road dust)
+    const particles = [];
+    function updateParticles(speed, carX, carY) {
+      if (speed > 5 && Math.random() < 0.6) {
+        particles.push({
+          x: carX - 175,
+          y: carY + 38,
+          vx: -(speed * 0.12 + Math.random() * 2 + 1),
+          vy: (Math.random() - 0.5) * 0.8 - 0.4,
+          radius: 3 + Math.random() * 4,
+          alpha: 0.5,
+          growth: 0.25 + Math.random() * 0.2
+        });
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.radius += p.growth;
+        p.alpha -= 0.012;
+
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function drawParticles(palette) {
+      for (let p of particles) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = palette === PALETTES.day ? `rgba(140, 140, 140, ${p.alpha * 0.4})` : `rgba(200, 190, 210, ${p.alpha * 0.35})`;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Sky & Sun
+    function drawSky(palette) {
+      const grad = ctx.createLinearGradient(0, 0, 0, height * 0.65);
+      grad.addColorStop(0, palette.skyTop);
+      grad.addColorStop(0.55, palette.skyMid);
+      grad.addColorStop(1, palette.skyBottom);
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Stars for night
+      if (timeOfDay === 'night' || timeOfDay === 'sunset') {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        const count = timeOfDay === 'night' ? 90 : 30;
+        for (let i = 0; i < count; i++) {
+          const sx = (Math.sin(i * 99 + distanceTraveled * 0.00005) * 0.5 + 0.5) * width;
+          const sy = (Math.cos(i * 33) * 0.5 + 0.5) * (height * 0.4);
+          const size = (i % 3 === 0) ? 2 : 1;
+          ctx.beginPath();
+          ctx.arc(sx, sy, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Sun / Moon
+      if (timeOfDay !== 'night') {
+        const sunX = width * 0.72;
+        const sunY = height * 0.38;
+
+        const sunGlowGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 160);
+        sunGlowGrad.addColorStop(0, palette.sunGlow);
+        sunGlowGrad.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = sunGlowGrad;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, 160, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = palette.sun;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Parallax Mountain Range
+    function drawMountains(peaks, speedMult, baseHeight, paletteColor) {
+      ctx.fillStyle = paletteColor;
+      ctx.beginPath();
+
+      const horizon = height * 0.65;
+      const step = width / (peaks.length - 1);
+      const offsetX = (distanceTraveled * speedMult) % step;
+
+      ctx.moveTo(-10, horizon);
+
+      for (let i = 0; i < peaks.length; i++) {
+        const x = i * step - offsetX;
+        const y = horizon - peaks[i % peaks.length];
+        if (i === 0) ctx.lineTo(x, y);
+        else {
+          const prevX = (i - 1) * step - offsetX;
+          const prevY = horizon - peaks[(i - 1) % peaks.length];
+          const cx = (prevX + x) / 2;
+          const cy = (prevY + y) / 2;
+          ctx.quadraticCurveTo(prevX, prevY, cx, cy);
+        }
+      }
+
+      ctx.lineTo(width + 10, horizon);
+      ctx.lineTo(width + 10, height);
+      ctx.lineTo(-10, height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Roadside Scenery
+    function drawRoadsideObjects(palette) {
+      const horizon = height * 0.65;
+      const loopWidth = 4000;
+      const offset = (distanceTraveled * 0.8) % loopWidth;
+
+      // Telegraph Wires
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+
+      for (let i = -1; i < NUM_OBJECTS + 2; i++) {
+        const objX = (i * (loopWidth / NUM_OBJECTS) - offset + loopWidth) % loopWidth - 200;
+        if (objX > -300 && objX < width + 300) {
+          const poleTopY = horizon - 110;
+          if (i === -1) ctx.moveTo(objX, poleTopY);
+          else {
+            ctx.quadraticCurveTo(objX - 50, poleTopY + 20, objX, poleTopY);
+          }
+        }
+      }
+      ctx.stroke();
+
+      // Draw Trees & Poles
+      for (let i = 0; i < objects.length; i++) {
+        const obj = objects[i];
+        const rawX = (i * (loopWidth / NUM_OBJECTS) - offset + loopWidth) % loopWidth - 200;
+
+        if (rawX < -200 || rawX > width + 200) continue;
+
+        const baseY = horizon + 8;
+
+        if (obj.type === 'tree') {
+          // Tree Trunk
+          ctx.fillStyle = '#1c1917';
+          ctx.fillRect(rawX - 6, baseY - obj.height * 0.4, 12, obj.height * 0.4);
+
+          // Canopy
+          ctx.fillStyle = palette.trees;
+          ctx.beginPath();
+          ctx.arc(rawX, baseY - obj.height * 0.7, obj.width * 0.8, 0, Math.PI * 2);
+          ctx.arc(rawX - obj.width * 0.3, baseY - obj.height * 0.5, obj.width * 0.6, 0, Math.PI * 2);
+          ctx.arc(rawX + obj.width * 0.3, baseY - obj.height * 0.5, obj.width * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (obj.type === 'pole') {
+          // Utility Pole
+          ctx.fillStyle = '#1e1b18';
+          ctx.fillRect(rawX - 4, baseY - 120, 8, 120);
+
+          // Crossbar
+          ctx.fillRect(rawX - 24, baseY - 110, 48, 6);
+
+          // Insulators
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(rawX - 22, baseY - 116, 4, 6);
+          ctx.fillRect(rawX + 18, baseY - 116, 4, 6);
+          ctx.fillRect(rawX - 2, baseY - 116, 4, 6);
+        } else if (obj.type === 'bush') {
+          ctx.fillStyle = palette.trees;
+          ctx.beginPath();
+          ctx.arc(rawX, baseY - 15, 25, 0, Math.PI * 2);
+          ctx.arc(rawX - 18, baseY - 10, 18, 0, Math.PI * 2);
+          ctx.arc(rawX + 18, baseY - 10, 18, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Roadway & Markings
+    function drawRoad(palette) {
+      const horizon = height * 0.65;
+      const roadHeight = height - horizon;
+
+      // Grass Shoulder
+      ctx.fillStyle = palette.grass;
+      ctx.fillRect(0, horizon, width, roadHeight);
+
+      // Asphalt Road
+      const roadTop = horizon + 30;
+      ctx.fillStyle = palette.road;
+      ctx.fillRect(0, roadTop, width, height - roadTop);
+
+      // Road Curb Lines
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, roadTop - 4, width, 4);
+
+      // Dashed Centerline (Parallax movement)
+      const dashWidth = 80;
+      const dashGap = 60;
+      const totalDash = dashWidth + dashGap;
+      const dashOffset = (distanceTraveled * 1.8) % totalDash;
+      const laneY = roadTop + (height - roadTop) * 0.45;
+
+      ctx.fillStyle = palette.roadMarking;
+
+      for (let x = -totalDash; x < width + totalDash; x += totalDash) {
+        ctx.fillRect(x - dashOffset, laneY, dashWidth, 6);
+      }
+    }
+
+    // The Car (Procedural GT Coupe)
+    function drawCar(x, y, palette) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Body vibration & suspension dynamics
+      const engineVibe = currentSpeed > 0 ? (Math.sin(Date.now() * 0.04) * 0.8) : 0;
+      const roadBumps = currentSpeed > 0 ? (Math.sin(distanceTraveled * 0.05) * 1.2 + Math.cos(distanceTraveled * 0.12) * 0.8) : 0;
+      const pitchTilt = (targetSpeed - currentSpeed) * 0.001; // Acceleration squat/dive
+
+      ctx.translate(0, engineVibe + roadBumps);
+      ctx.rotate(pitchTilt);
+
+      const carLength = 340;
+      const carHeight = 85;
+
+      // Headlight Beam
+      if (headlightsOn) {
+        ctx.save();
+        const beamGrad = ctx.createLinearGradient(120, -10, 600, 40);
+        beamGrad.addColorStop(0, palette.lightBeam);
+        beamGrad.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(120, -15);
+        ctx.lineTo(650, 40);
+        ctx.lineTo(620, 80);
+        ctx.lineTo(110, 15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Ground Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.beginPath();
+      ctx.ellipse(0, 40, carLength * 0.52, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Car Body Base Path (Aerodynamic GT Silhouette)
+      const bodyGrad = ctx.createLinearGradient(-carLength / 2, -carHeight, carLength / 2, 40);
+      bodyGrad.addColorStop(0, '#be123c'); // Deep Crimson Red
+      bodyGrad.addColorStop(0.45, '#fb7185'); // Metallic Specular Peak
+      bodyGrad.addColorStop(1, '#881337'); // Dark Shadow Base
+
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      // Rear bumper
+      ctx.moveTo(-160, 22);
+      ctx.lineTo(-170, 0);
+      ctx.quadraticCurveTo(-172, -22, -150, -25);
+      // Rear pillar / Roof curve
+      ctx.quadraticCurveTo(-80, -78, -30, -82);
+      // Front Windshield
+      ctx.lineTo(50, -80);
+      ctx.quadraticCurveTo(100, -50, 140, -32);
+      // Hood
+      ctx.quadraticCurveTo(160, -28, 168, -12);
+      // Front Bumper
+      ctx.quadraticCurveTo(172, 10, 155, 22);
+      // Bottom Sill
+      ctx.lineTo(-160, 22);
+      ctx.closePath();
+      ctx.fill();
+
+      // Glossy Body Highlight Stroke
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Windows & Glass
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.moveTo(-75, -28);
+      ctx.lineTo(-30, -74);
+      ctx.lineTo(46, -72);
+      ctx.lineTo(92, -32);
+      ctx.lineTo(-75, -28);
+      ctx.closePath();
+      ctx.fill();
+
+      // Window Tint Gradient & Interior Silhouette
+      const windowGrad = ctx.createLinearGradient(0, -80, 0, -20);
+      windowGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+      windowGrad.addColorStop(1, 'rgba(15, 23, 42, 0.85)');
+      ctx.fillStyle = windowGrad;
+      ctx.fill();
+
+      // B-Pillar Divider
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-5, -74, 8, 44);
+
+      // Door lines & Side Mirror
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-75, -28);
+      ctx.lineTo(-75, 20);
+      ctx.moveTo(35, -30);
+      ctx.lineTo(25, 20);
+      ctx.stroke();
+
+      // Side Mirror
+      ctx.fillStyle = '#be123c';
+      ctx.fillRect(40, -32, 16, 10);
+
+      // Taillights (Glowing LED bar)
+      ctx.fillStyle = '#ef4444';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = headlightsOn ? 18 : 4;
+      ctx.fillRect(-172, -18, 10, 16);
+      ctx.shadowBlur = 0;
+
+      // Headlight Assembly
+      ctx.fillStyle = headlightsOn ? '#ffffff' : '#cbd5e1';
+      ctx.shadowColor = headlightsOn ? '#fef08a' : 'transparent';
+      ctx.shadowBlur = headlightsOn ? 25 : 0;
+      ctx.beginPath();
+      ctx.ellipse(162, -14, 8, 12, Math.PI * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Wheel Arches
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(-100, 22, 42, Math.PI, 0);
+      ctx.arc(100, 22, 42, Math.PI, 0);
+      ctx.fill();
+
+      // Draw Wheels (Rear & Front)
+      drawWheel(-100, 22, wheelAngle);
+      drawWheel(100, 22, wheelAngle);
+
+      ctx.restore();
+    }
+
+    // Detailed Alloy Wheel & Tire
+    function drawWheel(wx, wy, angle) {
+      ctx.save();
+      ctx.translate(wx, wy);
+
+      // Outer Rubber Tire
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(0, 0, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tire Tread / Rim Wall Groove
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Alloy Rim Base
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.arc(0, 0, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Brake Rotor & Red Caliper (Static behind spinning spokes)
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#dc2626'; // Red Brembo Caliper
+      ctx.fillRect(8, -12, 8, 16);
+
+      // Spinning Spokes
+      ctx.rotate(angle);
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 3.5;
+      const numSpokes = 5;
+
+      for (let i = 0; i < numSpokes; i++) {
+        const a = (i * Math.PI * 2) / numSpokes;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a) * 23, Math.sin(a) * 23);
+        ctx.stroke();
+      }
+
+      // Center Cap
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Main Animation Loop
+    let lastTime = performance.now();
+
+    function animate(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      // Smooth speed interpolation
+      currentSpeed += (targetSpeed - currentSpeed) * 0.05;
+
+      const pxPerSec = (currentSpeed * 1000) / 3600 * 60; // scale factor for visual speed
+      distanceTraveled += pxPerSec * dt;
+      wheelAngle += (pxPerSec * dt) / 36; // Wheel circumference rotation
+
+      const palette = PALETTES[timeOfDay];
+      const carX = width * 0.38;
+      const carY = height * 0.65 + 6;
+
+      // Render Pipeline
+      drawSky(palette);
+      drawMountains(farPeaks, 0.08, 160, palette.mountainsFar);
+      drawMountains(midPeaks, 0.25, 100, palette.mountainsMid);
+      drawRoadsideObjects(palette);
+      drawRoad(palette);
+
+      updateParticles(currentSpeed, carX, carY);
+      drawParticles(palette);
+
+      drawCar(carX, carY, palette);
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

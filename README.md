@@ -77,6 +77,7 @@ Two independent axes are labelled:
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
 | Google | Gemini 3.5 Flash (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.5-flash-native`](./providers/google/gemini-3.5-flash-native) |
+| Google | Gemini 3.6 Flash High (Antigravity Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.6-flash-high`](./providers/google/gemini-3.6-flash-high) |
 | MiniMax | MiniMax-M3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3`](./providers/minimax/minimax-m3) |
 | MiniMax | MiniMax-M3 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3-native`](./providers/minimax/minimax-m3-native) |
 | OpenAI | GPT-5.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
