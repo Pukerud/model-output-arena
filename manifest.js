@@ -420,8 +420,8 @@ window.ARENA = {
     {
       provider: "local",
       provider_display: "Local (llama.cpp)",
-      model: "laguna-s-2.1",
-      model_display: "Laguna S 2.1",
+      model: "laguna-s-2.1 i3XSS",
+      model_display: "Laguna S 2.1 i3XSS",
       hosting: "local",
       weights: "open",
       path: "providers/local/laguna-s-2.1",
