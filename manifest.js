@@ -431,6 +431,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/laguna-s-2.1/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/laguna-s-2.1/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-opus-5",
+      model_display: "Claude Opus 5",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/anthropic/claude-opus-5",
+      added: "2026-07-24",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-opus-5/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-opus-5/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-opus-5/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

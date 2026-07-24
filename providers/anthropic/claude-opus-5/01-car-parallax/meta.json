@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-opus-5",
+  "model_display": "Claude Opus 5",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-07-24T18:35:00Z",
+  "runner": "Claude Opus 5 via Claude Code (VS Code extension)",
+  "notes": "Single self-contained HTML, no libraries. DPR-aware full-page canvas, all layout derived from the viewport. Eleven parallax layers on one world-scroll value: static sunset sky with sun disc and glow, three cumulus cloud bands (built as a union of discs on a flat base, lit from underneath), flapping birds, two ridged-noise mountain ranges with warm rim strokes, rolling hills, a conifer/broadleaf forest band, sunlit fields with a fence, telephone poles with catenary wires plus signs/mile-markers/scrub, asphalt with aggregate speckle and faster lane dashes, and a blurred foreground grass rush. Car is a hand-authored ~3:1 saloon profile smoothed through midpoint quadratics, with clipped wheel-arch openings, arch lips, glass with a sunset reflection, B-pillar, head-rests, shut lines, crease, handles, mirror, shark fin, lamps with additive glows, and a rim light along the roof and nose. Wheels roll without slipping (angle = distance / radius) with tread ticks, a five-spoke rim smeared across three low-alpha copies for motion blur, brake disc and caliper. Body rides on a critically-damped heave/pitch spring sampling a procedural road-height function at each axle, plus engine vibration. Grit from the rear tyre, exhaust wisps, contact and long shadows, sun bloom, anamorphic streak, vignette and film grain. Verified with a machine syntax check and headless-Chrome screenshots; two authoring fixes before finalizing: the wheels were originally drawn before the body (so the wheel-well discs painted over them) and the first car profile was too tall, both corrected.",
+  "hosting": "api",
+  "weights": "closed"
+}

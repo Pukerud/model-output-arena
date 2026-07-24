@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-opus-5",
+  "model_display": "Claude Opus 5",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:8f1e5687419505d78246f3595884e6a38c40307b032cb576a327aeefc5e6d906",
+  "generated_at": "2026-07-24T18:35:00Z",
+  "runner": "Claude Opus 5 via Claude Code (VS Code extension)",
+  "notes": "\"Lawn Defence\" — the ten-point plan is written as a comment block at the top of the file and then followed. Fixed 1280x720 canvas letterboxed into any window (DPR aware) for the lawn; HTML/CSS overlays for main menu, how-to-play, leaderboard, pause, and end screens. 5 lanes x 9 columns, left seed rail with a sun counter, six packets with cost/cooldown sweeps/hotkeys, and a shovel (refunds 25%). Economy: sky sun on a timer plus sunflowers, click to collect, token flies to the counter. Six plants (Sunflower, Peashooter, Wall-nut, Snow Pea, Repeater, Cherry Bomb) and five zombies (Zombie, Conehead, Sprinter, Buckethead, Brute), all drawn procedurally with idle animation, walk/eat cycles, armour that visibly degrades, freeze tint, damage flash and ragdoll death. 12 waves generated from a difficulty budget with every 4th flagged as a huge wave, banners, a flag-marked progress bar, and skippable breaks. One lawn mower per lane fires once as a safety net. WebAudio synth SFX (no assets), particles, floating score text, screen shake, hover ghost with invalid-placement feedback, hotkeys 1-6/S/Esc/M/Space, auto-pause on tab blur. Score from kills + wave bonuses + leftover sun, with a top-10 localStorage leaderboard and name entry. Verified with a machine syntax check and a headless-Chrome harness that plays the game (clean, no runtime errors); fixes before finalizing: sunflower sun floated upward forever (sign error in the spawn physics), the repeater's second pea used setTimeout instead of game time, and the first board metrics put the lawn mowers behind the seed rail with packet text overflowing.",
+  "hosting": "api",
+  "weights": "closed"
+}

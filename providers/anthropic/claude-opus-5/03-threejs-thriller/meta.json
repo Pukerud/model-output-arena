@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-opus-5",
+  "model_display": "Claude Opus 5",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-07-24T18:35:00Z",
+  "runner": "Claude Opus 5 via Claude Code (VS Code extension)",
+  "notes": "Single HTML file, Three.js r160 pulled from unpkg via an import map (the only CDN dependency; the prompt permits a library for this test). All four dancers are built from primitives on a shared procedural rig (hips/spine/chest/neck/head, three-segment arms with clawed hands, three-segment legs) and costumed per character: Michael Jackson in the red-and-black jacket with chevrons, fedora, jheri curls and a single white glove; Pepe the Frog with an oversized head, eyes on top of the skull, wide red-lipped mouth and blue polo; Donald Trump in a navy suit with an over-long red tie and a blond swoop; Elon Musk in a black leather jacket with a five-o'clock shadow. Choreography is a beat-locked keyframe system at 118 BPM: ten authored poses (zombie rise, the claw left/right, wide monster stance, pelvic thrust, side shuffles, stiff-armed lurch, shoulder roll, arms-up V) sequenced over a 32-beat loop, with per-dancer amplitude/lag/snap so the formation reads as four performers rather than one instanced puppet, plus additive beat bounce, breathing, sway and inverse-kinematic-ish ankle levelling. Cinematic camera director cuts through eight shots (establishing wide, low hero, tracking, close-ups, crane, orbit) on phrase boundaries with handheld float and a gentle dutch; [F] hands over to OrbitControls, [Space] cuts, [B] toggles bloom. Set: displaced ground with a flat dance floor, 46 procedural headstones of three kinds, recursive dead trees, an instanced iron railing, silhouette hills, 26 drifting mist billboards, 1100 ash particles, moon disc with sprite glow. Lighting is moonlight with 2048 shadows, a warm rim spot, two sweeping colour spots pulsing on the beat, and randomised lightning that drives both the light and the grade. ACES tone mapping, UnrealBloom, and a custom final pass for chromatic aberration, split toning, vignette, film grain and the lightning wash, under CSS letterbox bars with a title card. Verified with a machine syntax check (import-map JSON plus an ES-module parse) and by loading the page in headless Chrome, where it imported three.js and drove the render loop continuously; no still frame was captured, because software WebGL in that environment rasterised the shadow maps and bloom too slowly to reach a screenshot. Unlike tests 01 and 02, this output has therefore not been eyeballed.",
+  "hosting": "api",
+  "weights": "closed"
+}
