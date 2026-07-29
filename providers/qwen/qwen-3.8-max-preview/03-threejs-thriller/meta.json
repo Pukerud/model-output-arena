@@ -1,0 +1,13 @@
+{
+  "provider": "qwen",
+  "provider_display": "Qwen",
+  "model": "qwen-3.8-max-preview",
+  "model_display": "Qwen 3.8 Max Preview",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-07-29T07:35:44Z",
+  "runner": "Qwen 3.8 Max Preview via pi agent",
+  "notes": "Single HTML using Three.js r128 via CDN (the one library the prompt permits). Procedurally built articulated dancers (hip / torso / head / shoulder / hip pivots) for MJ (red jacket, fedora, white stripe), Pepe (green, big bulging eyes, wide mouth), Trump (orange tan, blonde swoop, navy suit, red tie) and Elon (dark suit), performing a looping Thriller-style routine: side-step + hip sway, alternating 'zombie-claw' arm lunges with wrist flicks, a both-arms-up climax pose on the 4th bar, weight-shift leg steps and head bops, slightly staggered per dancer so the line ripples. Cinematic staging: full moon + glow, starfield, exponential fog, graveyard gravestones and dead trees, a soft-shadow moon key light plus beat-pulsing purple/green spotlights, ACES tone mapping and a slow orbiting camera. Verified headless in Edge (WebGL): 0 console/runtime errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

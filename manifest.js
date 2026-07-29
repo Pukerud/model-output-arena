@@ -461,6 +461,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/google/gemini-3.6-flash-high/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/google/gemini-3.6-flash-high/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "qwen",
+      provider_display: "Qwen",
+      model: "qwen-3.8-max-preview",
+      model_display: "Qwen 3.8 Max Preview",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/qwen/qwen-3.8-max-preview",
+      added: "2026-07-29",
+      outputs: {
+        "01-car-parallax":      "providers/qwen/qwen-3.8-max-preview/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/qwen/qwen-3.8-max-preview/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/qwen/qwen-3.8-max-preview/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

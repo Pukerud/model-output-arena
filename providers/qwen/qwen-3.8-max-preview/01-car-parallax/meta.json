@@ -1,0 +1,13 @@
+{
+  "provider": "qwen",
+  "provider_display": "Qwen",
+  "model": "qwen-3.8-max-preview",
+  "model_display": "Qwen 3.8 Max Preview",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-07-29T07:35:44Z",
+  "runner": "Qwen 3.8 Max Preview via pi agent",
+  "notes": "Single self-contained HTML, vanilla canvas 2D, no libraries. Static sunset sky with sun disc + radial glow and faint stars; procedural ridged-noise mountain/hill bands; a dark distant tree-line, mid roadside trees and telephone poles, asphalt with fast lane dashes, and a blurred foreground grass rush — each layer on its own parallax factor over one periodic world-scroll value so the scene loops seamlessly. Hand-authored red saloon profile with wheel-arch cut-outs, glass with a sunset reflection, body crease and head/tail lamps; wheels roll without slip (angle = scroll / radius) with five-spoke rims; subtle body bob + pitch tie the car to the road. Verified headless in Edge: 0 console/runtime errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

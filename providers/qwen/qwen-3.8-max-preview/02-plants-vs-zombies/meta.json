@@ -1,0 +1,13 @@
+{
+  "provider": "qwen",
+  "provider_display": "Qwen",
+  "model": "qwen-3.8-max-preview",
+  "model_display": "Qwen 3.8 Max Preview",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-07-29T07:35:44Z",
+  "runner": "Qwen 3.8 Max Preview via pi agent",
+  "notes": "Single self-contained HTML, canvas only. Full game: main menu (Play / Leaderboard), a 5x9 checkerboard lawn, a sun economy (falling sky sun + sunflowers), five seed packets (Sunflower, Peashooter, Snow Pea, Wall-nut, Cherry) each with cost and recharge cooldown, a 24-wave spawn schedule with halfway and final-wave banners, three zombie types (basic / cone / bucket) that walk and eat plants, per-row lawnmowers as a last-resort failsafe, a win/lose end screen with name entry, and a localStorage top-5 leaderboard. Verified headless in Edge: the menu plus 12 s of live play (planting, sun accrual, zombie spawn) ran with 0 console/runtime errors.",
+  "hosting": "api",
+  "weights": "closed"
+}
