@@ -476,6 +476,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/qwen/qwen-3.8-max-preview/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/qwen/qwen-3.8-max-preview/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwen3.6-27b-a3b-uncensored",
+      model_display: "Qwen 3.6 27B A3B Uncensored",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwen3.6-27b-a3b-uncensored",
+      added: "2025-08-06",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwen3.6-27b-a3b-uncensored/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwen3.6-27b-a3b-uncensored/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwen3.6-27b-a3b-uncensored/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
