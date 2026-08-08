@@ -491,6 +491,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.6-27b-a3b-uncensored/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.6-27b-a3b-uncensored/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwen3.6-27b-fable-fusion-711",
+      model_display: "Qwen 3.6 27B Fable Fusion 711",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwen3.6-27b-fable-fusion-711",
+      added: "2026-08-08",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwen3.6-27b-fable-fusion-711/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwen3.6-27b-fable-fusion-711/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwen3.6-27b-fable-fusion-711/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
