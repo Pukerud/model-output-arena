@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mini Plants vs Zombies - Muse Glimmer 30B</title>
+<style>
+html,body{margin:0;height:100%;background:#222;color:#fff;font-family:sans-serif;overflow:hidden}
+#ui{position:absolute;top:10px;left:10px;z-index:10;background:rgba(0,0,0,.6);padding:10px;border-radius:8px}
+button{margin:4px;padding:6px 10px}
+canvas{display:block}
+#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:20}
+.card{background:#333;padding:24px;border-radius:12px;text-align:center;max-width:400px}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div>Sun: <span id="sun">50</span></div>
+  <button id="plantBtn">Plant Peashooter 25 Sun</button>
+  <button id="restart">Restart</button>
+  <div>Score: <span id="score">0</span></div>
+</div>
+<div id="menu" class="card">
+  <div>
+    <h1>Mini Plants vs Zombies</h1>
+    <p>Muse Glimmer 30B - Single file polished demo</p>
+    <button id="start">Start Game</button>
+    <p style="font-size:12px;margin-top:12px">Leaderboard saved locally. Click to plant, zombies come from right.</p>
+  </div>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H;function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight}resize();addEventListener('resize',resize);
+
+let sun=50,score=0,plants=[],zombies=[],bullets=[],rows=5,cols=9,cellW,cellH;
+let gameOver=false,lastSpawn=0;
+
+function initGrid(){cellW=W/cols;cellH=H/rows}
+initGrid();
+
+const menu=document.getElementById('menu');
+document.getElementById('start').onclick=()=>{menu.style.display='none';resetGame()};
+document.getElementById('restart').onclick=resetGame;
+document.getElementById('plantBtn').onclick=()=>selectedPlant='peashooter';
+
+let selectedPlant=null,mouse={x:0,y:0};
+canvas.onmousemove=e=>{mouse.x=e.clientX;mouse.y=e.clientY};
+canvas.onclick=e=>{
+  if(gameOver||!selectedPlant) return;
+  const col=Math.floor(mouse.x/cellW),row=Math.floor(mouse.y/cellH);
+  if(row<0||row>=rows||col<0||col>=cols) return;
+  if(sun<25) return;
+  // check occupied
+  if(plants.some(p=>p.row===row&&p.col===col)) return;
+  sun-=25;updateUI();
+  plants.push({row,col,type:selectedPlant,hp:100,x:col*cellW+cellW/2,y:row*cellH+cellH/2});
+};
+
+function resetGame(){
+  sun=50;score=0;plants=[];zombies=[];bullets=[];gameOver=false;lastSpawn=0;
+  updateUI();
+}
+
+function spawnZombie(){
+  const row=Math.floor(Math.random()*rows);
+  zombies.push({row,col:cols-1,hp:100,x:(cols-1)*cellW+cellW/2,y:row*cellH+cellH/2,speed:0.3});
+}
+function update(){
+  if(gameOver) return;
+  // spawn
+  lastSpawn+=16;
+  if(lastSpawn>2000){spawnZombie();lastSpawn=0;}
+  // plants shoot
+  plants.forEach(p=>{
+    if(p.type==='peashooter' && Math.random()<0.05){
+      bullets.push({x:p.x+20,y:p.y,vy:0,vx:6,row:p.row});
+    }
+  });
+  // move zombies
+  zombies.forEach(z=>{
+    z.col-=z.speed*0.02;
+    z.x=z.col*cellW+cellW/2;
+    // attack plant
+    const target=plants.find(p=>p.row===z.row&&Math.abs(p.col-z.col)<0.5);
+    if(target){target.hp-=0.3;z.x+=0;}
+  });
+  // bullets
+  bullets.forEach(b=>b.x+=b.vx);
+  // collisions
+  bullets.forEach((b,i)=>{
+    const z=zombies.find(z=>z.row===b.row&&Math.abs(z.x-b.x)<30);
+    if(z){z.hp-=20;bullets.splice(i,1);}
+  });
+  zombies=zombies.filter(z=>z.hp>0 && z.col>-1);
+  plants=plants.filter(p=>p.hp>0);
+  // check lose
+  if(zombies.some(z=>z.col<0)){gameOver=true;}
+  // score
+  score+=Math.floor(sun/100);
+  updateUI();
+}
+
+function draw(){
+  ctx.fillStyle='#4caf50';ctx.fillRect(0,0,W,H);
+  // grid
+  ctx.strokeStyle='rgba(0,0,0,.2)';
+  for(let i=0;i<=rows;i++){ctx.beginPath();ctx.moveTo(0,i*cellH);ctx.lineTo(W,i*cellH);ctx.stroke();}
+  for(let j=0;j<=cols;j++){ctx.beginPath();ctx.moveTo(j*cellW,0);ctx.lineTo(j*cellW,H);ctx.stroke();}
+  // plants
+  plants.forEach(p=>{
+    ctx.fillStyle='#2e7d32';
+    ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='12px sans-serif';ctx.fillText('P',p.x-5,p.y+4);
+  });
+  // zombies
+  zombies.forEach(z=>{
+    ctx.fillStyle='#795548';
+    ctx.fillRect(z.x-20,z.y-20,40,40);
+    ctx.fillStyle='#000';ctx.fillRect(z.x-10,z.y-10,20,10);
+  });
+  // bullets
+  bullets.forEach(b=>{
+    ctx.fillStyle='#ffeb3b';
+    ctx.beginPath();ctx.arc(b.x,b.y,5,0,Math.PI*2);ctx.fill();
+  });
+  // selection preview
+  if(selectedPlant && !gameOver){
+    const col=Math.floor(mouse.x/cellW),row=Math.floor(mouse.y/cellH);
+    ctx.strokeStyle='yellow';ctx.lineWidth=2;
+    ctx.strokeRect(col*cellW,row*cellH,cellW,cellH);
+  }
+  if(gameOver){
+    ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,H/2-50,W,100);
+    ctx.fillStyle='#fff';ctx.font='32px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Game Over - Score '+score,H/2,W/2);
+  }
+}
+
+function updateUI(){
+  document.getElementById('sun').textContent=sun;
+  document.getElementById('score').textContent=score;
+}
+function loop(){update();draw();requestAnimationFrame(loop)}
+loop();
+
+// simple leaderboard
+window.addEventListener('beforeunload',()=>{
+  const lb=JSON.parse(localStorage.getItem('pvz_lb')||'[]');
+  lb.push({name:'Muse',score,ts:Date.now()});
+  lb.sort((a,b)=>b.score-a.score);
+  localStorage.setItem('pvz_lb',JSON.stringify(lb.slice(0,10)));
+});
+</script>
+</body>
+</html>

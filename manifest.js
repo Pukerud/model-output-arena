@@ -506,6 +506,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.6-27b-fable-fusion-711/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.6-27b-fable-fusion-711/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "muse-glimmer-30b",
+      model_display: "Muse Glimmer 30B",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/muse-glimmer-30b",
+      added: "2026-06-13",
+      outputs: {
+        "01-car-parallax":      "providers/local/muse-glimmer-30b/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/muse-glimmer-30b/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/muse-glimmer-30b/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
