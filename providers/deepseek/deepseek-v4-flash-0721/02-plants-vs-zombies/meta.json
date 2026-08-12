@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-flash-0721",
+  "model_display": "DeepSeek V4 Flash 0721",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-12T21:09:17Z",
+  "runner": "DeepSeek V4 Flash 0721 via pendant (VS Code)",
+  "notes": "Fully verified playable: 9×5 lawn, 5 plants (Sunflower/Peashooter/Snow Pea/Wall-nut/Cherry Bomb), 3 zombie types, sun economy + cooldowns, 3-round levels that escalate, lawnmowers, shovel, pause/mute, WebAudio synth SFX, localStorage leaderboard, main menu / how-to / game-over / pause overlays. Every mechanic smoke-tested in a real browser.",
+  "hosting": "api",
+  "weights": "closed"
+}

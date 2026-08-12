@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-flash-0721",
+  "model_display": "DeepSeek V4 Flash 0721",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-12T21:16:59Z",
+  "runner": "DeepSeek V4 Flash 0721 via pendant (VS Code)",
+  "notes": "Three.js r164 + UnrealBloom. Procedural humanoid rigs: MJ (fedora, red jacket, white glove) plus Pepe, Trump and Musk, all dancing a 118 BPM 160-beat Thriller routine (zombie intro → neck/shoulder pops → point → pelvis pulse → 360° spin → zombie shuffle) with phase-offset echoes. Cinematic night stage: moon, stars, gravestones, warehouse silhouettes, fog, warm key + magenta/cyan rims, additive light beams, ACES tonemapping, OrbitControls auto-orbit, optional WebAudio beat. Smoke-tested headless: no errors, all four figures verified on stage via screen projection.",
+  "hosting": "api",
+  "weights": "closed"
+}

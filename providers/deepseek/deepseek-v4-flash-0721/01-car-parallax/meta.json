@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-flash-0721",
+  "model_display": "DeepSeek V4 Flash 0721",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-12T20:57:44Z",
+  "runner": "DeepSeek V4 Flash 0721 via pendant (VS Code)",
+  "notes": "Sunset drive scene: layered parallax (stars, clouds, two mountain ridges, two treelines, utility poles, bushes, flowers), wine-red coupe with spinning spoked wheels, body bob, headlight/taillight glow, exhaust puffs, hold key to accelerate.",
+  "hosting": "api",
+  "weights": "closed"
+}

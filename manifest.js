@@ -253,6 +253,21 @@ window.ARENA = {
       },
     },
     {
+      provider: "deepseek",
+      provider_display: "DeepSeek",
+      model: "deepseek-v4-flash-0721",
+      model_display: "DeepSeek V4 Flash 0721",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/deepseek/deepseek-v4-flash-0721",
+      added: "2026-08-12",
+      outputs: {
+        "01-car-parallax":      "providers/deepseek/deepseek-v4-flash-0721/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/deepseek/deepseek-v4-flash-0721/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/deepseek/deepseek-v4-flash-0721/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "minimax",
       provider_display: "MiniMax",
       model: "minimax-m3",
