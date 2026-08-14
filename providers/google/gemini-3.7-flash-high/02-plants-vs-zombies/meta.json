@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.7-flash-high",
+  "model_display": "Gemini 3.7 Flash High (Antigravity Harness)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-14T08:00:00Z",
+  "runner": "Gemini 3.7 Flash High via Antigravity IDE",
+  "notes": "Single-shot run in Antigravity IDE. Full-featured, self-contained PvZ clone with zero external asset dependencies. Features include: Title screen, Main Menu, Level-based Adventure mode, Endless Survival mode, Plant Almanac encyclopedia, Persistent Leaderboards (localStorage), Interactive Audio/FX synthesizer (Web Audio API). In-game systems: 5-lane lawn grid, lawnmowers as last line of defense, 6 distinct plants (Sunflower, Peashooter, Snow Pea, Wall-nut with progressive damage states, Cherry Bomb with screen shake, Potato Mine with arming sequence), shovel tool, 4 zombie types (Regular, Conehead, Buckethead, Fast Runner), particle splats, floating text, and wave announcements.",
+  "hosting": "api",
+  "weights": "closed"
+}

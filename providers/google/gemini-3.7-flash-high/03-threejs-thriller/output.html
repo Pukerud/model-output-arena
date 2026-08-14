@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thriller - Michael Jackson, Pepe, Trump & Elon</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #030206;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #fff;
+    }
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      background: rgba(10, 10, 18, 0.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      user-select: none;
+      max-width: 320px;
+    }
+    .hud-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ff4757, #ff6b81, #ffa502);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hud-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: #ced6e0;
+    }
+    .hud-row:last-child {
+      margin-bottom: 0;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .hud-btn:hover {
+      background: #ff4757;
+      border-color: #ff4757;
+    }
+    .hud-btn.active {
+      background: #ff4757;
+      border-color: #ff6b81;
+    }
+    .btn-group {
+      display: flex;
+      gap: 4px;
+    }
+    #audio-prompt {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 71, 87, 0.9);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      z-index: 10;
+      box-shadow: 0 4px 20px rgba(255, 71, 87, 0.5);
+      animation: pulse 2s infinite;
+      transition: all 0.3s ease;
+    }
+    #audio-prompt.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.04); }
+    }
+  </style>
+  <!-- Three.js & OrbitControls from stable CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="hud">
+    <div class="hud-title">🧟 THRILLER CINEMATIC 🌕</div>
+    <div class="hud-row">
+      <span>Camera Angle:</span>
+      <div class="btn-group">
+        <button class="hud-btn active" id="camAction">Action</button>
+        <button class="hud-btn" id="camFront">Front</button>
+        <button class="hud-btn" id="camMJ">Lead</button>
+        <button class="hud-btn" id="camOrbit">Free</button>
+      </div>
+    </div>
+    <div class="hud-row">
+      <span>Atmosphere:</span>
+      <div class="btn-group">
+        <button class="hud-btn active" id="litMoon">Moonlight</button>
+        <button class="hud-btn" id="litBlood">Blood Moon</button>
+        <button class="hud-btn" id="litStorm">Storm</button>
+      </div>
+    </div>
+    <div class="hud-row">
+      <span>Audio Track:</span>
+      <button class="hud-btn" id="audioToggle">🔊 Synth: ON</button>
+    </div>
+    <div class="hud-row">
+      <span>Lightning Strike:</span>
+      <button class="hud-btn" id="lightningBtn">⚡ Flash</button>
+    </div>
+  </div>
+
+  <div id="audio-prompt">🎵 Click to Enable Thriller Synth Soundtrack</div>
+
+  <script>
+    (function () {
+      // --- 1. AUDIO ENGINE (Web Audio API Thriller Funk Synthesizer) ---
+      const AudioEngine = {
+        ctx: null,
+        isPlaying: false,
+        timer: null,
+        step: 0,
+        bpm: 118,
+
+        init() {
+          if (this.ctx) return;
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+          this.startGroove();
+        },
+
+        playBass(freq, time, dur) {
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const sub = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+
+          osc.type = 'sawtooth';
+          sub.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, time);
+          sub.frequency.setValueAtTime(freq / 2, time);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(450, time);
+          filter.frequency.exponentialRampToValueAtTime(120, time + dur);
+
+          gain.gain.setValueAtTime(0.22, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+          osc.connect(filter);
+          sub.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(time);
+          sub.start(time);
+          osc.stop(time + dur);
+          sub.stop(time + dur);
+        },
+
+        playDrum(time, isSnare) {
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = isSnare ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(isSnare ? 180 : 120, time);
+          osc.frequency.exponentialRampToValueAtTime(30, time + (isSnare ? 0.12 : 0.08));
+
+          gain.gain.setValueAtTime(isSnare ? 0.15 : 0.3, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + (isSnare ? 0.15 : 0.1));
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.15);
+        },
+
+        startGroove() {
+          this.isPlaying = true;
+          const bassNotes = [110, 110, 130.81, 146.83, 130.81, 110, 98, 110]; // Iconic Thriller baseline
+          const stepTime = (60 / this.bpm) / 2;
+
+          const scheduleBeat = () => {
+            if (!this.isPlaying) return;
+            const now = this.ctx.currentTime;
+            for (let i = 0; i < 8; i++) {
+              const t = now + i * stepTime;
+              const note = bassNotes[(this.step + i) % bassNotes.length];
+              this.playBass(note, t, stepTime * 0.9);
+              // Drums
+              if ((this.step + i) % 4 === 0) this.playDrum(t, false); // Kick
+              if ((this.step + i) % 4 === 2) this.playDrum(t, true);  // Snare
+            }
+            this.step += 8;
+            this.timer = setTimeout(scheduleBeat, stepTime * 8 * 1000 - 20);
+          };
+          scheduleBeat();
+        },
+
+        toggle() {
+          if (!this.ctx) {
+            this.init();
+            return true;
+          }
+          if (this.isPlaying) {
+            this.isPlaying = false;
+            clearTimeout(this.timer);
+            return false;
+          } else {
+            this.startGroove();
+            return true;
+          }
+        }
+      };
+
+      const audioPrompt = document.getElementById('audio-prompt');
+      function unlockAudio() {
+        AudioEngine.init();
+        audioPrompt.classList.add('hidden');
+        window.removeEventListener('click', unlockAudio);
+      }
+      window.addEventListener('click', unlockAudio);
+      audioPrompt.addEventListener('click', unlockAudio);
+
+      // --- 2. THREE.JS SCENE SETUP ---
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x040308);
+      scene.fog = new THREE.FogExp2(0x06060e, 0.024);
+
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 3.5, 12);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.1;
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.02;
+      controls.minDistance = 3;
+      controls.maxDistance = 28;
+      controls.target.set(0, 2, 0);
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // --- 3. CINEMATIC LIGHTING & MOON ---
+      // Moonlight Directional
+      const moonLight = new THREE.DirectionalLight(0x70a1ff, 1.6);
+      moonLight.position.set(-15, 24, -12);
+      moonLight.castShadow = true;
+      moonLight.shadow.mapSize.width = 2048;
+      moonLight.shadow.mapSize.height = 2048;
+      moonLight.shadow.camera.near = 1;
+      moonLight.shadow.camera.far = 60;
+      moonLight.shadow.camera.left = -16;
+      moonLight.shadow.camera.right = 16;
+      moonLight.shadow.camera.top = 16;
+      moonLight.shadow.camera.bottom = -16;
+      moonLight.shadow.bias = -0.0005;
+      scene.add(moonLight);
+
+      // Ambient Fill
+      const ambientLight = new THREE.AmbientLight(0x2f3542, 0.7);
+      scene.add(ambientLight);
+
+      // Front Stage Spotlight for Michael Jackson & Squad
+      const spotLight = new THREE.SpotLight(0xffffff, 2.2, 35, Math.PI / 6, 0.4, 1.2);
+      spotLight.position.set(0, 10, 9);
+      spotLight.target.position.set(0, 1.5, 0);
+      spotLight.castShadow = true;
+      scene.add(spotLight);
+      scene.add(spotLight.target);
+
+      // Spooky Ground Fog / Lantern Rim Light
+      const rimLight1 = new THREE.PointLight(0xff6b81, 1.8, 12);
+      rimLight1.position.set(-6, 1.5, -3);
+      scene.add(rimLight1);
+
+      const rimLight2 = new THREE.PointLight(0x38bdf8, 1.8, 12);
+      rimLight2.position.set(6, 1.5, -3);
+      scene.add(rimLight2);
+
+      // Giant Full Moon
+      const moonGeo = new THREE.SphereGeometry(7, 32, 32);
+      const moonMat = new THREE.MeshBasicMaterial({ color: 0xe0e7ff });
+      const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+      moonMesh.position.set(-35, 38, -60);
+      scene.add(moonMesh);
+
+      // Moon Glow Billboard Halo
+      const haloGeo = new THREE.PlaneGeometry(35, 35);
+      const canvasGlow = document.createElement('canvas');
+      canvasGlow.width = 256;
+      canvasGlow.height = 256;
+      const gctx = canvasGlow.getContext('2d');
+      const grad = gctx.createRadialGradient(128, 128, 10, 128, 128, 128);
+      grad.addColorStop(0, 'rgba(180, 210, 255, 0.55)');
+      grad.addColorStop(0.5, 'rgba(100, 150, 255, 0.15)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      gctx.fillStyle = grad;
+      gctx.fillRect(0, 0, 256, 256);
+
+      const haloTex = new THREE.CanvasTexture(canvasGlow);
+      const haloMat = new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+      const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+      haloMesh.position.copy(moonMesh.position);
+      haloMesh.position.z += 1;
+      scene.add(haloMesh);
+
+      // --- 4. GOTHIC CEMETERY ENVIRONMENT ---
+      // Ground / Cobblestone Terrain
+      const groundGeo = new THREE.PlaneGeometry(80, 80, 40, 40);
+      const pos = groundGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const vx = pos.getX(i);
+        const vy = pos.getY(i);
+        // Add gentle undulating mounds away from the center dance stage
+        const dist = Math.hypot(vx, vy);
+        if (dist > 6) {
+          pos.setZ(i, Math.sin(vx * 0.3) * Math.cos(vy * 0.3) * 0.6);
+        }
+      }
+      groundGeo.computeVertexNormals();
+
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x181720,
+        roughness: 0.85,
+        metalness: 0.15
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // Center Dance Stage Flagstones
+      const stageGeo = new THREE.CylinderGeometry(6.5, 7.0, 0.15, 32);
+      const stageMat = new THREE.MeshStandardMaterial({
+        color: 0x272430,
+        roughness: 0.6,
+        metalness: 0.2
+      });
+      const stage = new THREE.Mesh(stageGeo, stageMat);
+      stage.position.y = 0.05;
+      stage.receiveShadow = true;
+      scene.add(stage);
+
+      // Tombstones & Gothic Crosses
+      const tombMat = new THREE.MeshStandardMaterial({ color: 0x3d3a45, roughness: 0.9 });
+      for (let i = 0; i < 28; i++) {
+        const a = (i / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+        const r = 9 + Math.random() * 18;
+        const tx = Math.cos(a) * r;
+        const tz = Math.sin(a) * r;
+
+        const tombGroup = new THREE.Group();
+        tombGroup.position.set(tx, 0, tz);
+        tombGroup.rotation.y = Math.random() * Math.PI;
+        tombGroup.rotation.z = (Math.random() - 0.5) * 0.15; // Tilted tombstone
+
+        if (Math.random() > 0.35) {
+          // Slab Headstone
+          const slabGeo = new THREE.BoxGeometry(0.8, 1.3, 0.25);
+          const slab = new THREE.Mesh(slabGeo, tombMat);
+          slab.position.y = 0.65;
+          slab.castShadow = true;
+          slab.receiveShadow = true;
+          tombGroup.add(slab);
+        } else {
+          // Cross
+          const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.8, 0.25), tombMat);
+          crossV.position.y = 0.9;
+          crossV.castShadow = true;
+          const crossH = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.28, 0.25), tombMat);
+          crossH.position.y = 1.25;
+          crossH.castShadow = true;
+          tombGroup.add(crossV);
+          tombGroup.add(crossH);
+        }
+        scene.add(tombGroup);
+      }
+
+      // Twisted Dead Trees
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+        const r = 16 + Math.random() * 12;
+        const treeX = Math.cos(a) * r;
+        const treeZ = Math.sin(a) * r;
+
+        const treeGroup = new THREE.Group();
+        treeGroup.position.set(treeX, 0, treeZ);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x151218, roughness: 1.0 });
+
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.6, 6, 8), trunkMat);
+        trunk.position.y = 3;
+        trunk.castShadow = true;
+        treeGroup.add(trunk);
+
+        // Branches
+        for (let b = 0; b < 4; b++) {
+          const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.22, 3, 6), trunkMat);
+          branch.position.set(0, 4.5, 0);
+          branch.rotation.z = (Math.PI / 3) * (b % 2 === 0 ? 1 : -1);
+          branch.rotation.y = (b * Math.PI) / 2;
+          branch.castShadow = true;
+          treeGroup.add(branch);
+        }
+        scene.add(treeGroup);
+      }
+
+      // Glowing Carved Jack-o'-Lanterns (Pumpkins)
+      for (let p = 0; p < 6; p++) {
+        const a = (p / 6) * Math.PI * 2 + 0.3;
+        const r = 6.2;
+        const px = Math.cos(a) * r;
+        const pz = Math.sin(a) * r;
+
+        const pumpkinGroup = new THREE.Group();
+        pumpkinGroup.position.set(px, 0.3, pz);
+
+        const pumpGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        pumpGeo.scale(1.2, 0.9, 1.2);
+        const pumpMat = new THREE.MeshStandardMaterial({ color: 0xe67e22, roughness: 0.7 });
+        const pumpMesh = new THREE.Mesh(pumpGeo, pumpMat);
+        pumpMesh.castShadow = true;
+        pumpkinGroup.add(pumpMesh);
+
+        // Candle light inside
+        const pLight = new THREE.PointLight(0xff7700, 1.2, 4);
+        pLight.position.set(0, 0.1, 0);
+        pumpkinGroup.add(pLight);
+
+        scene.add(pumpkinGroup);
+      }
+
+      // --- 5. ARTICULATED CHARACTER BUILDER ---
+      function createCharacter(config) {
+        const group = new THREE.Group();
+
+        // Materials
+        const skinMat = new THREE.MeshStandardMaterial({ color: config.skinColor, roughness: 0.6 });
+        const outfitMat = new THREE.MeshStandardMaterial({ color: config.outfitColor, roughness: 0.5, metalness: 0.1 });
+        const pantsMat = new THREE.MeshStandardMaterial({ color: config.pantsColor, roughness: 0.7 });
+        const shoesMat = new THREE.MeshStandardMaterial({ color: config.shoesColor, roughness: 0.3 });
+
+        // Root / Pelvis
+        const pelvis = new THREE.Group();
+        pelvis.position.y = 1.6;
+        group.add(pelvis);
+
+        const hips = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.35, 0.45), pantsMat);
+        hips.castShadow = true;
+        pelvis.add(hips);
+
+        // Spine / Torso
+        const spine = new THREE.Group();
+        spine.position.y = 0.2;
+        pelvis.add(spine);
+
+        const chest = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.52), outfitMat);
+        chest.position.y = 0.45;
+        chest.castShadow = true;
+        spine.add(chest);
+
+        // Special Decals / Outfits
+        if (config.isMJ) {
+          // Iconic V-Stripes on Thriller Jacket
+          const vMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+          const v1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.54), vMat);
+          v1.rotation.z = -0.45;
+          v1.position.set(-0.18, 0.45, 0.02);
+          const v2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.54), vMat);
+          v2.rotation.z = 0.45;
+          v2.position.set(0.18, 0.45, 0.02);
+          spine.add(v1);
+          spine.add(v2);
+        } else if (config.isTrump) {
+          // Long Bright Red Tie
+          const tieMat = new THREE.MeshStandardMaterial({ color: 0xd63031, roughness: 0.4 });
+          const tie = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.75, 0.55), tieMat);
+          tie.position.set(0, 0.35, 0.02);
+          spine.add(tie);
+        }
+
+        // Neck & Head
+        const neck = new THREE.Group();
+        neck.position.y = 0.9;
+        spine.add(neck);
+
+        let head;
+        if (config.isPepe) {
+          // Distinctive Pepe Head
+          head = new THREE.Group();
+          const pHeadMesh = new THREE.Mesh(new THREE.SphereGeometry(0.46, 16, 16), skinMat);
+          pHeadMesh.scale.set(1.2, 0.9, 1.1);
+          pHeadMesh.position.y = 0.35;
+          pHeadMesh.castShadow = true;
+          head.add(pHeadMesh);
+
+          // Big Frog Eyes
+          const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+          const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+          [-0.24, 0.24].forEach(ex => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), eyeMat);
+            eye.position.set(ex, 0.62, 0.25);
+            const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), pupilMat);
+            pupil.position.set(ex, 0.64, 0.38);
+            head.add(eye);
+            head.add(pupil);
+          });
+        } else {
+          head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.55, 0.48), skinMat);
+          head.position.y = 0.35;
+          head.castShadow = true;
+
+          // Hair / Hats
+          if (config.isMJ) {
+            // Fedora Hat
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0x1e1e1e, roughness: 0.4 });
+            const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.06, 24), hatMat);
+            brim.position.y = 0.3;
+            brim.rotation.x = 0.15;
+            const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.35, 24), hatMat);
+            crown.position.y = 0.45;
+            crown.rotation.x = 0.15;
+            head.add(brim);
+            head.add(crown);
+          } else if (config.isTrump) {
+            // Signature Golden Hair
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0xf5cd79, roughness: 0.6 });
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.24, 0.58), hairMat);
+            hair.position.set(0, 0.34, 0.04);
+            hair.rotation.z = -0.1;
+            head.add(hair);
+          } else if (config.isElon) {
+            // Modern Styled Hair
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x4b4b4b, roughness: 0.7 });
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.18, 0.52), hairMat);
+            hair.position.set(0, 0.32, 0);
+            head.add(hair);
+          }
+        }
+        neck.add(head);
+
+        // Arms Builder
+        function buildArm(isLeft) {
+          const shoulder = new THREE.Group();
+          shoulder.position.set(isLeft ? -0.55 : 0.55, 0.82, 0);
+          spine.add(shoulder);
+
+          const armUpper = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.55, 0.24), outfitMat);
+          armUpper.position.y = -0.25;
+          armUpper.castShadow = true;
+          shoulder.add(armUpper);
+
+          const elbow = new THREE.Group();
+          elbow.position.y = -0.52;
+          shoulder.add(elbow);
+
+          const armLower = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.5, 0.22), config.isMJ && !isLeft ? new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.7 }) : skinMat);
+          armLower.position.y = -0.22;
+          armLower.castShadow = true;
+          elbow.add(armLower);
+
+          const hand = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.18), config.isMJ && !isLeft ? new THREE.MeshStandardMaterial({ color: 0xf1f2f6, metalness: 0.9 }) : skinMat);
+          hand.position.y = -0.48;
+          hand.castShadow = true;
+          elbow.add(hand);
+
+          return { shoulder, elbow, hand };
+        }
+
+        const leftArm = buildArm(true);
+        const rightArm = buildArm(false);
+
+        // Legs Builder
+        function buildLeg(isLeft) {
+          const hip = new THREE.Group();
+          hip.position.set(isLeft ? -0.22 : 0.22, -0.15, 0);
+          pelvis.add(hip);
+
+          const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.65, 0.26), pantsMat);
+          thigh.position.y = -0.32;
+          thigh.castShadow = true;
+          hip.add(thigh);
+
+          const knee = new THREE.Group();
+          knee.position.y = -0.65;
+          hip.add(knee);
+
+          const shin = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.24), pantsMat);
+          shin.position.y = -0.32;
+          shin.castShadow = true;
+          knee.add(shin);
+
+          const foot = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.18, 0.48), shoesMat);
+          foot.position.set(0, -0.65, 0.1);
+          foot.castShadow = true;
+          knee.add(foot);
+
+          return { hip, knee, foot };
+        }
+
+        const leftLeg = buildLeg(true);
+        const rightLeg = buildLeg(false);
+
+        return {
+          group,
+          pelvis,
+          spine,
+          neck,
+          head,
+          leftArm,
+          rightArm,
+          leftLeg,
+          rightLeg
+        };
+      }
+
+      // --- 6. INSTANTIATE THE SQUAD ---
+      // 1. Michael Jackson (Center Lead)
+      const mj = createCharacter({
+        skinColor: 0xf8d7c4,
+        outfitColor: 0xd63031, // Red Thriller Jacket
+        pantsColor: 0x1e1e24,
+        shoesColor: 0x000000,
+        isMJ: true
+      });
+      mj.group.position.set(0, 0, 1.2);
+      scene.add(mj.group);
+
+      // 2. Pepe the Frog (Stage Left)
+      const pepe = createCharacter({
+        skinColor: 0x44bd32, // Pepe Green
+        outfitColor: 0x0984e3, // Blue Polo
+        pantsColor: 0xdfe6e9,
+        shoesColor: 0x636e72,
+        isPepe: true
+      });
+      pepe.group.position.set(-2.8, 0, -0.4);
+      scene.add(pepe.group);
+
+      // 3. Donald Trump (Stage Right)
+      const trump = createCharacter({
+        skinColor: 0xfbc531, // Tanned orange
+        outfitColor: 0x192a56, // Navy Suit
+        pantsColor: 0x192a56,
+        shoesColor: 0x2f3640,
+        isTrump: true
+      });
+      trump.group.position.set(2.8, 0, -0.4);
+      scene.add(trump.group);
+
+      // 4. Elon Musk (Center Back)
+      const elon = createCharacter({
+        skinColor: 0xf5cd79,
+        outfitColor: 0x2d3436, // Cyber Leather Jacket
+        pantsColor: 0x303952,
+        shoesColor: 0x1e272e,
+        isElon: true
+      });
+      elon.group.position.set(0, 0, -2.2);
+      scene.add(elon.group);
+
+      const squad = [mj, pepe, trump, elon];
+
+      // --- 7. THRILLER CHOREOGRAPHY ANIMATION ENGINE ---
+      function animateChoreography(char, t, offset = 0) {
+        const beat = (t * 2.1 + offset);
+        const cycle = beat % 16; // 16-beat comprehensive Thriller loop
+
+        // 1. Root Bounce / Zombie Grooving
+        char.pelvis.position.y = 1.6 + Math.abs(Math.sin(beat * Math.PI)) * 0.15;
+        char.pelvis.rotation.y = Math.sin(beat * 0.5) * 0.15;
+
+        // 2. Head Snaps & Shrugs (Phase 0-4)
+        if (cycle < 4) {
+          const snap = Math.floor(cycle) % 2 === 0 ? 0.65 : -0.65;
+          char.head.rotation.y = snap;
+          char.head.rotation.z = Math.sin(beat * Math.PI) * 0.15;
+          char.spine.rotation.x = 0.2 + Math.sin(beat * 2) * 0.08;
+
+          // Arms zombie shrug
+          char.leftArm.shoulder.rotation.x = -1.2 + Math.sin(beat * Math.PI) * 0.2;
+          char.rightArm.shoulder.rotation.x = -1.2 - Math.sin(beat * Math.PI) * 0.2;
+          char.leftArm.elbow.rotation.x = -0.8;
+          char.rightArm.elbow.rotation.x = -0.8;
+        }
+        // 3. The Iconic Thriller Claws Stomp (Phase 4-8)
+        else if (cycle < 8) {
+          const side = cycle < 6 ? 1 : -1;
+          char.head.rotation.y = side * 0.4;
+          char.spine.rotation.z = side * 0.15;
+          char.spine.rotation.x = 0.25;
+
+          // Double Claws swing left / right
+          char.leftArm.shoulder.rotation.x = -1.4;
+          char.rightArm.shoulder.rotation.x = -1.4;
+          char.leftArm.shoulder.rotation.z = side * 0.7 + Math.sin(beat * 4) * 0.15;
+          char.rightArm.shoulder.rotation.z = side * 0.7 + Math.sin(beat * 4) * 0.15;
+          char.leftArm.elbow.rotation.x = -1.1;
+          char.rightArm.elbow.rotation.x = -1.1;
+
+          // Stepping
+          char.leftLeg.hip.rotation.x = Math.sin(beat * Math.PI) * 0.4;
+          char.rightLeg.hip.rotation.x = -Math.sin(beat * Math.PI) * 0.4;
+        }
+        // 4. Zombie Side Slide & Wave (Phase 8-12)
+        else if (cycle < 12) {
+          char.head.rotation.y = Math.sin(beat * 2) * 0.3;
+          char.spine.rotation.x = 0.1;
+
+          // Alternating zombie arm reaches
+          char.leftArm.shoulder.rotation.x = -1.6 + Math.sin(beat * 2) * 0.5;
+          char.rightArm.shoulder.rotation.x = -1.6 - Math.sin(beat * 2) * 0.5;
+          char.leftArm.elbow.rotation.x = -0.5;
+          char.rightArm.elbow.rotation.x = -0.5;
+
+          char.pelvis.rotation.z = Math.sin(beat * 2) * 0.18;
+        }
+        // 5. MJ Kick, Spin & Dramatic Thriller Freeze Pose (Phase 12-16)
+        else {
+          char.head.rotation.y = 0.5;
+          char.spine.rotation.x = -0.15; // Lean back
+
+          // Right arm point up, left arm back
+          char.rightArm.shoulder.rotation.x = -2.6;
+          char.rightArm.shoulder.rotation.z = 0.3;
+          char.leftArm.shoulder.rotation.x = 0.6;
+          char.leftArm.elbow.rotation.x = -0.4;
+
+          // Dramatic Thriller kick stance
+          char.rightLeg.hip.rotation.x = -0.6;
+          char.rightLeg.knee.rotation.x = 0.8;
+          char.leftLeg.hip.rotation.x = 0.3;
+        }
+      }
+
+      // --- 8. CAMERA DIRECTING & PRESETS ---
+      let cameraMode = 'action'; // 'action', 'front', 'mj', 'orbit'
+
+      document.getElementById('camAction').onclick = (e) => setCamMode('action', e.target);
+      document.getElementById('camFront').onclick = (e) => setCamMode('front', e.target);
+      document.getElementById('camMJ').onclick = (e) => setCamMode('mj', e.target);
+      document.getElementById('camOrbit').onclick = (e) => setCamMode('orbit', e.target);
+
+      function setCamMode(mode, btn) {
+        cameraMode = mode;
+        document.querySelectorAll('.btn-group .hud-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        controls.enabled = mode === 'orbit';
+        if (mode === 'front') {
+          camera.position.set(0, 2.8, 10);
+          controls.target.set(0, 1.8, 0);
+        } else if (mode === 'mj') {
+          camera.position.set(0, 2.2, 4.5);
+          controls.target.set(0, 1.8, 1.2);
+        }
+      }
+
+      // Atmosphere presets
+      document.getElementById('litMoon').onclick = () => {
+        moonLight.color.setHex(0x70a1ff);
+        ambientLight.color.setHex(0x2f3542);
+        scene.fog.color.setHex(0x06060e);
+      };
+      document.getElementById('litBlood').onclick = () => {
+        moonLight.color.setHex(0xff3838);
+        ambientLight.color.setHex(0x4a121a);
+        scene.fog.color.setHex(0x1a0508);
+      };
+      document.getElementById('litStorm').onclick = () => {
+        moonLight.color.setHex(0x48dbfb);
+        ambientLight.color.setHex(0x1e272e);
+        scene.fog.color.setHex(0x0a0e17);
+      };
+
+      // Lightning Flash Trigger
+      let lightningIntensity = 0;
+      function triggerLightning() {
+        lightningIntensity = 3.5;
+        if (AudioEngine.ctx) {
+          // Thunder low boom
+          const osc = AudioEngine.ctx.createOscillator();
+          const g = AudioEngine.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(60, AudioEngine.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(20, AudioEngine.ctx.currentTime + 1.2);
+          g.gain.setValueAtTime(0.4, AudioEngine.ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, AudioEngine.ctx.currentTime + 1.2);
+          osc.connect(g);
+          g.connect(AudioEngine.ctx.destination);
+          osc.start();
+          osc.stop(AudioEngine.ctx.currentTime + 1.2);
+        }
+      }
+      document.getElementById('lightningBtn').onclick = triggerLightning;
+
+      const audioBtn = document.getElementById('audioToggle');
+      audioBtn.onclick = () => {
+        const state = AudioEngine.toggle();
+        audioBtn.textContent = `🔊 Synth: ${state ? 'ON' : 'OFF'}`;
+      };
+
+      // --- 9. MAIN RENDER LOOP ---
+      const clock = new THREE.Clock();
+
+      function render() {
+        const t = clock.getElapsedTime();
+
+        // 1. Animate Thriller Squad Choreography
+        animateChoreography(mj, t, 0);
+        animateChoreography(pepe, t, 0.05);
+        animateChoreography(trump, t, 0.08);
+        animateChoreography(elon, t, 0.03);
+
+        // 2. Pumpkin Candle Flickering
+        spotLight.intensity = 2.2 + Math.sin(t * 12) * 0.25;
+
+        // 3. Lightning Decay & Random Natural Strikes
+        if (Math.random() < 0.002) triggerLightning();
+        if (lightningIntensity > 0) {
+          moonLight.intensity = 1.6 + lightningIntensity;
+          lightningIntensity = Math.max(0, lightningIntensity - 0.15);
+        } else {
+          moonLight.intensity = 1.6;
+        }
+
+        // 4. Dynamic Cinematic Camera Motion
+        if (cameraMode === 'action') {
+          const camRadius = 10 + Math.sin(t * 0.4) * 2.5;
+          const camAngle = Math.sin(t * 0.3) * 0.6;
+          camera.position.x = Math.sin(camAngle) * camRadius;
+          camera.position.z = Math.cos(camAngle) * camRadius;
+          camera.position.y = 2.4 + Math.cos(t * 0.5) * 1.2;
+          camera.lookAt(0, 1.8 + Math.sin(t * 0.6) * 0.3, 0);
+        } else if (cameraMode === 'orbit') {
+          controls.update();
+        }
+
+        renderer.render(scene, camera);
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

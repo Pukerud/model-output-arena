@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.7-flash-high",
+  "model_display": "Gemini 3.7 Flash High (Antigravity Harness)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-14T08:00:00Z",
+  "runner": "Gemini 3.7 Flash High via Antigravity IDE",
+  "notes": "Single-shot run in Antigravity IDE. Full 3D cinematic scene built in Three.js featuring 4 articulated custom-modeled characters (Michael Jackson in iconic red/black Thriller jacket with fedora & silver glove; Pepe the Frog in blue polo; Donald Trump in navy suit & red tie; Elon Musk with cyber jacket). Features a multi-phase keyframed Thriller dance routine (zombie snaps, arm claw swings, side slides, dramatic MJ kicks, roar poses), Gothic cemetery environment (tombstones, volumetric moonlight, eerie fog, dead twisted trees, glowing pumpkins), dynamic lighting with shadow mapping & lightning storm flashes, 4 cinematic director camera angles + OrbitControls, and procedural Web Audio Thriller synth groove.",
+  "hosting": "api",
+  "weights": "closed"
+}

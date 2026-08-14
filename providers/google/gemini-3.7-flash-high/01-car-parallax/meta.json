@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.7-flash-high",
+  "model_display": "Gemini 3.7 Flash High (Antigravity Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-14T08:00:00Z",
+  "runner": "Gemini 3.7 Flash High via Antigravity IDE",
+  "notes": "Single-shot run in Antigravity IDE. Full-page HTML5 canvas with multi-layered parallax scrolling (cinematic golden-hour twilight sky with procedural dusk clouds and sun flare, distant alpine mountain silhouettes, mid-ground pine foothills, utility poles with physics-catenary wires, street lamps with warm ground light cones, roadside barriers with reflectors, textured asphalt, curbs, and foreground grass). Main subject is a high-fidelity modern sports GT coupe with metallic specular gradient shading, cabin silhouette, spinning alloy rims with red performance brake calipers, dynamic suspension bounce and pitch physics, glowing xenon headlights with volumetric beams, LED taillight streaks, and turbulent exhaust particle simulation.",
+  "hosting": "api",
+  "weights": "closed"
+}
