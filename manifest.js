@@ -551,6 +551,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/google/gemini-3.7-flash-high/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/google/gemini-3.7-flash-high/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "dirk-qwen3.8-27b",
+      model_display: "Dirk Qwen 3.8 27B",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/dirk-qwen3.8-27b",
+      added: "2026-08-14",
+      outputs: {
+        "01-car-parallax":      "providers/local/dirk-qwen3.8-27b/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/dirk-qwen3.8-27b/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/dirk-qwen3.8-27b/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

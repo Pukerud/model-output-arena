@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "dirk-qwen3.8-27b",
+  "model_display": "Dirk Qwen 3.8 27B",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-14T20:23:41Z",
+  "runner": "Dirk Qwen 3.8 27B via pi agent",
+  "notes": "Cinematic Three.js night scene: four stylized characters perform the Thriller zombie dance under moonlight with sweeping spotlights, letterbox and captions. Three.js via CDN importmap.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}
