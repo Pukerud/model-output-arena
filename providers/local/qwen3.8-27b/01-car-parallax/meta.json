@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b",
+  "model_display": "Qwen 3.8 27B",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-14T21:20:00Z",
+  "runner": "Qwen 3.8 27B via pi agent",
+  "notes": "Vanilla canvas, no libraries. Sunset palette, 5 parallax layers (clouds, far hills, mid treeline, roadside objects, road) plus near-foreground grass. Headless-browser verified: world scroll measured at 241 px/s and wheel rotation at the matching road speed; fixed a first-frame wheel-angle bug (rotation updated before wheel radius was laid out -> Infinity) and removed a duplicate wheel-rotation increment found during verification.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 4090"
+  }
+}
