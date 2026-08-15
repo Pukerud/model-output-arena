@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-heretic",
+  "model_display": "Qwen 3.8 27B Heretic",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-15T14:40:00Z",
+  "runner": "Qwen 3.8 27B Heretic via pi agent",
+  "notes": "Single file, zero assets, everything vector-drawn on canvas 2D. Plan (made first, followed): (1) core sim — 9x5 lawn, sun economy, 5 plants (Sunflower, Peashooter, Snow Pea, Wall-nut, Cherry Bomb) with costs/cooldowns, 3 zombie classes (basic, conehead, buckethead) plus a crowned wave-5 boss, pea projectiles with damage/slow, 5 escalating waves with intermission banners, win and lose conditions; (2) state machine — main menu, how-to, leaderboard, playing, paused, win/lose with wave banners, floating score text, screen shake, confetti; (3) rendering — lawn/house/street, plant portraits with idle wobble, firing recoil, sunflower pop, wall-nut crack stages, cherry fuse shake, zombie walk/eat/death animations, cone/bucket heads, slow aura, particles; (4) WebAudio synth SFX (fire, splat, chomp, collect, plant, boom, moans, fanfares) with mute toggle — no audio files; (5) persistence — top-10 leaderboard in localStorage with name entry on qualifying scores; (6) polish — cooldown sweeps, card tooltips, hover glow, keyboard shortcuts (1-5, S shovel, P pause, M mute, Esc), placement ghost with valid/invalid tint, best-score shown on menu. Verified in headless Chrome: zero console errors across a full 83-second playthrough to the lose screen; menu/how-to/leaderboard panels render; peashooter plant + combat verified (zombie 120 -> 60 HP in 3.5s); sun click +25; win screen, name entry and leaderboard save to localStorage verified; PLAY AGAIN restarts cleanly. Three bugs found and fixed during verification: end screens wrote to the wrong state object (g.state vs G.state) so the overlay never showed, how-to/leaderboard screens were never dispatched from render, and seed-card/shovel click handling was accidentally nested inside the button-hit branch so cards were unclickable.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-heretic",
+  "model_display": "Qwen 3.8 27B Heretic",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-15T14:15:00Z",
+  "runner": "Qwen 3.8 27B Heretic via pi agent",
+  "notes": "Vanilla canvas 2D, zero libraries. Sunset palette with a big low sun, stars, drifting clouds, and lens-flare dots. 7 parallax layers: sky (static), far ridge, near ridge, conifer treeline, roadside props (streetlights with glow, bushes, signs, rocks), road with scrolling dashes + asphalt flecks + sun reflection smear, near-foreground grass racing at 1.35x. Scenery is deterministic per tile index (seeded sin hash), so the loop is seamless but varied. Car: coupe silhouette with gradient body, sunset rim light, reflective glass, rolling 5-spoke wheels synced to road distance (true rolling, no slip), independent suspension bob/pitch, headlight beam, taillight glow, exhaust puffs, soft shadow. Cinematic letterbox bars, vignette, and animated film grain. Headless-chrome verified: no console errors, road speed measured at 249 px/s; pixel sampling confirmed sun, sky gradient, ridges, road, car body and glass all render; sun was repositioned above the far ridge after verification showed the ridge silhouette was occluding it.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}
