@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-native",
+  "model_display": "Qwen 3.8 27B (Native Harness)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-18T07:08:47Z",
+  "runner": "Qwen 3.8 27B via qwen-code native harness",
+  "notes": "Three.js r128 from cdnjs (the single permitted external dependency; page shows a fallback message if the CDN is unreachable). Four stylized primitive-rig characters built on a joint hierarchy (root/torso/head/shoulder/elbow/hip/knee): Michael Jackson (fedora, white glove, white boots), Pepe the Frog (squat proportions, bulging stalk eyes, torus grin), Donald Trump (orange swoosh hair, white shirt, red tie), Elon Musk (dark tee, jeans). Choreography is a 32-beat loop at 105 BPM with a 1-beat crossfade at the seam: zombie shamble -> MJ robot snap (others shoulder shimmy) -> moonwalk with sliding back step -> hee-hee crouch bounce -> point & lunge (MJ lunges/points, others double-fist) -> finale (MJ back-lean hold with tremble, others deep bow), with small per-character timing offsets. Cinematic staging: foggy graveyard (FogExp2, drifting fog sprites, rising dust), big red moon with additive glow, three sweeping spotlights with visible volumetric cones, beat-pulse point light, ACES tone mapping, PCF soft shadows, orbiting camera with per-8-beat focus shifts and handheld shake, CSS letterbox, vignette, and animated film grain. Optional user-toggled WebAudio synth beat (kick/snare/bass riff) synced to the same clock. Verification: syntax-checked and API-audited against the r128 UMD build; the WebGL scene itself was not visually confirmed in a browser (verification window closed before that check), so treat rendering as untested-in-browser.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_0",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

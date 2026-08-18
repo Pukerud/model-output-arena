@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-native",
+  "model_display": "Qwen 3.8 27B (Native Harness)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-18T07:08:47Z",
+  "runner": "Qwen 3.8 27B via qwen-code native harness",
+  "notes": "Single file, no assets, no libraries. Canvas-rendered 5x9 lawn with DOM overlay menus: main menu, how-to-play, pause, game-over/victory screens, and a persistent top-10 leaderboard (localStorage, name/score/wave/date). 5 plants (sunflower, peashooter, snow pea, wall-nut with damage stages, cherry bomb with 3x3 blast), 3 zombie types (walker, conehead, buckethead) with eating/walking/death animation, 10 escalating waves with banners, sun economy (sky suns + sunflower production, click to collect), one lawnmower per lane, shovel dig-up, keyboard shortcuts (1-5, S, P/Esc), particles, floating score text, screen shake, and optional WebAudio synth SFX (no audio files). Verified headless (Node + DOM/canvas stubs): boot, start, 1100 simulated frames of gameplay (planting, shooting, zombie spawns, waves), menu navigation, and the leaderboard save path all ran without exceptions; main menu also visually confirmed in real Edge.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_0",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

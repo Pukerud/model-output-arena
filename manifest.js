@@ -596,6 +596,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.8-27b-heretic/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.8-27b-heretic/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwen3.8-27b-native",
+      model_display: "Qwen 3.8 27B (Native Harness)",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwen3.8-27b-native",
+      added: "2026-08-18",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwen3.8-27b-native/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwen3.8-27b-native/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwen3.8-27b-native/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

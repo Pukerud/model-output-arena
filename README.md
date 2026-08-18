@@ -105,6 +105,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Dirk Qwen 3.8 27B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/dirk-qwen3.8-27b`](./providers/local/dirk-qwen3.8-27b) |
 | Local (llama.cpp) | Qwen 3.8 27B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b`](./providers/local/qwen3.8-27b) |
 | Local (llama.cpp) | Qwen 3.8 27B Heretic | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-heretic`](./providers/local/qwen3.8-27b-heretic) |
+| Local (llama.cpp) | Qwen 3.8 27B (Native Harness) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-native`](./providers/local/qwen3.8-27b-native) |
 
 ## How outputs were generated
 
