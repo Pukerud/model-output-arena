@@ -36,7 +36,7 @@
     display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center;
     padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel);
   }
-  .field{display:flex;flex-direction:column;gap:5px}
+  .field{display:flex;flex-direction:column;gap:5px;min-width:0}
   .field label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
   select{
     appearance:none; background:var(--panel-2); color:var(--txt);
@@ -48,8 +48,10 @@
   .field.group{min-width:0}
   .field.group .picks{display:flex;gap:8px;align-items:center}
   .field.group .picks select{min-width:0}
-  .field.group .picks .prov{min-width:130px;max-width:180px}
-  .field.group .picks .mdl{min-width:200px}
+  .field.group .picks .prov{min-width:105px;max-width:145px}
+  .field.group .picks .family{min-width:120px;max-width:220px}
+  .field.group .picks .mdl{min-width:135px;max-width:240px}
+  .field.group .picks select{flex:1 1 auto}
   .field label .tagA,.field label .tagB{margin-left:7px;vertical-align:1px}
   .btns{display:flex;gap:8px;margin-left:auto}
   button{
@@ -86,6 +88,17 @@
   }
   .toast.show{opacity:1}
   .stat{color:var(--good)}
+  @media (max-width:700px){
+    header #countPill{display:none}
+    .toolbar > .field:first-child,
+    .toolbar .field.group{flex:1 1 100%;width:100%}
+    .field.group .picks{flex-wrap:wrap}
+    .field.group .picks .prov,
+    .field.group .picks .family{flex:1 1 calc(50% - 4px);max-width:none}
+    .field.group .picks .mdl{flex:1 1 100%;max-width:none}
+    .btns{width:100%;margin-left:0}
+    .btns button{flex:1}
+  }
 </style>
 </head>
 <body>
@@ -108,14 +121,16 @@
     <label for="aProv">Model A <span class="tagA">A</span></label>
     <div class="picks">
       <select id="aProv" class="prov" title="Provider"></select>
-      <select id="aSel" class="mdl"></select>
+      <select id="aFamily" class="family" title="Model family" aria-label="Model A family"></select>
+      <select id="aSel" class="mdl" title="Variant" aria-label="Model A variant"></select>
     </div>
   </div>
   <div class="field group">
     <label for="bProv">Model B <span class="tagB">B</span></label>
     <div class="picks">
       <select id="bProv" class="prov" title="Provider"></select>
-      <select id="bSel" class="mdl"></select>
+      <select id="bFamily" class="family" title="Model family" aria-label="Model B family"></select>
+      <select id="bSel" class="mdl" title="Variant" aria-label="Model B variant"></select>
     </div>
   </div>
   <div class="btns">
@@ -164,6 +179,7 @@
   const $ = id => document.getElementById(id);
   const testSel = $("testSel"), aSel = $("aSel"), bSel = $("bSel");
   const aProv = $("aProv"), bProv = $("bProv");
+  const aFamily = $("aFamily"), bFamily = $("bFamily");
   const aFrame = $("aFrame"), bFrame = $("bFrame");
   const aName = $("aName"), bName = $("bName"), aWho = $("aWho"), bWho = $("bWho");
   const aOpen = $("aOpen"), bOpen = $("bOpen");
@@ -184,20 +200,67 @@
   }
   const ci = (a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"});
   const providers = [...providerMap.values()].sort((p,q)=>ci(p.display,q.display));
-  for (const p of providers) p.models.sort((m,n)=>ci(m.model_display||m.model, n.model_display||n.model));
+  function modelParts(m){
+    const display = m.model_display || m.model;
+    let family = display;
+    let variant = "Standard";
+    const parenthesized = display.match(/^(.*?)\s*\(([^)]+)\)$/);
+    if(parenthesized){
+      family = parenthesized[1].trim();
+      variant = parenthesized[2].trim();
+    } else {
+      const qwenFamily = display.match(/^(?:(.*?)\s+)?(Qwen\s+\d+(?:\.\d+)?\s+\d+B)(?:\s+(.+))?$/i);
+      const knownFamily = display.match(/^(GPT-\d+(?:\.\d+)?|GLM\s+\d+(?:\.\d+)?|Claude\s+(?:Opus|Sonnet|Haiku)\s+\d+(?:\.\d+)?)(?:\s+(.+))?$/i);
+      if(qwenFamily){
+        family = qwenFamily[2].trim();
+        variant = [qwenFamily[1], qwenFamily[3]].filter(Boolean).join(" ").trim() || "Standard";
+      } else if(knownFamily){
+        family = knownFamily[1].trim();
+        variant = (knownFamily[2] || "Standard").trim();
+      }
+    }
+    return { family, variant };
+  }
+  for (const m of models){
+    const parts = modelParts(m);
+    m.family = parts.family;
+    m.variant = parts.variant;
+  }
+  for (const p of providers) p.models.sort((m,n)=>{
+    const familyOrder = ci(m.family, n.family);
+    return familyOrder || ci(m.variant, n.variant);
+  });
 
   function modelLabel(m){ return (m.model_display||m.model) + (m.hosting==="local" ? "  · local" : ""); }
   function providerBySlug(slug){ return providers.find(p=>p.slug===slug); }
   function fillProviders(sel){ sel.innerHTML=""; for(const p of providers) sel.appendChild(opt(p.slug, p.display+" ("+p.models.length+")")); }
-  function fillModels(sel, provSlug){
+  function fillFamilies(sel, provSlug, preferredFamily){
     const p = providerBySlug(provSlug) || providers[0];
+    const families = [];
+    for(const m of p.models){
+      if(!families.some(f => f.name === m.family)) families.push({ name:m.family, count:0 });
+      families.find(f => f.name === m.family).count++;
+    }
+    families.sort((a,b)=>ci(a.name,b.name));
     sel.innerHTML="";
-    for(const m of p.models) sel.appendChild(opt(m.model, modelLabel(m)));
-    return p.models[0]?.model || "";
+    for(const f of families) sel.appendChild(opt(f.name, f.name + (f.count > 1 ? " (" + f.count + ")" : "")));
+    const selected = families.some(f => f.name === preferredFamily) ? preferredFamily : families[0]?.name || "";
+    sel.value = selected;
+    return selected;
+  }
+  function fillModels(sel, provSlug, family, preferredModel){
+    const p = providerBySlug(provSlug) || providers[0];
+    const familyModels = p.models.filter(m => m.family === family);
+    sel.innerHTML="";
+    for(const m of familyModels) sel.appendChild(opt(m.model, m.variant));
+    const selected = familyModels.some(m => m.model === preferredModel) ? preferredModel : familyModels[0]?.model || "";
+    sel.value = selected;
+    return selected;
   }
 
   // Populate provider dropdowns for A and B
   fillProviders(aProv); fillProviders(bProv);
+  bProv.value = providers[Math.min(1, providers.length - 1)]?.slug || "";
   $("countPill").textContent = models.length + " model" + (models.length===1?"":"s") + " · " + providers.length + " providers";
 
   function findModel(slug){ return models.find(m => m.model === slug); }
@@ -245,14 +308,19 @@
     const testId = testSel.value;
     // Provider A valid? else default to first provider
     if(!aProv.value || !providerBySlug(aProv.value)) aProv.value = providers[0].slug;
-    // Model A belongs to provider A? else refill + pick first
-    if(!aSel.value || !findModel(aSel.value) || findModel(aSel.value).provider !== aProv.value)
-      aSel.value = fillModels(aSel, aProv.value);
+    const currentA = findModel(aSel.value);
+    const aPreferredFamily = aFamily.value || (currentA && currentA.provider === aProv.value ? currentA.family : "");
+    const aSelectedFamily = fillFamilies(aFamily, aProv.value, aPreferredFamily);
+    aSel.value = fillModels(aSel, aProv.value, aSelectedFamily,
+      currentA && currentA.provider === aProv.value && currentA.family === aSelectedFamily ? currentA.model : "");
     // Provider B defaults to second provider (or first if only one)
     if(!bProv.value || !providerBySlug(bProv.value))
       bProv.value = providers[Math.min(1, providers.length-1)].slug;
-    if(!bSel.value || !findModel(bSel.value) || findModel(bSel.value).provider !== bProv.value)
-      bSel.value = fillModels(bSel, bProv.value);
+    const currentB = findModel(bSel.value);
+    const bPreferredFamily = bFamily.value || (currentB && currentB.provider === bProv.value ? currentB.family : "");
+    const bSelectedFamily = fillFamilies(bFamily, bProv.value, bPreferredFamily);
+    bSel.value = fillModels(bSel, bProv.value, bSelectedFamily,
+      currentB && currentB.provider === bProv.value && currentB.family === bSelectedFamily ? currentB.model : "");
     setIframe(aFrame, aOpen, aName, aWho, "A", aSel.value, testId);
     setIframe(bFrame, bOpen, bName, bWho, "B", bSel.value, testId);
     writeParams();
@@ -273,15 +341,15 @@
     const p = new URLSearchParams(raw);
     const test = p.get("test");
     if(test && A.tests.some(t => t.id === test)) testSel.value = test;
-    const setSide = (slug, provSel, mdlSel) => {
+    const setSide = (slug, provSel, familySel, mdlSel) => {
       const m = slug && findModel(slug);
       if(!m) return;
       provSel.value = m.provider;
-      fillModels(mdlSel, m.provider);
-      mdlSel.value = slug;
+      familySel.value = fillFamilies(familySel, m.provider, m.family);
+      mdlSel.value = fillModels(mdlSel, m.provider, familySel.value, slug);
     };
-    setSide(p.get("a"), aProv, aSel);
-    setSide(p.get("b"), bProv, bSel);
+    setSide(p.get("a"), aProv, aFamily, aSel);
+    setSide(p.get("b"), bProv, bFamily, bSel);
   }
 
   function toast(msg){
@@ -291,14 +359,25 @@
 
   // Events
   testSel.addEventListener("change", ()=>render());
-  aProv.addEventListener("change", ()=>{ aSel.value = fillModels(aSel, aProv.value); render(); });
-  bProv.addEventListener("change", ()=>{ bSel.value = fillModels(bSel, bProv.value); render(); });
+  aProv.addEventListener("change", ()=>{
+    aFamily.value = fillFamilies(aFamily, aProv.value, "");
+    aSel.value = fillModels(aSel, aProv.value, aFamily.value, "");
+    render();
+  });
+  bProv.addEventListener("change", ()=>{
+    bFamily.value = fillFamilies(bFamily, bProv.value, "");
+    bSel.value = fillModels(bSel, bProv.value, bFamily.value, "");
+    render();
+  });
+  aFamily.addEventListener("change", ()=>{ aSel.value = fillModels(aSel, aProv.value, aFamily.value, ""); render(); });
+  bFamily.addEventListener("change", ()=>{ bSel.value = fillModels(bSel, bProv.value, bFamily.value, ""); render(); });
   aSel.addEventListener("change", ()=>render());
   bSel.addEventListener("change", ()=>render());
   $("swapBtn").addEventListener("click", ()=>{
-    const ap=aProv.value, am=aSel.value, bp=bProv.value, bm=bSel.value;
-    aProv.value=bp; fillModels(aSel, bp); aSel.value=bm;
-    bProv.value=ap; fillModels(bSel, ap); bSel.value=am;
+    const ap=aProv.value, af=aFamily.value, am=aSel.value;
+    const bp=bProv.value, bf=bFamily.value, bm=bSel.value;
+    aProv.value=bp; aFamily.value=fillFamilies(aFamily, bp, bf); aSel.value=fillModels(aSel, bp, aFamily.value, bm);
+    bProv.value=ap; bFamily.value=fillFamilies(bFamily, ap, af); bSel.value=fillModels(bSel, ap, bFamily.value, am);
     render(); toast("Swapped A ⇄ B");
   });
   $("reloadBtn").addEventListener("click", ()=>{

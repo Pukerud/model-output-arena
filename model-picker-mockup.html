@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Output Arena — Model picker concepts</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #0a0d14;
+    --surface: #111722;
+    --surface-raised: #171f2d;
+    --surface-soft: #1b2434;
+    --line: #2a3548;
+    --text: #eef3fb;
+    --muted: #8b98ad;
+    --muted-strong: #b4bfd1;
+    --violet: #8a6dff;
+    --violet-soft: rgba(138, 109, 255, .16);
+    --cyan: #36d6f4;
+    --cyan-soft: rgba(54, 214, 244, .13);
+    --green: #45d5a1;
+    --yellow: #f5c86a;
+    --shadow: 0 18px 42px rgba(0, 0, 0, .28);
+  }
+
+  * { box-sizing: border-box; }
+  html { min-width: 320px; background: var(--page); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    background:
+      radial-gradient(900px 460px at 90% -6%, rgba(138, 109, 255, .18), transparent 62%),
+      radial-gradient(720px 430px at -8% 96%, rgba(54, 214, 244, .10), transparent 66%),
+      var(--page);
+    font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+
+  .app-shell { max-width: 1480px; margin: 0 auto; min-height: 100vh; }
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 17px 22px 15px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(9, 12, 18, .72);
+    backdrop-filter: blur(14px);
+  }
+  .logo {
+    display: grid;
+    place-items: center;
+    width: 35px;
+    height: 35px;
+    flex: 0 0 35px;
+    border-radius: 10px;
+    color: #08101a;
+    font-weight: 800;
+    letter-spacing: -.04em;
+    background: linear-gradient(135deg, var(--violet), var(--cyan));
+    box-shadow: 0 8px 24px rgba(98, 89, 255, .35);
+  }
+  .app-header h1 { margin: 0; font-size: 16px; line-height: 1.1; letter-spacing: .01em; }
+  .app-header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  .header-pill {
+    margin-left: auto;
+    padding: 5px 10px;
+    border: 1px solid rgba(138, 109, 255, .38);
+    border-radius: 999px;
+    color: #c9beff;
+    background: var(--violet-soft);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .compare-toolbar {
+    display: grid;
+    grid-template-columns: minmax(190px, .75fr) minmax(270px, 1fr) minmax(270px, 1fr) auto;
+    gap: 14px;
+    align-items: end;
+    padding: 13px 22px 15px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(17, 23, 34, .92);
+  }
+  .field { min-width: 0; }
+  .field > label, .section-kicker {
+    display: block;
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+  .field-row { display: flex; gap: 8px; min-width: 0; }
+  select, .fake-select, .search-input {
+    width: 100%;
+    min-height: 39px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    background: var(--surface-raised);
+  }
+  select { padding: 8px 32px 8px 11px; }
+  .field-row select:first-child { flex: 0 0 38%; }
+  .field-row select:last-child { flex: 1; }
+  .compare-actions { display: flex; gap: 8px; }
+  .ghost-button, .primary-button {
+    min-height: 39px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    color: var(--muted-strong);
+    background: var(--surface-raised);
+    white-space: nowrap;
+  }
+  .ghost-button:hover { border-color: var(--violet); color: var(--text); }
+  .primary-button {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #8064f6, #6449da);
+    box-shadow: 0 7px 18px rgba(109, 79, 239, .25);
+  }
+  .primary-button:hover { filter: brightness(1.08); }
+  .slot-tag {
+    display: inline-grid;
+    place-items: center;
+    min-width: 22px;
+    min-height: 21px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .slot-a { color: #c9beff; border: 1px solid rgba(138, 109, 255, .48); background: var(--violet-soft); }
+  .slot-b { color: #9dedff; border: 1px solid rgba(54, 214, 244, .42); background: var(--cyan-soft); }
+
+  main { padding: 28px 22px 42px; }
+  .intro { display: flex; align-items: end; justify-content: space-between; gap: 22px; margin-bottom: 18px; }
+  .intro h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+  .intro p { max-width: 580px; margin: 6px 0 0; color: var(--muted); overflow-wrap: anywhere; }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .legend span, .mini-badge, .variant-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 23px;
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted-strong);
+    background: rgba(23, 31, 45, .7);
+    font-size: 11px;
+  }
+  .legend .recommended { color: #c9beff; border-color: rgba(138, 109, 255, .42); background: var(--violet-soft); }
+
+  .concept-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; align-items: start; }
+  .concept-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(23, 31, 45, .92), rgba(14, 20, 30, .94));
+    box-shadow: var(--shadow);
+    transition: border-color .18s, transform .18s, box-shadow .18s;
+  }
+  .concept-card.is-selected { border-color: rgba(138, 109, 255, .75); box-shadow: 0 0 0 1px rgba(138, 109, 255, .18), var(--shadow); transform: translateY(-2px); }
+  .concept-card.is-selected::before {
+    content: "Recommended direction";
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 3px 7px;
+    border: 1px solid rgba(138, 109, 255, .38);
+    border-radius: 999px;
+    color: #c9beff;
+    background: rgba(138, 109, 255, .15);
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .concept-top { padding: 18px 17px 13px; border-bottom: 1px solid rgba(42, 53, 72, .75); }
+  .concept-number { color: var(--cyan); font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+  .concept-top h3 { margin: 8px 0 5px; font-size: 17px; letter-spacing: -.015em; }
+  .concept-top p { min-height: 41px; margin: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .concept-body { display: flex; flex-direction: column; gap: 15px; padding: 15px 17px 17px; }
+  .concept-label { margin: 0 0 6px; color: var(--muted); font-size: 11px; font-weight: 600; }
+  .mock-surface { min-width: 0; padding: 12px; border: 1px solid rgba(42, 53, 72, .9); border-radius: 10px; background: rgba(10, 14, 22, .56); }
+  .picker-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; color: var(--muted-strong); font-size: 11px; }
+  .picker-title strong { color: var(--text); font-size: 12px; }
+  .mock-surface select, .mock-surface .fake-select, .mock-surface .search-input { min-height: 36px; font-size: 12px; }
+  .stack { display: grid; gap: 8px; }
+  .stack label { color: var(--muted); font-size: 10px; }
+  .mock-summary { display: flex; align-items: center; gap: 7px; min-height: 31px; padding: 7px 9px; border-radius: 7px; color: var(--muted-strong); background: rgba(138, 109, 255, .10); font-size: 11px; }
+  .mock-summary strong { color: var(--text); font-weight: 600; }
+  .mock-summary .arrow { color: var(--violet); }
+  .hint { margin: 0; color: var(--muted); font-size: 11px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 1px; }
+  .card-footer .primary-button, .card-footer .ghost-button { min-height: 33px; font-size: 12px; }
+  .use-button[aria-pressed="true"] { color: #fff; border-color: rgba(138, 109, 255, .62); background: rgba(138, 109, 255, .19); }
+
+  /* Concept 1: family → variant */
+  .family-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .family-selects .full { grid-column: 1 / -1; }
+
+  /* Concept 2: search / grouped results */
+  .search-wrap { position: relative; }
+  .search-wrap .search-input { padding: 8px 10px 8px 32px; }
+  .search-icon { position: absolute; left: 11px; top: 9px; color: var(--muted); font-size: 13px; }
+  .results { display: grid; gap: 6px; max-height: 191px; margin-top: 9px; overflow: auto; }
+  .result-group { display: grid; gap: 5px; }
+  .result-group-title { padding: 4px 2px 1px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .result-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+    align-items: center;
+    width: 100%;
+    padding: 7px 8px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--muted-strong);
+    text-align: left;
+    background: rgba(23, 31, 45, .74);
+  }
+  .result-row:hover, .result-row.is-selected { border-color: rgba(54, 214, 244, .46); background: rgba(54, 214, 244, .10); }
+  .result-row strong { display: block; overflow: hidden; color: var(--text); font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .result-row small { display: block; overflow: hidden; margin-top: 1px; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+  .result-row .variant-badge { min-height: 20px; padding: 1px 6px; color: #9dedff; border-color: rgba(54, 214, 244, .35); background: var(--cyan-soft); font-size: 10px; }
+  .empty-results { padding: 14px 4px 6px; color: var(--muted); font-size: 11px; text-align: center; }
+
+  /* Concept 3: model family cards */
+  .family-list { display: grid; gap: 8px; }
+  .family-card { padding: 9px; border: 1px solid rgba(42, 53, 72, .85); border-radius: 8px; background: rgba(23, 31, 45, .68); }
+  .family-card.is-active { border-color: rgba(138, 109, 255, .52); background: rgba(138, 109, 255, .09); }
+  .family-meta { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+  .family-meta strong { display: block; color: var(--text); font-size: 12px; font-weight: 600; }
+  .family-meta small { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
+  .star-button { padding: 1px 3px; border: 0; color: var(--muted); background: transparent; font-size: 16px; line-height: 1; }
+  .star-button.is-favorite { color: var(--yellow); }
+  .variant-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .variant-chip { padding: 4px 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted-strong); background: var(--surface-soft); font-size: 10px; }
+  .variant-chip:hover, .variant-chip.is-active { color: #fff; border-color: rgba(138, 109, 255, .63); background: rgba(138, 109, 255, .22); }
+  .recent-row { display: flex; gap: 7px; align-items: center; padding: 5px 0; color: var(--muted); font-size: 10px; }
+  .recent-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(69, 213, 161, .12); }
+
+  .decision-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    margin-top: 17px;
+    padding: 14px 16px;
+    border: 1px solid rgba(54, 214, 244, .22);
+    border-radius: 11px;
+    background: linear-gradient(90deg, rgba(54, 214, 244, .08), rgba(138, 109, 255, .09));
+  }
+  .decision-strip strong { display: block; font-size: 12px; }
+  .decision-strip p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+  .decision-value { min-width: 174px; padding-left: 16px; border-left: 1px solid rgba(54, 214, 244, .22); color: #baf4ff; font-size: 12px; font-weight: 600; text-align: right; }
+
+  @media (max-width: 1050px) {
+    .compare-toolbar { grid-template-columns: 1fr 1fr; }
+    .compare-actions { justify-content: flex-start; }
+    .concept-grid { grid-template-columns: 1fr; }
+    .concept-card { max-width: none; }
+    .concept-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, .55fr); align-items: start; }
+    .concept-body > .mock-surface { grid-row: span 2; }
+    .concept-top p { min-height: 0; }
+  }
+  @media (max-width: 620px) {
+    .app-header, .compare-toolbar, main { padding-left: 14px; padding-right: 14px; }
+    .header-pill { display: none; }
+    .compare-toolbar { grid-template-columns: 1fr; gap: 11px; }
+    .compare-actions { width: 100%; }
+    .compare-actions button { flex: 1; }
+    .intro { display: block; }
+    .legend { justify-content: flex-start; margin-top: 12px; }
+    .concept-card.is-selected::before { display: none; }
+    .concept-body { display: flex; }
+    .decision-strip { grid-template-columns: 1fr; }
+    .decision-value { padding: 10px 0 0; border-top: 1px solid rgba(54, 214, 244, .22); border-left: 0; text-align: left; }
+  }
+</style>
+</head>
+<body>
+  <div class="app-shell" id="model-picker-mockup">
+    <header class="app-header">
+      <div class="logo" aria-hidden="true">A</div>
+      <div>
+        <h1>Model Output Arena</h1>
+        <p>Pick a test, pick two models, compare side-by-side.</p>
+      </div>
+      <div class="header-pill">picker concepts · design review</div>
+    </header>
+
+    <section class="compare-toolbar" aria-label="Comparison toolbar">
+      <div class="field">
+        <label for="test-select">Test</label>
+        <select id="test-select">
+          <option>02 · Mini Plants vs Zombies</option>
+          <option>01 · Animated Car — Parallax</option>
+          <option>03 · Three.js “Thriller”</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="top-model-a">Model A <span class="slot-tag slot-a">A</span></label>
+        <div class="field-row">
+          <select aria-label="Model A provider" id="top-provider-a">
+            <option>OpenAI (5)</option>
+            <option>Local (13)</option>
+            <option>Anthropic (6)</option>
+          </select>
+          <select aria-label="Model A variant" id="top-model-a">
+            <option>GPT-5.6 Sol</option>
+            <option>GPT-5.6 Luna</option>
+            <option>GPT-5.6 Terra</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="top-model-b">Model B <span class="slot-tag slot-b">B</span></label>
+        <div class="field-row">
+          <select aria-label="Model B provider" id="top-provider-b">
+            <option>Local (13)</option>
+            <option>OpenAI (5)</option>
+            <option>Qwen (2)</option>
+          </select>
+          <select aria-label="Model B variant" id="top-model-b">
+            <option>Qwen 3.8 27B</option>
+            <option>Qwen 3.8 27B Heretic</option>
+            <option>Qwen 3.8 27B (Native)</option>
+          </select>
+        </div>
+      </div>
+      <div class="compare-actions">
+        <button class="ghost-button" type="button" id="swap-button">⇄ Swap</button>
+        <button class="primary-button" type="button" id="reload-button">↻ Reload</button>
+      </div>
+    </section>
+
+    <main>
+      <div class="intro">
+        <div>
+          <div class="section-kicker">Three directions</div>
+          <h2>Make model families easy to scan</h2>
+          <p>Each concept keeps the provider visible while making version, harness, and fine-tune differences explicit.</p>
+        </div>
+        <div class="legend" aria-label="Concept legend">
+          <span class="recommended">Recommended starting point</span>
+          <span>Works with A / B slots</span>
+        </div>
+      </div>
+
+      <section class="concept-grid" aria-label="Model picker suggestions">
+        <article class="concept-card is-selected" data-concept="1">
+          <div class="concept-top">
+            <div class="concept-number">Suggestion 01 · structured</div>
+            <h3>Family → variant</h3>
+            <p>Keep the familiar dropdown flow, but separate the model family from its edition or harness.</p>
+          </div>
+          <div class="concept-body">
+            <div class="mock-surface">
+              <div class="picker-title"><strong>Model A</strong><span class="slot-tag slot-a">A</span></div>
+              <div class="family-selects">
+                <div class="stack full">
+                  <label for="s1-provider">Provider</label>
+                  <select id="s1-provider">
+                    <option>OpenAI</option>
+                    <option>Local (llama.cpp)</option>
+                    <option>Anthropic</option>
+                  </select>
+                </div>
+                <div class="stack">
+                  <label for="s1-family">Family</label>
+                  <select id="s1-family">
+                    <option value="gpt56">GPT-5.6</option>
+                    <option value="gpt55">GPT-5.5</option>
+                    <option value="qwen38">Qwen 3.8 27B</option>
+                  </select>
+                </div>
+                <div class="stack">
+                  <label for="s1-variant">Variant</label>
+                  <select id="s1-variant">
+                    <option>Sol</option>
+                    <option>Luna</option>
+                    <option>Terra</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mock-summary" aria-live="polite" id="s1-summary"><strong>GPT-5.6</strong><span class="arrow">›</span><span>Sol</span></div>
+            </div>
+            <p class="hint">Best for: predictable selection and deep links that remain readable.</p>
+            <div class="card-footer">
+              <span class="mini-badge">3 fields · low change</span>
+              <button class="primary-button use-button" type="button" aria-pressed="true">Use this pattern</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="concept-card" data-concept="2">
+          <div class="concept-top">
+            <div class="concept-number">Suggestion 02 · discoverable</div>
+            <h3>Searchable model palette</h3>
+            <p>Replace a long native list with one searchable picker that groups results by provider and family.</p>
+          </div>
+          <div class="concept-body">
+            <div class="mock-surface">
+              <div class="picker-title"><strong>Choose a model</strong><span class="slot-tag slot-b">B</span></div>
+              <div class="search-wrap">
+                <span class="search-icon" aria-hidden="true">⌕</span>
+                <input class="search-input" id="s2-search" type="search" autocomplete="off" placeholder="Search name, version, or harness…" aria-label="Search models">
+              </div>
+              <div class="results" id="s2-results">
+                <div class="result-group" data-provider="OpenAI">
+                  <div class="result-group-title">OpenAI</div>
+                  <button class="result-row is-selected" type="button" data-model="GPT-5.5" data-variant="standard"><span><strong>GPT-5.5</strong><small>OpenAI · API · proprietary</small></span><span class="variant-badge">standard</span></button>
+                  <button class="result-row" type="button" data-model="GPT-5.5" data-variant="Native Harness"><span><strong>GPT-5.5</strong><small>OpenAI · API · proprietary</small></span><span class="variant-badge">native</span></button>
+                </div>
+                <div class="result-group" data-provider="Local">
+                  <div class="result-group-title">Local (llama.cpp)</div>
+                  <button class="result-row" type="button" data-model="Qwen 3.8 27B" data-variant="Native Harness"><span><strong>Qwen 3.8 27B</strong><small>Local · open weights</small></span><span class="variant-badge">native</span></button>
+                  <button class="result-row" type="button" data-model="Qwen 3.6 27B" data-variant="Heretic"><span><strong>Qwen 3.6 27B</strong><small>Local · open weights</small></span><span class="variant-badge">heretic</span></button>
+                </div>
+              </div>
+              <div class="mock-summary" aria-live="polite" id="s2-summary"><strong>GPT-5.5</strong><span class="arrow">·</span><span>standard</span></div>
+            </div>
+            <p class="hint">Best for: large catalogs, fuzzy memory, and model names with long suffixes.</p>
+            <div class="card-footer">
+              <span class="mini-badge">1 field · scales well</span>
+              <button class="ghost-button use-button" type="button" aria-pressed="false">Use this pattern</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="concept-card" data-concept="3">
+          <div class="concept-top">
+            <div class="concept-number">Suggestion 03 · visual</div>
+            <h3>Family cards + variant chips</h3>
+            <p>Show the high-level families at a glance, then use small chips for editions, fine-tunes, or harnesses.</p>
+          </div>
+          <div class="concept-body">
+            <div class="mock-surface">
+              <div class="picker-title"><strong>Recent &amp; favorite families</strong><span class="slot-tag slot-a">A</span></div>
+              <div class="recent-row"><span class="recent-dot" aria-hidden="true"></span><span>Recently used · GPT-5.6 Sol</span></div>
+              <div class="family-list" id="s3-families">
+                <div class="family-card is-active" data-family="GPT-5.6">
+                  <div class="family-meta"><span><strong>GPT-5.6</strong><small>OpenAI · 3 variants</small></span><button class="star-button is-favorite" type="button" aria-label="Remove GPT-5.6 from favorites">★</button></div>
+                  <div class="variant-list"><button class="variant-chip is-active" type="button" data-family="GPT-5.6" data-variant="Sol">Sol</button><button class="variant-chip" type="button" data-family="GPT-5.6" data-variant="Luna">Luna</button><button class="variant-chip" type="button" data-family="GPT-5.6" data-variant="Terra">Terra</button></div>
+                </div>
+                <div class="family-card" data-family="Qwen 3.8 27B">
+                  <div class="family-meta"><span><strong>Qwen 3.8 27B</strong><small>Local · 4 variants</small></span><button class="star-button" type="button" aria-label="Add Qwen 3.8 27B to favorites">☆</button></div>
+                  <div class="variant-list"><button class="variant-chip" type="button" data-family="Qwen 3.8 27B" data-variant="Base">Base</button><button class="variant-chip" type="button" data-family="Qwen 3.8 27B" data-variant="Heretic">Heretic</button><button class="variant-chip" type="button" data-family="Qwen 3.8 27B" data-variant="Native">Native</button></div>
+                </div>
+              </div>
+              <div class="mock-summary" aria-live="polite" id="s3-summary"><strong>GPT-5.6</strong><span class="arrow">›</span><span>Sol</span></div>
+            </div>
+            <p class="hint">Best for: frequent users who want one-click access to a small set of known variants.</p>
+            <div class="card-footer">
+              <span class="mini-badge">Fast scan · favorites</span>
+              <button class="ghost-button use-button" type="button" aria-pressed="false">Use this pattern</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <div class="decision-strip" role="status" aria-live="polite">
+        <div>
+          <strong id="decision-title">Selected direction: Family → variant</strong>
+          <p id="decision-copy">A small, predictable change that directly exposes the iteration without making the toolbar taller.</p>
+        </div>
+        <div class="decision-value" id="decision-value">Previewing GPT-5.6 · Sol</div>
+      </div>
+    </main>
+  </div>
+
+<script>
+(() => {
+  const root = document.getElementById('model-picker-mockup');
+  if (!root) return;
+
+  const conceptCopy = {
+    1: { title: 'Selected direction: Family → variant', copy: 'A small, predictable change that directly exposes the iteration without making the toolbar taller.' },
+    2: { title: 'Selected direction: Searchable model palette', copy: 'A single input keeps the toolbar compact while making long names and harness variants easy to find.' },
+    3: { title: 'Selected direction: Family cards + variant chips', copy: 'A visual shortcut for repeat users who mostly compare a handful of familiar model families.' }
+  };
+  const conceptValue = document.getElementById('decision-value');
+  const decisionTitle = document.getElementById('decision-title');
+  const decisionCopy = document.getElementById('decision-copy');
+
+  function updateDirection(card) {
+    root.querySelectorAll('.concept-card').forEach((item) => item.classList.toggle('is-selected', item === card));
+    root.querySelectorAll('.use-button').forEach((button) => button.setAttribute('aria-pressed', String(button.closest('.concept-card') === card)));
+    const copy = conceptCopy[card.dataset.concept];
+    decisionTitle.textContent = copy.title;
+    decisionCopy.textContent = copy.copy;
+  }
+
+  root.querySelectorAll('.use-button').forEach((button) => {
+    button.addEventListener('click', () => updateDirection(button.closest('.concept-card')));
+  });
+
+  const s1Family = document.getElementById('s1-family');
+  const s1Variant = document.getElementById('s1-variant');
+  const s1Summary = document.getElementById('s1-summary');
+  const familyVariants = {
+    gpt56: ['Sol', 'Luna', 'Terra'],
+    gpt55: ['standard', 'Native Harness'],
+    qwen38: ['Base', 'Heretic', 'Native Harness']
+  };
+  const familyLabels = { gpt56: 'GPT-5.6', gpt55: 'GPT-5.5', qwen38: 'Qwen 3.8 27B' };
+  function refreshFamilyVariants() {
+    const variants = familyVariants[s1Family.value] || [];
+    s1Variant.innerHTML = variants.map((variant) => `<option>${variant}</option>`).join('');
+    s1Summary.innerHTML = `<strong>${familyLabels[s1Family.value]}</strong><span class="arrow">›</span><span>${s1Variant.value}</span>`;
+    conceptValue.textContent = `${familyLabels[s1Family.value]} · ${s1Variant.value}`;
+  }
+  s1Family.addEventListener('change', refreshFamilyVariants);
+  s1Variant.addEventListener('change', refreshFamilyVariants);
+
+  const s2Search = document.getElementById('s2-search');
+  const s2Results = document.getElementById('s2-results');
+  const s2Summary = document.getElementById('s2-summary');
+  function filterResults() {
+    const query = s2Search.value.trim().toLowerCase();
+    let matches = 0;
+    s2Results.querySelectorAll('.result-group').forEach((group) => {
+      let groupMatches = 0;
+      group.querySelectorAll('.result-row').forEach((row) => {
+        const haystack = `${row.dataset.model} ${row.dataset.variant} ${group.dataset.provider}`.toLowerCase();
+        const visible = !query || haystack.includes(query);
+        row.hidden = !visible;
+        if (visible) { groupMatches += 1; matches += 1; }
+      });
+      group.hidden = groupMatches === 0;
+    });
+    let empty = s2Results.querySelector('.empty-results');
+    if (matches === 0) {
+      if (!empty) { empty = document.createElement('div'); empty.className = 'empty-results'; s2Results.appendChild(empty); }
+      empty.textContent = 'No model variants match that search.';
+    } else if (empty) {
+      empty.remove();
+    }
+  }
+  s2Search.addEventListener('input', filterResults);
+  s2Results.querySelectorAll('.result-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      s2Results.querySelectorAll('.result-row').forEach((item) => item.classList.toggle('is-selected', item === row));
+      s2Summary.innerHTML = `<strong>${row.dataset.model}</strong><span class="arrow">·</span><span>${row.dataset.variant}</span>`;
+      conceptValue.textContent = `${row.dataset.model} · ${row.dataset.variant}`;
+    });
+  });
+
+  const s3Summary = document.getElementById('s3-summary');
+  root.querySelectorAll('.variant-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const familyCard = chip.closest('.family-card');
+      root.querySelectorAll('.family-card').forEach((card) => card.classList.toggle('is-active', card === familyCard));
+      familyCard.querySelectorAll('.variant-chip').forEach((item) => item.classList.toggle('is-active', item === chip));
+      s3Summary.innerHTML = `<strong>${chip.dataset.family}</strong><span class="arrow">›</span><span>${chip.dataset.variant}</span>`;
+      conceptValue.textContent = `${chip.dataset.family} · ${chip.dataset.variant}`;
+    });
+  });
+  root.querySelectorAll('.star-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const favorite = button.classList.toggle('is-favorite');
+      button.textContent = favorite ? '★' : '☆';
+      button.setAttribute('aria-label', `${favorite ? 'Remove' : 'Add'} ${button.closest('.family-card').dataset.family} ${favorite ? 'from' : 'to'} favorites`);
+    });
+  });
+
+  document.getElementById('swap-button').addEventListener('click', () => {
+    const providerA = document.getElementById('top-provider-a');
+    const providerB = document.getElementById('top-provider-b');
+    const modelA = document.getElementById('top-model-a');
+    const modelB = document.getElementById('top-model-b');
+    [providerA.value, providerB.value] = [providerB.value, providerA.value];
+    [modelA.value, modelB.value] = [modelB.value, modelA.value];
+  });
+  document.getElementById('reload-button').addEventListener('click', (event) => {
+    const button = event.currentTarget;
+    const original = button.textContent;
+    button.textContent = '✓ Ready';
+    window.setTimeout(() => { button.textContent = original; }, 900);
+  });
+})();
+</script>
+</body>
+</html>
