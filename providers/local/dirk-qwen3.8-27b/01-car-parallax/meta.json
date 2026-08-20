@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "dirk-qwen3.8-27b",
+  "model_display": "Dirk Qwen 3.8 27B",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-14T19:41:14Z",
+  "runner": "Dirk Qwen 3.8 27B via pi agent",
+  "notes": "Vanilla canvas parallax car with layered scenery, spinning wheels and day/night lamp glow.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

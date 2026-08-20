@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.6-27b-fable-fusion-711",
+  "model_display": "Qwen 3.6 27B Fable Fusion 711",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-08T11:15:20Z",
+  "runner": "Qwen3.6-27B-Fable-Fusion-711 via pi.dev agent (llama.cpp)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "Fable Fusion 711",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

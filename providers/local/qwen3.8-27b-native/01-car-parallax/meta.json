@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-native",
+  "model_display": "Qwen 3.8 27B (Native Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-18T07:08:47Z",
+  "runner": "Qwen 3.8 27B via qwen-code native harness",
+  "notes": "Vanilla canvas 2D, zero libraries. Sunset palette with a big low sun, stars, and drifting clouds. Parallax layers from far to near: far ridge, mid hills, near ground, seeded conifer/round treeline, roadside props (streetlights with glow, utility poles with sagging wires, bushes, rocks + sign), road with scrolling dashes, edge lines, asphalt flecks and a sun-reflection smear, near-foreground swaying grass at 1.35x. Scenery is deterministic per tile index (seeded sin hash), so the loop is seamless but varied. Car: coupe silhouette with gradient body, sunset rim light, reflective glass, rolling 5-spoke wheels synced to road distance (true rolling, no slip), independent suspension bob/pitch driven by layered road noise, headlight beam, taillight glow, exhaust puffs, soft shadow. Cinematic letterbox bars, vignette, and animated film grain. Verified headless (Node + validating canvas stub, 900 frames, no exceptions); verification caught and fixed one first-frame crash (car.scale read as a property instead of called -> NaN ellipse radii, which discarded every frame's canvas work).",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_0",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

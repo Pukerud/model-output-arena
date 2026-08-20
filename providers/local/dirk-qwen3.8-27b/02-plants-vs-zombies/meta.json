@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "dirk-qwen3.8-27b",
+  "model_display": "Dirk Qwen 3.8 27B",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-14T19:52:06Z",
+  "runner": "Dirk Qwen 3.8 27B via pi agent",
+  "notes": "Single-file Plants vs Zombies mini game with menus, waves and a local leaderboard.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

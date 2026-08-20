@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parallax Highway - Realistic Animated Car</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #080710;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #ui-hud {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(18, 20, 29, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      pointer-events: auto;
+      user-select: none;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+      transition: opacity 0.3s ease;
+    }
+    #ui-hud:hover {
+      background: rgba(18, 20, 29, 0.85);
+    }
+    .hud-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 6px;
+    }
+    .hud-row:last-child {
+      margin-bottom: 0;
+    }
+    .hud-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #ff9d5c;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .hud-val {
+      font-family: "SF Mono", Monaco, Consolas, monospace;
+      font-weight: 600;
+      color: #fff;
+    }
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .hud-btn:hover {
+      background: #ff7b39;
+      border-color: #ff7b39;
+    }
+    .hud-hint {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="simCanvas"></canvas>
+  
+  <div id="ui-hud">
+    <div class="hud-title">GT Veloce · 3.7 Twin-Turbo</div>
+    <div class="hud-row">
+      <span>Speed:</span>
+      <span class="hud-val" id="hudSpeed">115 km/h</span>
+    </div>
+    <div class="hud-row">
+      <span>Time of Day:</span>
+      <button class="hud-btn" id="todBtn">Sunset (Dusk)</button>
+    </div>
+    <div class="hud-row">
+      <span>Headlights:</span>
+      <button class="hud-btn" id="lightBtn">AUTO (ON)</button>
+    </div>
+    <div class="hud-hint">Use [▲/▼] Speed | [Space] Boost | [T] Sky Mode | [H] Lights</div>
+  </div>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('simCanvas');
+      const ctx = canvas.getContext('2d');
+      const hudSpeed = document.getElementById('hudSpeed');
+      const todBtn = document.getElementById('todBtn');
+      const lightBtn = document.getElementById('lightBtn');
+
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+      let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // State
+      let targetSpeed = 32; // base driving speed unit
+      let currentSpeed = 32;
+      let distance = 0;
+      let wheelAngle = 0;
+      let chassisBounce = 0;
+      let chassisPitch = 0;
+      let suspensionFront = 0;
+      let suspensionRear = 0;
+      let headlightsOn = true;
+      let timeModeIndex = 0; // 0: Sunset, 1: Twilight/Night, 2: Golden Hour, 3: Cyber Dawn
+
+      const timeThemes = [
+        {
+          name: "Sunset (Dusk)",
+          skyTop: "#0d1b2a",
+          skyMid: "#412234",
+          skyBottom: "#ff7b39",
+          sunColor: "#ffe57f",
+          sunCorona: "rgba(255, 123, 57, 0.4)",
+          sunY: 0.62,
+          hazeColor: "rgba(255, 120, 60, 0.22)",
+          mountainFar: "#2c1d38",
+          mountainMid: "#21162d",
+          hillsNear: "#181024",
+          treeColor: "#110b1a",
+          groundTop: "#1c1421",
+          groundBottom: "#0b080f",
+          ambientLight: 0.7,
+          headlightStrength: 0.85
+        },
+        {
+          name: "Midnight Indigo",
+          skyTop: "#02040a",
+          skyMid: "#080e1e",
+          skyBottom: "#131b2e",
+          sunColor: "#e0e7ff",
+          sunCorona: "rgba(100, 140, 255, 0.15)",
+          sunY: 0.3,
+          hazeColor: "rgba(20, 30, 60, 0.3)",
+          mountainFar: "#0b1120",
+          mountainMid: "#070c17",
+          hillsNear: "#050811",
+          treeColor: "#020408",
+          groundTop: "#090d16",
+          groundBottom: "#020306",
+          ambientLight: 0.35,
+          headlightStrength: 1.0
+        },
+        {
+          name: "Golden Hour",
+          skyTop: "#2b5876",
+          skyMid: "#e27b58",
+          skyBottom: "#ffc371",
+          sunColor: "#ffffff",
+          sunCorona: "rgba(255, 210, 120, 0.5)",
+          sunY: 0.55,
+          hazeColor: "rgba(255, 200, 110, 0.28)",
+          mountainFar: "#5c3d4e",
+          mountainMid: "#402638",
+          hillsNear: "#291826",
+          treeColor: "#1a0f1c",
+          groundTop: "#2d1c25",
+          groundBottom: "#140c11",
+          ambientLight: 0.9,
+          headlightStrength: 0.4
+        },
+        {
+          name: "Neon Cyber Dawn",
+          skyTop: "#1f0036",
+          skyMid: "#570861",
+          skyBottom: "#ff2a85",
+          sunColor: "#00f0ff",
+          sunCorona: "rgba(255, 42, 133, 0.35)",
+          sunY: 0.65,
+          hazeColor: "rgba(255, 42, 133, 0.25)",
+          mountainFar: "#3b0947",
+          mountainMid: "#260430",
+          hillsNear: "#190221",
+          treeColor: "#0f0114",
+          groundTop: "#1c0424",
+          groundBottom: "#0a010d",
+          ambientLight: 0.75,
+          headlightStrength: 0.9
+        }
+      ];
+
+      todBtn.addEventListener('click', () => {
+        timeModeIndex = (timeModeIndex + 1) % timeThemes.length;
+        todBtn.textContent = timeThemes[timeModeIndex].name;
+      });
+
+      lightBtn.addEventListener('click', () => {
+        headlightsOn = !headlightsOn;
+        lightBtn.textContent = headlightsOn ? "ON" : "OFF";
+      });
+
+      // Keyboard Controls
+      const keys = {};
+      window.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+        if (e.key === 't' || e.key === 'T') {
+          timeModeIndex = (timeModeIndex + 1) % timeThemes.length;
+          todBtn.textContent = timeThemes[timeModeIndex].name;
+        }
+        if (e.key === 'h' || e.key === 'H') {
+          headlightsOn = !headlightsOn;
+          lightBtn.textContent = headlightsOn ? "ON" : "OFF";
+        }
+      });
+      window.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+      });
+
+      // Procedural Mountain Generator
+      function createRidge(pointsCount, roughness, heightScale) {
+        const points = [];
+        let cur = 0.5;
+        for (let i = 0; i <= pointsCount; i++) {
+          points.push(cur);
+          cur += (Math.random() - 0.5) * roughness;
+          cur = Math.max(0.1, Math.min(0.9, cur));
+        }
+        // Smooth
+        const smoothed = [];
+        for (let i = 0; i < points.length; i++) {
+          const prev = points[Math.max(0, i - 1)];
+          const next = points[Math.min(points.length - 1, i + 1)];
+          smoothed.push((prev + points[i] * 2 + next) / 4);
+        }
+        return smoothed.map(v => v * heightScale);
+      }
+
+      const farRidge = createRidge(120, 0.28, 140);
+      const midRidge = createRidge(140, 0.22, 90);
+      const pineRidge = createRidge(160, 0.15, 55);
+
+      // Clouds
+      const clouds = [];
+      for (let i = 0; i < 18; i++) {
+        clouds.push({
+          x: Math.random() * 2400,
+          y: 40 + Math.random() * 160,
+          scale: 0.6 + Math.random() * 1.2,
+          speed: 0.04 + Math.random() * 0.08,
+          opacity: 0.25 + Math.random() * 0.45,
+          puffs: Array.from({ length: 5 }, () => ({
+            dx: (Math.random() - 0.5) * 80,
+            dy: (Math.random() - 0.5) * 20,
+            r: 25 + Math.random() * 35
+          }))
+        });
+      }
+
+      // Wind Turbines in distant background
+      const windTurbines = [
+        { x: 300, h: 65 },
+        { x: 750, h: 80 },
+        { x: 1250, h: 60 },
+        { x: 1800, h: 75 }
+      ];
+
+      // Roadside Utility Poles
+      const utilityPoles = [];
+      for (let i = 0; i < 12; i++) {
+        utilityPoles.push({ x: i * 260 });
+      }
+
+      // Roadside Trees & Shrubs
+      const roadsideElements = [];
+      for (let i = 0; i < 35; i++) {
+        roadsideElements.push({
+          x: i * 110 + Math.random() * 60,
+          type: Math.random() > 0.4 ? 'tree' : 'bush',
+          height: 45 + Math.random() * 65,
+          width: 30 + Math.random() * 40,
+          colorVar: (Math.random() - 0.5) * 0.15
+        });
+      }
+
+      // Street Lamps with volumetric light beams
+      const streetLamps = [];
+      for (let i = 0; i < 8; i++) {
+        streetLamps.push({ x: i * 420 });
+      }
+
+      // Foreground Grass Tufts
+      const grassTufts = [];
+      for (let i = 0; i < 60; i++) {
+        grassTufts.push({
+          x: i * 40 + Math.random() * 20,
+          height: 14 + Math.random() * 22,
+          lean: (Math.random() - 0.5) * 12
+        });
+      }
+
+      // Exhaust Particle System
+      const exhaustParticles = [];
+      function emitExhaust(x, y, speedRatio) {
+        if (Math.random() < 0.75 + speedRatio * 0.25) {
+          exhaustParticles.push({
+            x: x,
+            y: y,
+            vx: - (speedRatio * 8 + Math.random() * 3),
+            vy: (Math.random() - 0.6) * 1.5,
+            size: 3 + Math.random() * 4,
+            maxSize: 22 + Math.random() * 20,
+            opacity: 0.45 + Math.random() * 0.3,
+            life: 1.0,
+            decay: 0.02 + Math.random() * 0.025
+          });
+        }
+      }
+
+      // Audio Engine for Realistic Engine Rumble
+      let audioCtx = null;
+      let engineOsc = null;
+      let engineGain = null;
+      function initAudio() {
+        if (audioCtx) return;
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContext();
+          engineOsc = audioCtx.createOscillator();
+          const subOsc = audioCtx.createOscillator();
+          engineGain = audioCtx.createGain();
+          const filter = audioCtx.createBiquadFilter();
+
+          engineOsc.type = 'sawtooth';
+          subOsc.type = 'triangle';
+          filter.type = 'lowpass';
+          filter.frequency.value = 160;
+
+          engineGain.gain.value = 0.04;
+          engineOsc.connect(filter);
+          subOsc.connect(filter);
+          filter.connect(engineGain);
+          engineGain.connect(audioCtx.destination);
+
+          engineOsc.start();
+          subOsc.start();
+        } catch (e) {}
+      }
+      window.addEventListener('click', initAudio, { once: true });
+      window.addEventListener('keydown', initAudio, { once: true });
+
+      // Main Animation Loop
+      let lastTime = performance.now();
+      let turbineBladeAngle = 0;
+
+      function render(now) {
+        const dt = Math.min((now - lastTime) / 1000, 0.1);
+        lastTime = now;
+
+        // Dynamic Input handling
+        if (keys['ArrowUp'] || keys['ArrowRight']) targetSpeed = Math.min(targetSpeed + 30 * dt, 75);
+        else if (keys['ArrowDown'] || keys['ArrowLeft']) targetSpeed = Math.max(targetSpeed - 35 * dt, 6);
+        else if (keys[' ']) targetSpeed = 95; // Boost
+        else targetSpeed = 32;
+
+        currentSpeed += (targetSpeed - currentSpeed) * 4.0 * dt;
+        const kmh = Math.round(currentSpeed * 3.6);
+        hudSpeed.textContent = `${kmh} km/h`;
+
+        if (audioCtx && engineOsc) {
+          engineOsc.frequency.setTargetAtTime(32 + currentSpeed * 1.5, audioCtx.currentTime, 0.05);
+        }
+
+        const roadY = height * 0.76;
+        distance += currentSpeed * 18 * dt;
+        wheelAngle += (currentSpeed * 22 * dt) / 30;
+        turbineBladeAngle += 0.8 * dt;
+
+        // Vehicle physics & suspension dynamics
+        const bumpFreq1 = distance * 0.05;
+        const bumpFreq2 = distance * 0.12;
+        const rawBump = Math.sin(bumpFreq1) * 1.6 + Math.cos(bumpFreq2) * 1.1 + (Math.random() - 0.5) * 0.6;
+        
+        suspensionFront += (rawBump * 0.8 - suspensionFront) * 18 * dt;
+        suspensionRear += (Math.sin(bumpFreq1 - 1.2) * 1.5 - suspensionRear) * 18 * dt;
+        
+        chassisBounce = (suspensionFront + suspensionRear) * 0.5;
+        // Pitch back slightly under acceleration, forward under braking
+        const accelForce = (targetSpeed - currentSpeed);
+        chassisPitch += ((accelForce * 0.03 + (suspensionFront - suspensionRear) * 0.02) - chassisPitch) * 12 * dt;
+
+        const theme = timeThemes[timeModeIndex];
+
+        // 1. SKY BACKGROUND
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, roadY);
+        skyGrad.addColorStop(0, theme.skyTop);
+        skyGrad.addColorStop(0.5, theme.skyMid);
+        skyGrad.addColorStop(1, theme.skyBottom);
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. CELESTIAL BODY (Sun / Moon) & ATMOSPHERIC CORONA
+        const sunX = width * 0.72;
+        const sunY = roadY * theme.sunY;
+        const sunRadius = 45;
+
+        // Corona Glow
+        const coronaGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 220);
+        coronaGrad.addColorStop(0, theme.sunCorona);
+        coronaGrad.addColorStop(0.4, theme.hazeColor);
+        coronaGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = coronaGrad;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, 220, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sun disc
+        ctx.fillStyle = theme.sunColor;
+        ctx.shadowColor = theme.sunColor;
+        ctx.shadowBlur = 35;
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 3. CLOUDS (Parallax Layer 0.04)
+        clouds.forEach(cloud => {
+          cloud.x -= currentSpeed * cloud.speed * 8 * dt;
+          if (cloud.x < -200) cloud.x = width + 200 + Math.random() * 100;
+          ctx.fillStyle = `rgba(255, 220, 200, ${cloud.opacity * (theme.ambientLight * 0.7 + 0.3)})`;
+          cloud.puffs.forEach(puff => {
+            ctx.beginPath();
+            ctx.arc(cloud.x + puff.dx * cloud.scale, cloud.y + puff.dy * cloud.scale, puff.r * cloud.scale, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        });
+
+        // 4. DISTANT MOUNTAIN RANGE (Parallax Layer 0.08)
+        function drawMountainLayer(ridge, speedFactor, baseColor, yOffset) {
+          const mWidth = 2400;
+          const shift = (distance * speedFactor) % mWidth;
+          ctx.fillStyle = baseColor;
+          ctx.beginPath();
+          ctx.moveTo(0, roadY);
+          for (let x = 0; x <= width + 50; x += 15) {
+            const worldX = (x + shift) % mWidth;
+            const index = Math.floor((worldX / mWidth) * (ridge.length - 1));
+            const y = roadY - yOffset - ridge[index];
+            ctx.lineTo(x, y);
+          }
+          ctx.lineTo(width + 50, roadY);
+          ctx.lineTo(0, roadY);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        drawMountainLayer(farRidge, 0.06, theme.mountainFar, 110);
+
+        // Distant Wind Turbines
+        windTurbines.forEach(wt => {
+          const screenX = ((wt.x - distance * 0.09) % (width + 600) + width + 600) % (width + 600) - 200;
+          const wtY = roadY - 80;
+          ctx.strokeStyle = "rgba(255,255,255,0.18)";
+          ctx.lineWidth = 2.5;
+          // Tower
+          ctx.beginPath();
+          ctx.moveTo(screenX, wtY);
+          ctx.lineTo(screenX, wtY - wt.h);
+          ctx.stroke();
+          // Rotor blades
+          const hubY = wtY - wt.h;
+          for (let b = 0; b < 3; b++) {
+            const angle = turbineBladeAngle + (b * Math.PI * 2) / 3;
+            const bx = screenX + Math.cos(angle) * (wt.h * 0.45);
+            const by = hubY + Math.sin(angle) * (wt.h * 0.45);
+            ctx.beginPath();
+            ctx.moveTo(screenX, hubY);
+            ctx.lineTo(bx, by);
+            ctx.stroke();
+          }
+        });
+
+        // 5. MID-DISTANCE HILLS & FOOTHILLS (Parallax Layer 0.16)
+        drawMountainLayer(midRidge, 0.16, theme.mountainMid, 50);
+
+        // 6. NEAR FORESTS & ROLLING HILL RIDGE (Parallax Layer 0.32)
+        drawMountainLayer(pineRidge, 0.32, theme.hillsNear, 10);
+
+        // 7. HORIZON ATMOSPHERIC HAZE
+        const haze = ctx.createLinearGradient(0, roadY - 90, 0, roadY + 20);
+        haze.addColorStop(0, "rgba(0,0,0,0)");
+        haze.addColorStop(0.7, theme.hazeColor);
+        haze.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = haze;
+        ctx.fillRect(0, roadY - 90, width, 110);
+
+        // 8. ROADSIDE UTILITY POLES & CATENARY POWER LINES (Parallax Layer 0.65)
+        const poleSpacing = 280;
+        const poleWrap = poleSpacing * utilityPoles.length;
+        const poleShift = (distance * 0.65) % poleWrap;
+        
+        ctx.strokeStyle = "rgba(10, 8, 16, 0.85)";
+        ctx.lineWidth = 4;
+        const visiblePoles = [];
+
+        utilityPoles.forEach((pole, i) => {
+          let px = (pole.x - poleShift + poleWrap) % poleWrap - 100;
+          if (px > -150 && px < width + 150) {
+            const py = roadY - 2;
+            const ph = 155;
+            visiblePoles.push({ x: px, y: py - ph });
+
+            // Pole body
+            ctx.strokeStyle = "#170f20";
+            ctx.lineWidth = 4.5;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px, py - ph);
+            ctx.stroke();
+
+            // Cross arm
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(px - 24, py - ph + 18);
+            ctx.lineTo(px + 24, py - ph + 18);
+            ctx.moveTo(px - 18, py - ph + 38);
+            ctx.lineTo(px + 18, py - ph + 38);
+            ctx.stroke();
+
+            // Insulators
+            ctx.fillStyle = "#ffcc88";
+            [-22, 22, -16, 16].forEach((ix, idx) => {
+              ctx.fillRect(px + ix - 2, py - ph + (idx < 2 ? 14 : 34), 4, 6);
+            });
+          }
+        });
+
+        // Draw Sagging Catenary Power Lines between sorted poles
+        visiblePoles.sort((a, b) => a.x - b.x);
+        for (let i = 0; i < visiblePoles.length - 1; i++) {
+          const p1 = visiblePoles[i];
+          const p2 = visiblePoles[i + 1];
+          if (p2.x - p1.x < poleSpacing * 1.5) {
+            ctx.strokeStyle = "rgba(20, 15, 30, 0.6)";
+            ctx.lineWidth = 1.2;
+            // Top wire
+            ctx.beginPath();
+            ctx.moveTo(p1.x - 22, p1.y + 14);
+            ctx.quadraticCurveTo((p1.x + p2.x) / 2, (p1.y + p2.y) / 2 + 35, p2.x - 22, p2.y + 14);
+            ctx.stroke();
+            // Second wire
+            ctx.beginPath();
+            ctx.moveTo(p1.x + 22, p1.y + 14);
+            ctx.quadraticCurveTo((p1.x + p2.x) / 2, (p1.y + p2.y) / 2 + 32, p2.x + 22, p2.y + 14);
+            ctx.stroke();
+          }
+        }
+
+        // 9. ROADSIDE TREES & BUSHES (Parallax Layer 0.85)
+        const elementWrap = 2800;
+        const treeShift = (distance * 0.85) % elementWrap;
+        roadsideElements.forEach(elem => {
+          let ex = (elem.x - treeShift + elementWrap) % elementWrap - 150;
+          if (ex > -150 && ex < width + 150) {
+            const ey = roadY - 4;
+            ctx.fillStyle = theme.treeColor;
+            if (elem.type === 'tree') {
+              // Trunk
+              ctx.fillRect(ex - 3, ey - elem.height * 0.4, 6, elem.height * 0.4);
+              // Foliage layers (triangles/pines)
+              ctx.beginPath();
+              ctx.moveTo(ex, ey - elem.height);
+              ctx.lineTo(ex - elem.width * 0.5, ey - elem.height * 0.3);
+              ctx.lineTo(ex + elem.width * 0.5, ey - elem.height * 0.3);
+              ctx.closePath();
+              ctx.fill();
+            } else {
+              // Bush
+              ctx.beginPath();
+              ctx.arc(ex, ey - elem.height * 0.4, elem.width * 0.45, 0, Math.PI * 2);
+              ctx.arc(ex - elem.width * 0.25, ey - elem.height * 0.3, elem.width * 0.35, 0, Math.PI * 2);
+              ctx.arc(ex + elem.width * 0.25, ey - elem.height * 0.3, elem.width * 0.35, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        });
+
+        // 10. STREET LAMPS WITH LIGHT CONES (Parallax Layer 1.0)
+        const lampWrap = 420 * streetLamps.length;
+        const lampShift = (distance * 1.0) % lampWrap;
+        streetLamps.forEach(lamp => {
+          let lx = (lamp.x - lampShift + lampWrap) % lampWrap - 150;
+          if (lx > -200 && lx < width + 250) {
+            const ly = roadY;
+            const lh = 180;
+            // Pole
+            ctx.strokeStyle = "#2b2a38";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(lx, ly - lh + 20);
+            ctx.quadraticCurveTo(lx, ly - lh, lx + 28, ly - lh);
+            ctx.stroke();
+
+            // Lamp fixture
+            ctx.fillStyle = "#ffeaa7";
+            ctx.fillRect(lx + 22, ly - lh - 2, 14, 6);
+
+            // Volumetric Cone of light
+            const coneGrad = ctx.createRadialGradient(lx + 28, ly - lh + 4, 5, lx + 30, ly + 20, 180);
+            coneGrad.addColorStop(0, "rgba(255, 235, 170, 0.32)");
+            coneGrad.addColorStop(0.6, "rgba(255, 200, 120, 0.1)");
+            coneGrad.addColorStop(1, "rgba(255, 200, 120, 0)");
+            ctx.fillStyle = coneGrad;
+            ctx.beginPath();
+            ctx.moveTo(lx + 28, ly - lh + 4);
+            ctx.lineTo(lx - 90, ly + 40);
+            ctx.lineTo(lx + 150, ly + 40);
+            ctx.closePath();
+            ctx.fill();
+          }
+        });
+
+        // 11. ROADSIDE GUARDRAIL BARRIER
+        const railY = roadY - 14;
+        ctx.strokeStyle = "#4a4a58";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(0, railY);
+        ctx.lineTo(width, railY);
+        ctx.stroke();
+
+        // Guardrail posts & reflective markers (Moving at 1.0)
+        const postShift = (distance * 1.0) % 50;
+        ctx.fillStyle = "#333342";
+        ctx.strokeStyle = "#ff793f";
+        for (let x = -postShift; x < width + 50; x += 50) {
+          ctx.fillRect(x - 2, railY, 4, 18);
+          // Reflector
+          ctx.fillStyle = "#ffb142";
+          ctx.fillRect(x - 1, railY - 4, 3, 3);
+        }
+
+        // 12. HIGHWAY ROAD SURFACE & MARKINGS (Layer 1.0)
+        const groundGrad = ctx.createLinearGradient(0, roadY, 0, height);
+        groundGrad.addColorStop(0, theme.groundTop);
+        groundGrad.addColorStop(0.15, "#1f222e");
+        groundGrad.addColorStop(0.7, "#141720");
+        groundGrad.addColorStop(1, theme.groundBottom);
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, roadY, width, height - roadY);
+
+        // Curb edge
+        const curbGrad = ctx.createLinearGradient(0, roadY, 0, roadY + 8);
+        curbGrad.addColorStop(0, "#57606f");
+        curbGrad.addColorStop(1, "#2f3542");
+        ctx.fillStyle = curbGrad;
+        ctx.fillRect(0, roadY, width, 7);
+
+        // Asphalt Texture Stripes
+        const roadStripeShift = (distance * 1.25) % 80;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+        for (let x = -roadStripeShift; x < width + 80; x += 80) {
+          ctx.fillRect(x, roadY + 12, 40, 2);
+        }
+
+        // Dashed Center Road Line (High-speed parallax)
+        const dashSpacing = 120;
+        const dashShift = (distance * 1.45) % dashSpacing;
+        ctx.fillStyle = "#eccc68";
+        ctx.shadowColor = "rgba(236, 204, 104, 0.4)";
+        ctx.shadowBlur = 6;
+        for (let x = -dashShift; x < width + dashSpacing; x += dashSpacing) {
+          ctx.fillRect(x, roadY + 54, 65, 5);
+        }
+        ctx.shadowBlur = 0;
+
+        // Solid Shoulder Line
+        ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+        ctx.fillRect(0, roadY + 105, width, 4);
+
+        // 13. HEADLIGHT / TAILLIGHT GROUND ILLUMINATION POOLS
+        const carX = Math.min(width * 0.38, 480);
+        const carY = roadY + 8 + chassisBounce;
+
+        if (headlightsOn) {
+          // Dynamic forward headlight cone beam on road
+          const hlGrad = ctx.createRadialGradient(carX + 160, carY + 8, 15, carX + 380, carY + 35, 340);
+          hlGrad.addColorStop(0, `rgba(220, 245, 255, ${0.45 * theme.headlightStrength})`);
+          hlGrad.addColorStop(0.5, `rgba(180, 220, 255, ${0.18 * theme.headlightStrength})`);
+          hlGrad.addColorStop(1, "rgba(180, 220, 255, 0)");
+          ctx.fillStyle = hlGrad;
+          ctx.beginPath();
+          ctx.moveTo(carX + 130, carY - 2);
+          ctx.lineTo(carX + 560, carY - 20);
+          ctx.lineTo(carX + 520, carY + 90);
+          ctx.lineTo(carX + 110, carY + 28);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Taillight ground red reflection pool
+        const tlPool = ctx.createRadialGradient(carX - 120, carY + 24, 5, carX - 120, carY + 24, 110);
+        tlPool.addColorStop(0, "rgba(255, 20, 20, 0.55)");
+        tlPool.addColorStop(0.5, "rgba(255, 0, 0, 0.18)");
+        tlPool.addColorStop(1, "rgba(255, 0, 0, 0)");
+        ctx.fillStyle = tlPool;
+        ctx.fillRect(carX - 240, carY - 10, 240, 70);
+
+        // 14. EXHAUST PARTICLES
+        emitExhaust(carX - 132, carY + 23, currentSpeed / 35);
+        for (let i = exhaustParticles.length - 1; i >= 0; i--) {
+          const p = exhaustParticles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.size += (p.maxSize - p.size) * 0.08;
+          p.life -= p.decay;
+
+          if (p.life <= 0) {
+            exhaustParticles.splice(i, 1);
+            continue;
+          }
+
+          ctx.fillStyle = `rgba(180, 180, 200, ${p.life * p.opacity * 0.35})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 15. MAIN SUBJECT: HIGH-FIDELITY SPORTS GT CAR
+        ctx.save();
+        ctx.translate(carX, carY);
+        ctx.rotate(chassisPitch);
+
+        // Shadow beneath car
+        const shadowGrad = ctx.createRadialGradient(0, 32, 10, 0, 32, 160);
+        shadowGrad.addColorStop(0, "rgba(0, 0, 0, 0.92)");
+        shadowGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.55)");
+        shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = shadowGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 31, 155, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Car Body Silhouette & High-Gloss Metallic Finish
+        // Body base gradient
+        const bodyGrad = ctx.createLinearGradient(-140, -45, 140, 30);
+        bodyGrad.addColorStop(0, "#7a0c16");
+        bodyGrad.addColorStop(0.3, "#d63031");
+        bodyGrad.addColorStop(0.5, "#ff4d4d"); // Specular peak
+        bodyGrad.addColorStop(0.8, "#c0392b");
+        bodyGrad.addColorStop(1, "#590a10");
+
+        // Main Chassis Path
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        // Start front splitter
+        ctx.moveTo(138, 22);
+        ctx.lineTo(142, 15);
+        ctx.quadraticCurveTo(140, 8, 125, 4); // Front nose cone
+        ctx.lineTo(105, -1); // Hood slope
+        ctx.quadraticCurveTo(72, -8, 48, -12); // Windshield base
+        ctx.quadraticCurveTo(24, -36, -14, -38); // Roof apex
+        ctx.lineTo(-58, -36); // Roof line
+        ctx.quadraticCurveTo(-92, -30, -118, -4); // Rear fastback glass slope
+        ctx.lineTo(-136, 0); // Trunk & spoiler deck
+        ctx.lineTo(-144, 4); // Rear bumper top
+        ctx.lineTo(-142, 18); // Rear fascia
+        ctx.lineTo(-135, 23); // Rear diffuser
+        // Rear Wheel arch cutout
+        ctx.lineTo(-72, 23);
+        ctx.arc(-82, 16, 27, 0.25 * Math.PI, 1.0 * Math.PI, true);
+        ctx.lineTo(-105, 23);
+        // Side skirt
+        ctx.lineTo(-60, 23);
+        ctx.lineTo(60, 23);
+        // Front Wheel arch cutout
+        ctx.lineTo(60, 23);
+        ctx.arc(82, 16, 27, 0.0 * Math.PI, 0.75 * Math.PI, true);
+        ctx.lineTo(138, 23);
+        ctx.closePath();
+        ctx.fill();
+
+        // Body Panel Specular Highlight Streak (Clearcoat reflection)
+        const shineGrad = ctx.createLinearGradient(-130, -35, 120, 10);
+        shineGrad.addColorStop(0, "rgba(255,255,255,0)");
+        shineGrad.addColorStop(0.3, "rgba(255,255,255,0.45)");
+        shineGrad.addColorStop(0.4, "rgba(255,255,255,0.85)");
+        shineGrad.addColorStop(0.5, "rgba(255,255,255,0.2)");
+        shineGrad.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.strokeStyle = shineGrad;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-115, -4);
+        ctx.quadraticCurveTo(-14, -39, 46, -12);
+        ctx.lineTo(105, -1);
+        ctx.stroke();
+
+        // Aerodynamic Carbon Splitter & Side Skirt
+        ctx.fillStyle = "#11141a";
+        ctx.fillRect(-140, 21, 280, 4);
+        // Carbon weave texture accents
+        ctx.fillStyle = "#222733";
+        ctx.fillRect(-138, 22, 40, 2);
+        ctx.fillRect(98, 22, 42, 2);
+
+        // Rear Aerodynamic GT Wing / Spoiler
+        ctx.fillStyle = "#161922";
+        ctx.fillRect(-142, -9, 8, 14); // Pylon
+        ctx.fillStyle = "#0c0e14";
+        ctx.beginPath();
+        ctx.roundRect(-152, -13, 24, 5, 2);
+        ctx.fill();
+
+        // Cockpit Greenhouse (Glass Windows & Interior)
+        const glassGrad = ctx.createLinearGradient(0, -36, 0, -8);
+        glassGrad.addColorStop(0, "rgba(10, 18, 30, 0.95)");
+        glassGrad.addColorStop(0.6, "rgba(25, 45, 70, 0.75)");
+        glassGrad.addColorStop(1, "rgba(200, 230, 255, 0.4)");
+
+        ctx.fillStyle = glassGrad;
+        ctx.beginPath();
+        ctx.moveTo(42, -11);
+        ctx.lineTo(21, -34);
+        ctx.lineTo(-54, -34);
+        ctx.quadraticCurveTo(-82, -26, -108, -6);
+        ctx.lineTo(42, -11);
+        ctx.closePath();
+        ctx.fill();
+
+        // Window Frames / B-Pillar
+        ctx.strokeStyle = "#1a1d24";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = "#1a1d24";
+        ctx.fillRect(-15, -34, 6, 25); // B-pillar
+
+        // Interior Silhouettes (Driver Seat Headrest & Steering Wheel)
+        ctx.fillStyle = "rgba(12, 14, 20, 0.85)";
+        // Seat headrest
+        ctx.beginPath();
+        ctx.roundRect(-5, -28, 12, 16, 4);
+        ctx.fill();
+        // Steering wheel upper arc
+        ctx.strokeStyle = "rgba(180, 180, 200, 0.7)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(28, -16, 7, -Math.PI * 0.7, Math.PI * 0.2);
+        ctx.stroke();
+
+        // Door Cut Line & Aerodynamic Side Intake Scoop
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(38, -10);
+        ctx.lineTo(32, 20);
+        ctx.moveTo(-20, -10);
+        ctx.lineTo(-24, 20);
+        ctx.stroke();
+
+        // Flush Door Handle
+        ctx.fillStyle = "#1f242e";
+        ctx.fillRect(-10, -3, 14, 3);
+
+        // Side Air Scoop
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.beginPath();
+        ctx.moveTo(-45, 16);
+        ctx.lineTo(-28, 2);
+        ctx.lineTo(-24, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        // Xenon Projector Headlight Unit
+        const hlX = 132;
+        const hlY = 8;
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#00f0ff";
+        ctx.shadowBlur = headlightsOn ? 18 : 0;
+        ctx.beginPath();
+        ctx.ellipse(hlX, hlY, 7, 4, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Front Amber Indicator
+        ctx.fillStyle = "#ff9f1a";
+        ctx.fillRect(137, 12, 3, 4);
+
+        // Rear LED Blade Taillight & Light Trail
+        const tlX = -138;
+        const tlY = 6;
+        ctx.fillStyle = "#ff1e42";
+        ctx.shadowColor = "#ff0033";
+        ctx.shadowBlur = 22;
+        ctx.fillRect(tlX, tlY, 6, 5);
+        ctx.fillRect(tlX + 4, tlY + 2, 12, 2); // Side wrap
+        ctx.shadowBlur = 0;
+
+        // Quad Exhaust Tips
+        ctx.fillStyle = "#718093";
+        ctx.beginPath();
+        ctx.roundRect(-143, 19, 9, 5, 2);
+        ctx.fill();
+        ctx.fillStyle = "#111";
+        ctx.beginPath();
+        ctx.arc(-142, 21.5, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // WHEELS RENDERING HELPER (Alloy Rims + Drilled Rotors + Calipers)
+        function renderWheel(wx, wy) {
+          ctx.save();
+          ctx.translate(wx, wy);
+
+          // 1. Rubber Tire
+          ctx.fillStyle = "#12141a";
+          ctx.beginPath();
+          ctx.arc(0, 0, 24, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Tire Sidewall highlight
+          ctx.strokeStyle = "#252b38";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 22.5, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // 2. Drilled Performance Brake Disc Rotor (Static with hub)
+          ctx.fillStyle = "#7f8c8d";
+          ctx.beginPath();
+          ctx.arc(0, 0, 16.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Rotor ventilation grooves
+          ctx.strokeStyle = "#576574";
+          ctx.lineWidth = 1;
+          for (let r = 8; r < 15; r += 3) {
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          // 3. High-Performance Crimson Red Brake Caliper (Stationary)
+          ctx.fillStyle = "#e74c3c";
+          ctx.shadowColor = "rgba(0,0,0,0.5)";
+          ctx.shadowBlur = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, 17, -Math.PI * 0.75, -Math.PI * 0.25);
+          ctx.lineTo(0, -9);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          // Caliper brand text line
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(-6, -14, 12, 1.5);
+
+          // 4. Rotating Alloy Rim (5 Twin-Spoke Design with motion blur)
+          ctx.save();
+          ctx.rotate(wheelAngle);
+
+          // Rim outer lip
+          ctx.strokeStyle = "#dcdde1";
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 17, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Spokes
+          const spokeCount = 5;
+          for (let s = 0; s < spokeCount; s++) {
+            const a = (s * Math.PI * 2) / spokeCount;
+            ctx.save();
+            ctx.rotate(a);
+
+            // Metallic Twin-spoke
+            const spokeGrad = ctx.createLinearGradient(-3, 0, 3, 16);
+            spokeGrad.addColorStop(0, "#f5f6fa");
+            spokeGrad.addColorStop(0.5, "#718093");
+            spokeGrad.addColorStop(1, "#2f3542");
+            ctx.fillStyle = spokeGrad;
+
+            ctx.beginPath();
+            ctx.moveTo(-2.5, 4);
+            ctx.lineTo(-4, 16);
+            ctx.lineTo(-1, 16.5);
+            ctx.lineTo(-0.5, 4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(2.5, 4);
+            ctx.lineTo(4, 16);
+            ctx.lineTo(1, 16.5);
+            ctx.lineTo(0.5, 4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+          }
+
+          // Center Hub Cap with Emblem
+          ctx.fillStyle = "#1e272e";
+          ctx.beginPath();
+          ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#e84118";
+          ctx.beginPath();
+          ctx.arc(0, 0, 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore(); // End Rotating Rim
+          ctx.restore(); // End Wheel
+        }
+
+        // Draw Front & Rear Wheels
+        renderWheel(-82, 16);
+        renderWheel(82, 16);
+
+        ctx.restore(); // End Car Matrix
+
+        // 16. FOREGROUND BLADES OF GRASS (High-Speed Parallax Layer 1.6)
+        const grassShift = (distance * 1.6) % 40;
+        ctx.strokeStyle = theme.treeColor;
+        ctx.lineWidth = 2;
+        for (let x = -grassShift; x < width + 50; x += 22) {
+          const gh = 18 + Math.sin(x * 0.3) * 10;
+          ctx.beginPath();
+          ctx.moveTo(x, height);
+          ctx.quadraticCurveTo(x - 8, height - gh * 0.6, x - 12, height - gh);
+          ctx.stroke();
+        }
+
+        // 17. CINEMATIC VIGNETTE & FILM COLOR GRADE OVERLAY
+        const vignette = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.35, width * 0.5, height * 0.5, width * 0.8);
+        vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+        vignette.addColorStop(1, "rgba(4, 2, 8, 0.45)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, width, height);
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

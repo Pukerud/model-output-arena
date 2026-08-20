@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller — Three.js Dance Scene</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #05060f; }
+  canvas { display: block; }
+  #title {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    font: 700 22px/1.2 "Bebas Neue", "Arial Narrow", sans-serif;
+    letter-spacing: 6px; color: #e8b63c; text-align: center; z-index: 5;
+    text-shadow: 0 0 18px rgba(220, 120, 40, .6), 0 2px 0 #000;
+    pointer-events: none; white-space: nowrap;
+  }
+  #controls {
+    position: fixed; right: 14px; bottom: 14px; z-index: 6; display: flex; gap: 8px; align-items: center;
+  }
+  #controls button {
+    background: rgba(12, 14, 26, .75); color: #e8b63c; border: 1px solid rgba(232, 182, 60, .5);
+    padding: 8px 12px; border-radius: 8px; cursor: pointer; font: 600 12px/1 "Segoe UI", sans-serif;
+    letter-spacing: 1px; backdrop-filter: blur(4px);
+  }
+  #controls button:hover { background: rgba(232, 182, 60, .2); }
+  #hint {
+    position: fixed; left: 14px; bottom: 14px; z-index: 6;
+    font: 11px/1.5 "Segoe UI", sans-serif; color: rgba(255,255,255,.45); letter-spacing: .4px;
+    pointer-events: none; text-shadow: 0 1px 2px #000;
+  }
+</style>
+</head>
+<body>
+<div id="title">T H R I L L E R</div>
+<div id="controls">
+  <button id="snd">🔇 Sound off — click</button>
+  <button id="cam">🎥 Camera: Auto</button>
+</div>
+<div id="hint">drag to orbit · scroll to zoom · the Moonwalk happens at night</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PLAN
+   1. Renderer + scene + fog + cinematic camera (OrbitControls, auto-orbit).
+   2. Night environment: moon, stars, mist, warehouse silhouettes, stage floor.
+   3. Post-processing: UnrealBloom + OutputPass for the cinematic glow.
+   4. Four procedural characters from primitives (shared humanoid rig):
+      Michael Jackson (fedora, red jacket, one white glove), Pepe the Frog,
+      Donald Trump (blue suit, red tie, comb-over), Elon Musk (dark zipper hoodie).
+   5. Dance system on a 118 BPM grid: MJ leads a 160-beat Thriller routine
+      (zombie arms → neck/shoulder pops → point → pelvis pulse → spin →
+      zombie shuffle), others echo with phase offsets and their own flavour.
+   6. Coloured spotlights + fog so the figures pop, plus a soft synth beat.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const canvas = document.body.appendChild(document.createElement('canvas'));
+
+// ─────────────── renderer ───────────────
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+// ─────────────── scene / camera ───────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070912);
+scene.fog = new THREE.FogExp2(0x070912, 0.016);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 300);
+camera.position.set(0, 6.2, 17);
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 3.6, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 1.1;
+controls.maxPolarAngle = Math.PI * 0.485;
+controls.minDistance = 8;
+controls.maxDistance = 46;
+
+// ─────────────── post processing ───────────────
+let composer = null;
+try {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.5, 0.3);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+} catch (e) { console.warn('post-processing unavailable', e); }
+
+// ─────────────── lights ───────────────
+scene.add(new THREE.AmbientLight(0x2e405e, 0.9));
+const hemi = new THREE.HemisphereLight(0x44608f, 0x101014, 0.75);
+scene.add(hemi);
+
+function makeSpot(color, x, y, z, angle, dist, intensity, targetPos) {
+  const s = new THREE.SpotLight(color, intensity, dist, angle, 0.55, 1.2);
+  s.position.set(x, y, z);
+  s.castShadow = true;
+  s.shadow.mapSize.set(1024, 1024);
+  s.target.position.copy(targetPos);
+  scene.add(s); scene.add(s.target);
+  return s;
+}
+const key = makeSpot(0xffe6b8, 0, 13, 9, 0.55, 65, 950, new THREE.Vector3(0, 3, 0));      // warm key
+const magenta = makeSpot(0xff3d9e, -12, 10, -2, 0.7, 60, 560, new THREE.Vector3(-3, 3, 0)); // magenta rim
+const cyan = makeSpot(0x35c8ff, 12, 10, -2, 0.7, 60, 520, new THREE.Vector3(3, 3, 0));      // cyan rim
+const amber = makeSpot(0xffa63c, 0, 8, 12, 0.45, 50, 420, new THREE.Vector3(0, 2, 0));      // back amber
+
+// volumetric-ish light beams (additive cones)
+function beam(color, x, z, targetY, tilt) {
+  const h = 24, rTop = 0.4, rBot = 4.6;
+  const geo = new THREE.CylinderGeometry(rTop, rBot, h, 24, 1, true);
+  const mat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.055, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, h / 2 - 1, z);
+  mesh.rotation.z = tilt;
+  mesh.rotation.x = 0.16;
+  scene.add(mesh);
+  return mesh;
+}
+beam(0xffdf9e, -4.5, -7, 5, 0.06);
+beam(0xff3d9e, 6.5, -6, 5, -0.08);
+beam(0x35c8ff, -7.5, -5, 5, -0.05);
+
+// ─────────────── environment ───────────────
+const moon = new THREE.Mesh(
+  new THREE.SphereGeometry(3.2, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xeef2ff, fog: false })
+);
+moon.position.set(-26, 22, -48);
+const moonGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(5.4, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0x99b8ff, transparent: true, opacity: 0.14, fog: false, depthWrite: false })
+);
+moonGlow.position.copy(moon.position);
+scene.add(moon, moonGlow);
+
+// stars
+const starGeo = new THREE.BufferGeometry();
+const starPos = [];
+for (let i = 0; i < 900; i++) {
+  const r = 90 + Math.random() * 60;
+  const th = Math.random() * Math.PI * 2;
+  const ph = Math.acos(Math.random() * 0.9 + 0.05);
+  starPos.push(r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th));
+}
+starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xcfd8ff, size: 0.22, transparent: true, opacity: 0.8, fog: false }));
+scene.add(stars);
+
+// floor — dark polished stage
+const floor = new THREE.Mesh(
+  new THREE.CircleGeometry(34, 64),
+  new THREE.MeshStandardMaterial({ color: 0x0d111d, roughness: 0.32, metalness: 0.86 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// stage ring
+const ring = new THREE.Mesh(
+  new THREE.TorusGeometry(8.6, 0.12, 12, 80),
+  new THREE.MeshBasicMaterial({ color: 0xe8b63c, transparent: true, opacity: 0.85 })
+);
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = 0.03;
+scene.add(ring);
+
+// scattered gravestones behind
+function gravestone(x, z, s, tilt) {
+  const g = new THREE.Mesh(
+    new THREE.BoxGeometry(0.9 * s, 2.2 * s, 0.22 * s),
+    new THREE.MeshStandardMaterial({ color: 0x5c6472, roughness: 0.9 })
+  );
+  g.position.set(x, 1.1 * s, z);
+  g.rotation.z = tilt;
+  g.rotation.y = (Math.random() - 0.5) * 0.4;
+  g.castShadow = true;
+  scene.add(g);
+  return g;
+}
+for (let i = 0; i < 14; i++) {
+  const ang = Math.PI * 0.15 + Math.random() * Math.PI * 0.7;
+  gravestone(Math.cos(ang) * 13, Math.sin(ang) * 6 - 8, 0.8 + Math.random() * 0.9, (Math.random() - 0.5) * 0.18);
+}
+
+// warehouse silhouettes + wall fog backdrop
+const sil = new THREE.Mesh(
+  new THREE.BoxGeometry(40, 9, 1),
+  new THREE.MeshStandardMaterial({ color: 0x0a0d18, roughness: 1, metalness: 0 })
+);
+sil.position.set(0, 4.5, -30);
+scene.add(sil);
+const box = new THREE.Mesh(
+  new THREE.BoxGeometry(24, 14, 1),
+  new THREE.MeshStandardMaterial({ color: 0x080a14, roughness: 1 })
+);
+box.position.set(-30, 5, -18); box.rotation.y = 0.5;
+scene.add(box);
+
+// wireframe dome accent
+const dome = new THREE.Mesh(
+  new THREE.SphereGeometry(40, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5),
+  new THREE.MeshBasicMaterial({ color: 0x223, wireframe: true, transparent: true, opacity: 0.10 })
+);
+dome.position.y = 0;
+scene.add(dome);
+
+// thin ground haze planes
+const haze = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 12),
+  new THREE.MeshBasicMaterial({ color: 0x7a9bd8, transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false })
+);
+haze.rotation.x = -Math.PI / 2;
+haze.position.set(0, 0.35, -8);
+scene.add(haze);
+
+// ─────────────── humanoid rig builder ───────────────
+function std(color, rough = 0.7, metal = 0.05) { return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal }); }
+
+function humanoid(cfg) {
+  // cfg: { skin, hair, shirt, jacket, jacketZipper, pants, shoes, hat, glove,
+  //        h, armL, armR?, build (blend factor), headScale, hatType }
+  const g = new THREE.Group();
+  const b = cfg.build || 0;          // 0 slim … 1 chunky
+  const H = (cfg.h != null ? cfg.h : 5.6) / 5.6;
+
+  // legs
+  const hL = new THREE.Group(); hL.position.set(-0.42 * b - 0.16, 2.25 * H, 0);
+  const hR = new THREE.Group(); hR.position.set(0.42 * b + 0.16, 2.25 * H, 0);
+  const thighGeo = new THREE.BoxGeometry(0.34, 1.7 * H, 0.36);
+  const calfGeo = new THREE.BoxGeometry(0.28, 1.5 * H, 0.30);
+  const footGeo = new THREE.BoxGeometry(0.32, 0.22, 0.62);
+
+  const tL = new THREE.Mesh(thighGeo, cfg.pants); tL.position.y = -0.85 * H;
+  const tR = new THREE.Mesh(thighGeo, cfg.pants); tR.position.y = -0.85 * H;
+  const cL = new THREE.Mesh(calfGeo, cfg.pants); cL.position.y = -0.75 * H;
+  const cR = new THREE.Mesh(calfGeo, cfg.pants); cR.position.y = -0.75 * H;
+  const fL = new THREE.Mesh(footGeo, cfg.shoes); fL.position.set(0, -1.55 * H, 0.15);
+  const fR = new THREE.Mesh(footGeo, cfg.shoes); fR.position.set(0, -1.55 * H, 0.15);
+  hL.add(tL, cL, fL); hR.add(tR, cR, fR);
+  g.add(hL, hR);
+
+  // torso
+  const torso = new THREE.Group(); torso.position.y = 2.25 * H;
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(1.06 * (0.35 + b * 0.5), 1.5 * H, 0.62 * (0.3 + b * 0.4)), cfg.shirt);
+  chest.position.y = 0.75 * H;
+  torso.add(chest);
+  // jacket overlay
+  if (cfg.jacket) {
+    const jk = new THREE.Mesh(new THREE.BoxGeometry(1.16 * (0.35 + b * 0.5), 1.5 * H, 0.66 * (0.3 + b * 0.4)), cfg.jacket);
+    jk.position.set(0, 0.75 * H, -0.01);
+    torso.add(jk);
+  }
+  // torso accent (tie / zipper / belly)
+  if (cfg.chestAccent) {
+    const acc = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.0 * H, 0.06), cfg.chestAccent);
+    acc.position.set(0, 0.85 * H, 0.33 * (0.3 + b * 0.4) + 0.01);
+    torso.add(acc);
+  }
+  // hips / pelvis
+  const pelvis = new THREE.Mesh(new THREE.BoxGeometry(1.0 * (0.35 + b * 0.5), 0.55 * H, 0.52 * (0.3 + b * 0.4)), cfg.pants);
+  pelvis.position.y = 0.28 * H;
+  torso.add(pelvis);
+
+  // neck + head
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.4 * H, 10), cfg.skin);
+  neck.position.y = 1.5 * H + 0.2 * H;
+  torso.add(neck);
+  const headScale = cfg.headScale || 1;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.5 * headScale, 24, 20), cfg.skin);
+  head.position.y = 1.72 * H + 0.4 * H * headScale;
+  head.scale.y = 1.15;
+  torso.add(head);
+
+  // face: simple eyes + brow/glasses hints scaled to head
+  const eyeM = new THREE.MeshBasicMaterial({ color: 0x0c0c10 });
+  const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.075 * headScale, 10, 10), eyeM);
+  eyeL.position.set(-0.19 * headScale, 0.05 * headScale, 0.46 * headScale);
+  const eyeR = eyeL.clone(); eyeR.position.x = 0.19 * headScale;
+  head.add(eyeL, eyeR);
+  if (cfg.eyesWhite) {
+    const wM = std(0xf2f0ea, 0.4);
+    for (const s of [1, -1]) {
+      const w = new THREE.Mesh(new THREE.SphereGeometry(0.10 * headScale, 10, 10), wM);
+      w.position.set(0.19 * s * headScale, 0.06 * headScale, 0.445 * headScale);
+      head.add(w);
+    }
+  }
+  if (cfg.moustache) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.11 * headScale, 0.11 * headScale, 0.34 * headScale, 12), std(0x20170f, 0.85));
+    m.position.set(0, -0.16 * headScale, 0.43 * headScale);
+    head.add(m);
+  }
+
+  // hair
+  if (cfg.hairType === 'sphere') {
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.52 * headScale, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.55), cfg.hair);
+    hair.position.y = 0.1 * headScale;
+    head.add(hair);
+  } else if (cfg.hairType === 'combover') {
+    const top = new THREE.Mesh(new THREE.SphereGeometry(0.5 * headScale, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), cfg.hair);
+    top.position.y = 0.06 * headScale;
+    top.scale.y = 0.7;
+    head.add(top);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.24 * headScale, 0.16 * headScale, 0.4 * headScale), cfg.hair);
+    tail.position.set(0.2 * headScale, 0.32 * headScale, 0.2 * headScale);
+    head.add(tail);
+  } else if (cfg.hairType === 'curly') {
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.53 * headScale, 12, 10), cfg.hair);
+    c.position.y = 0.05 * headScale;
+    head.add(c);
+  }
+
+  // hat
+  if (cfg.hatType === 'fedora') {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.72 * headScale, 0.72 * headScale, 0.07, 24), std(0x0b0b0e, 0.85));
+    brim.position.set(0, 0.42 * headScale, 0);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.44 * headScale, 0.5 * headScale, 0.42 * headScale, 20), std(0x0b0b0e, 0.85));
+    crown.position.set(0, 0.21 * headScale, 0);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.455 * headScale, 0.455 * headScale, 0.09, 20), std(0x8a1f2d, 0.6));
+    band.position.set(0, 0.36 * headScale, 0);
+    const hat = new THREE.Group();
+    hat.add(brim, crown, band);
+    hat.position.set(0, 0.62 * headScale, 0);
+    hat.rotation.z = 0.16; hat.rotation.x = -0.06;
+    g.add(hat);
+  }
+
+  // arms
+  const armL = new THREE.Group(); armL.position.set(-(0.62 * (0.35 + b * 0.5) + 0.06), 2.9 * H, 0);
+  const armR = new THREE.Group(); armR.position.set(0.62 * (0.35 + b * 0.5) + 0.06, 2.9 * H, 0);
+  const uArmGeo = new THREE.BoxGeometry(0.3 * (1 + b * 0.5), 1.1 * H, 0.3 * (1 + b * 0.5));
+  const fArmGeo = new THREE.BoxGeometry(0.25 * (1 + b * 0.4), 1.05 * H, 0.25 * (1 + b * 0.4));
+
+  const uaL = new THREE.Mesh(uArmGeo, cfg.shirt); uaL.position.y = -0.55 * H;
+  const uaR = new THREE.Mesh(uArmGeo, cfg.shirt); uaR.position.y = -0.55 * H;
+  const elL = new THREE.Group(); elL.position.y = -1.1 * H;
+  const elR = new THREE.Group(); elR.position.y = -1.1 * H;
+  const faL = new THREE.Mesh(fArmGeo, cfg.jacket ? cfg.jacket : cfg.shirt); faL.position.y = -0.55 * H;
+  const faR = new THREE.Mesh(fArmGeo, cfg.jacket ? cfg.jacket : cfg.shirt); faR.position.y = -0.55 * H;
+  const haL = new THREE.Mesh(new THREE.SphereGeometry(0.17 * (1 + b * 0.3), 12, 10), cfg.glove || cfg.skin); haL.position.y = -1.1 * H;
+  const haR = new THREE.Mesh(new THREE.SphereGeometry(0.17 * (1 + b * 0.3), 12, 10), cfg.gloveR || cfg.glove || cfg.skin); haR.position.y = -1.1 * H;
+  elL.add(faL, haL); elR.add(faR, haR);
+  armL.add(uaL, elL); armR.add(uaR, elR);
+  torso.add(armL, armR);
+
+  g.add(torso);
+  const rig = { group: g, hL, hR, tL, tR, cL, cR, fL, fR, torso, chest, armL, armR, elL, elR, haL, haR, head, hipY: 2.25 * H };
+  rig.bobOffset = cfg.bobOffset || 0;
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+  scene.add(g);
+  return rig;
+}
+
+// ─────────────── characters ───────────────
+const blacks = std(0x77484a, 0.55);
+
+// MICHAEL JACKSON — fedora, red jacket, white glove (right)
+const mj = humanoid({
+  skin: std(0xc98d74, 0.5), hair: std(0x160d0a, 0.9), hairType: 'curly',
+  shirt: std(0x9a1426, 0.45), jacket: std(0xc31b2e, 0.4),
+  chestAccent: std(0x2b2b2e, 0.5), pants: std(0x0b0b0e, 0.35, 0.1), shoes: std(0x0a0a0c, 0.3, 0.4),
+  gloveR: new THREE.MeshStandardMaterial({ color: 0xf4f4f4, roughness: 0.32 }),
+  hatType: 'fedora', h: 5.6, build: 0.1,
+});
+mj.group.position.set(-4.4, 0, 0);
+
+// PEEPE THE FROG — green
+const pepe = humanoid({
+  skin: std(0x7fd06a, 0.55), hair: std(0x7fd06a, 0.6), hairType: 'sphere',
+  shirt: std(0x6ab04c, 0.6), pants: std(0x3a6e2e, 0.7), shoes: std(0x2c3a1e, 0.7),
+  headScale: 1.35, h: 4.9, build: 0.25, chestAccent: std(0x2c3a1e, 0.7), eyesWhite: true,
+});
+pepe.group.position.set(4.7, 0, -1.5);
+pepe.group.scale.set(1, 1.06, 1);
+
+// DONALD TRUMP — blue suit, red tie, comb-over
+const trump = humanoid({
+  skin: std(0xf0b079, 0.5), hair: std(0xe8cf7a, 0.8), hairType: 'combover',
+  shirt: std(0xffffff, 0.35), jacket: std(0x23408c, 0.45),
+  chestAccent: std(0xc02020, 0.5), pants: std(0x23408c, 0.5), shoes: std(0x161618, 0.4),
+  h: 5.7, build: 0.55,
+});
+trump.group.position.set(6.8, 0, 4.5);
+trump.group.rotation.y = -0.35;
+
+// ELON MUSK — dark zipper hoodie
+const musk = humanoid({
+  skin: std(0xc99b7e, 0.5), hair: std(0x17140f, 0.9), hairType: 'sphere',
+  shirt: std(0x22252b, 0.55), jacket: std(0x2c3038, 0.5),
+  chestAccent: std(0x8a9099, 0.7, 0.6), pants: std(0x1a1d22, 0.6), shoes: std(0x101214, 0.4),
+  h: 5.8, build: 0.15,
+});
+musk.group.position.set(-6.9, 0, 3.8);
+musk.group.rotation.y = 0.3;
+
+const dancers = [mj, pepe, trump, musk];
+
+// ─────────────── audio — soft beat synth (user-gated) ───────────────
+const BPM = 118, BEAT = 60 / BPM;
+let soundOn = false, AC = null, beatTimer = null, beatCount = 0;
+
+function beep(f, dur, vol, type, when) {
+  const t = (AC.currentTime || 0) + when;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = f;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function tickBeat() {
+  if (!soundOn) return;
+  try {
+    const t = beatCount % 4;
+    beep(150, 0.16, 0.5, 'sine', 0);                       // kick
+    if (t === 2) beep(120, 0.18, 0.4, 'sine', 0);
+    beep(3200, 0.03, 0.05, 'square', 0);                   // hat
+    if (t % 2 === 1) beep(1900, 0.07, 0.06, 'square', BEAT / 2); // off-hat
+    if (t === 3) { beep(520, 0.09, 0.12, 'square', 0); beep(700, 0.12, 0.10, 'square', BEAT / 2); }
+    beatCount++;
+  } catch (e) {}
+}
+document.getElementById('snd').addEventListener('click', () => {
+  soundOn = !soundOn;
+  document.getElementById('snd').textContent = soundOn ? '🔊 Beat on' : '🔇 Sound off — click';
+  if (soundOn) {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    AC.resume();
+    beatTimer = setInterval(tickBeat, BEAT * 1000);
+  } else {
+    clearInterval(beatTimer);
+  }
+});
+
+// ─────────────── dance system ───────────────
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t * t * (3 - 2 * t);
+// beat 0..159 loop
+const CYCLE_BEATS = 160;
+function phase(t) { return ((t / BEAT) % CYCLE_BEATS + CYCLE_BEATS) % CYCLE_BEATS; }
+// envelope over a beat window: 0→1→0
+function win(p, start, len, ramp = 0.35) {
+  const x = p - start;
+  if (x < 0 || x > len) return 0;
+  const inT = clamp(x / (len * ramp), 0, 1);
+  const outT = clamp((len - x) / (len * ramp), 0, 1);
+  return Math.min(inT, outT);
+}
+// smooth loop of sine segment for rhythmic pulses; r = rotations per window
+function pulse(beat, off, len, amp = 1) {
+  return Math.sin(((beat - off) / len) * Math.PI * 2) * amp;
+}
+
+// base idle sway, everyone
+function idle(r, t, amp = 0.05) {
+  r.hL.rotation.x = Math.sin(t * 1.5 + r.bobOffset) * 0.05 * amp;
+  r.hR.rotation.x = -Math.sin(t * 1.5 + r.bobOffset) * 0.05 * amp;
+  r.torso.rotation.y = Math.sin(t * 0.8 + r.bobOffset) * 0.08 * amp;
+  r.torso.rotation.z = Math.sin(t * 1.1 + r.bobOffset) * 0.04 * amp;
+  r.armL.rotation.x = Math.sin(t * 0.9 + r.bobOffset) * 0.1 * amp;
+  r.armR.rotation.x = -Math.sin(t * 0.9 + r.bobOffset) * 0.1 * amp;
+  r.head.rotation.x = Math.sin(t * 1.2 + r.bobOffset) * 0.06 * amp;
+  r.head.rotation.y = Math.sin(t * 1.0 + r.bobOffset) * 0.10 * amp;
+  r.group.position.y = Math.abs(Math.sin(t * 2 + r.bobOffset)) * 0.02 * amp;
+}
+
+// MJ: THE THRILLER ROUTINE (per-beat choreography)
+function danceMJ(r, t) {
+  const b = phase(t);
+  immediateTargets(r); // reset
+  // keyframed poses sculpted over beat windows
+  const swing = Math.sin(t * 2.1) * 0.06;                 // constant body swing
+
+  // A) intro zombie: arms raised, staggered steps for first 32 beats
+  const intro = win(b, 0, 34);
+  r.armL.rotation.x = lerp(r.armL.rotation.x, 0.5 + Math.sin(t * 0.9) * 0.12, intro);
+  r.armR.rotation.x = lerp(r.armR.rotation.x, 0.5 + Math.cos(t * 0.9) * 0.12, intro);
+  r.floorShift = ready(r, swing, intro);
+
+  // B) neck/shoulder pop on quarter notes (32-64)
+  if (b >= 32 && b < 64) {
+    const beatInWin = b - 32;
+    const pop = win(b, 32, 24, 0.2);
+    const onBeat = Math.floor(beatInWin % 8) === 0 ? 1 : 0;
+    r.torso.rotation.z = -0.12 * onBeat + Math.sin(t * 1.5) * 0.05;
+    r.torso.rotation.x = 0.10 * (beatInWin % 2 === 0 ? 1 : -1) * onBeat;
+    r.head.rotation.z = -0.28 * onBeat;                    // the neck pop!
+    r.head.rotation.y = 0.12 * Math.sin(beatInWin * 0.5);
+    r.armL.rotation.x = 0.35 + (beatInWin % 2 ? 0.6 : -0.4) * onBeat;
+    r.armR.rotation.x = -0.7;
+    r.hL.rotation.x = 0.06 * onBeat; r.hR.rotation.x = -0.06 * onBeat;
+    bounce(r, t, 0.06);
+  }
+
+  // C) point forward (64-84): right arm extended, spinning cuff
+  if (b >= 64 && b < 84) {
+    const k = win(b, 64, 20, 0.25);
+    r.armR.rotation.x = lerp(r.armR.rotation.x, -0.35, k);      // forward up
+    r.armR.rotation.z = lerp(r.armR.rotation.z, -0.15, k);
+    r.elR.rotation.x = lerp(r.elR.rotation.x, -1.0, k);         // straighten
+    r.armL.rotation.x = lerp(r.armL.rotation.x, 0.9, k);        // cocked back
+    r.haR.rotation.z = lerp(r.haR.rotation.z, Math.sin(t * 0.7) * 0.2, k);
+    r.torso.rotation.y = lerp(r.torso.rotation.y, 0.25, k);
+    r.torso.rotation.x = lerp(r.torso.rotation.x, -0.12, k);
+    r.head.rotation.y = lerp(r.head.rotation.y, 0.3, k);
+    r.hL.rotation.x = lerp(r.hL.rotation.x, 0.3, k);            // lean back leg
+    r.hR.rotation.x = lerp(r.hR.rotation.x, -0.14, k);
+    // tapping foot on beat
+    r.cR.rotation.x = (b % 1 < 0.5 ? 1 : 0) * 0.1;
+  }
+
+  // D) pelvis pulse / crotch-grab rhythm (84-108)
+  if (b >= 84 && b < 108) {
+    const k = win(b, 84, 24, 0.2);
+    const be = (b - 84) % 2 === 0 ? 1 : -1;
+    r.torso.rotation.x = lerp(r.torso.rotation.x, be * 0.22, k);     // hip thrust
+    r.torso.rotation.z = Math.sin(t * 1.5) * 0.05;
+    r.armR.rotation.x = lerp(r.armR.rotation.x, 0.9, k);             // hand on hip
+    r.elR.rotation.x = lerp(r.elR.rotation.x, -0.6, k);
+    r.armL.rotation.x = lerp(r.armL.rotation.x, 0.9, k);
+    r.elL.rotation.z = lerp(r.elL.rotation.z, 0.5, k);
+    r.hL.rotation.x = lerp(r.hL.rotation.x, 0.25, k);
+    r.hR.rotation.x = lerp(r.hR.rotation.x, -0.25, k);
+    bounce(r, t, 0.10);
+  }
+
+  // E) the SPIN (108-122): full 360, two beats, then statue pose
+  if (b >= 108 && b < 122) {
+    const k = win(b, 108, 14, 0.1);
+    const spinT = clamp((b - 108) / 8, 0, 1);
+    r.group.rotation.y = lerp(r.group.rotation.y, ease(spinT) * TAU * 2, k);
+    r.armL.rotation.x = lerp(r.armL.rotation.x, 2.6, k);            // arms flung
+    r.armR.rotation.x = lerp(r.armR.rotation.x, 2.6, k);
+    r.torso.rotation.y = Math.sin(spinT * Math.PI) * 0.4;
+  }
+  if (b >= 122 && b < 126) {                                        // freeze pose
+    immediateTargets(r);
+    r.armR.rotation.x = 0.18; r.armR.rotation.z = -0.2;
+    r.armL.rotation.x = 2.8; r.armL.rotation.z = 0.2;
+    r.elL.rotation.x = -2.2; r.elR.rotation.x = -1.4;
+    r.head.rotation.z = -0.3; r.head.rotation.y = 0.5;
+    r.torso.rotation.z = 0.06;
+  }
+
+  // F) zombie shuffle to the end (126-160)
+  if (b >= 126) {
+    const k = win(b, 126, 34, 0.3);
+    const step = Math.sin(t * 3.4);
+    r.hL.rotation.x = lerp(r.hL.rotation.x, 0.5 + step * 0.18, k);
+    r.hR.rotation.x = lerp(r.hR.rotation.x, 0.5 - step * 0.18, k);
+    r.cL.rotation.x = lerp(r.cL.rotation.x, -step * 0.15, k);
+    r.cR.rotation.x = lerp(r.cR.rotation.x, step * 0.15, k);
+    r.torso.rotation.z = lerp(r.torso.rotation.z, -step * 0.06, k);
+    r.torso.rotation.x = lerp(r.torso.rotation.x, 0.18, k);
+    r.armL.rotation.x = lerp(r.armL.rotation.x, -0.55 + step * 0.12, k);   // zombie arms stretched forward
+    r.armR.rotation.x = lerp(r.armR.rotation.x, -0.55 - step * 0.12, k);
+    r.elL.rotation.x = lerp(r.elL.rotation.x, -0.35, k);
+    r.elR.rotation.x = lerp(r.elR.rotation.x, -0.35, k);
+    r.head.rotation.z = lerp(r.head.rotation.z, -step * 0.22, k);
+    r.head.rotation.y = lerp(r.head.rotation.y, -step * 0.4, k);
+    r.group.position.y = Math.abs(step) * 0.03;
+  }
+
+  r.group.position.y = Math.abs(Math.sin(t * 3.4)) * 0.012;    // subtle bounce
+}
+function ready(r, swing, k) {
+  r.torso.rotation.y = lerp(r.torso.rotation.y, swing, k);
+  r.torso.rotation.x = lerp(r.torso.rotation.x, 0.04, k);
+  r.head.rotation.y = lerp(r.head.rotation.y, -0.1 + swing, k);
+  r.hL.rotation.x = lerp(r.hL.rotation.x, 0.12, k);
+  r.hR.rotation.x = lerp(r.hR.rotation.x, -0.12, k);
+  return 0;
+}
+function bounce(r, t, amt) {
+  r.group.position.y = Math.abs(Math.sin(t * 2 * BPM / 60)) * amt;
+}
+function immediateTargets(r) {
+  r.hL.rotation.x = 0; r.hR.rotation.x = 0;
+  r.cL.rotation.x = 0; r.cR.rotation.x = 0;
+  r.torso.rotation.x = 0; r.torso.rotation.y = 0; r.torso.rotation.z = 0;
+  r.head.rotation.x = 0; r.head.rotation.y = 0; r.head.rotation.z = 0;
+  r.armL.rotation.x = 0; r.armL.rotation.z = 0;
+  r.armR.rotation.x = 0; r.armR.rotation.z = 0;
+  r.elL.rotation.x = 0; r.elL.rotation.z = 0;
+  r.elR.rotation.x = 0; r.elR.rotation.z = 0;
+  r.haL.rotation.z = 0; r.haR.rotation.z = 0;
+  r.group.rotation.y = 0;
+}
+
+// backup choreography — echoes MJ with offset + personality
+function danceEcho(r, t, off, flavour) {
+  const b = phase(t) + (off || 0);
+  immediateTargets(r);
+  const loop = ((b % 160) + 160) % 160;
+
+  // zombie arms throughout most of it
+  const zA = loop < 126 ? 0.35 : 1;
+  r.armL.rotation.x = 0.45 + Math.sin(t * 1.6 + off) * 0.1 + zA * 0.3;
+  r.armR.rotation.x = 0.45 + Math.cos(t * 1.6 + off) * 0.1 + zA * 0.3;
+  r.elL.rotation.x = -0.4; r.elR.rotation.x = -0.4;
+
+  // global rhythm bounce
+  bounce(r, t, 0.06);
+  r.torso.rotation.y = Math.sin(t * 1.3 + off) * 0.12;
+  r.torso.rotation.z = Math.sin(t * 1.7 + off) * 0.05;
+
+  // per-personality arms
+  if (flavour === 'trump') {
+    // jab/point every other beat, fist pomp
+    const on = Math.floor(b) % 2 === 0 ? 1 : 0;
+    r.armR.rotation.x = 0.3 + on * 1.2;          // punch
+    r.armR.rotation.z = -0.1;
+    r.elR.rotation.x = -0.9 * on;
+    r.haR.scale.x = 1 + on * 0.3;
+    r.head.rotation.z = -0.1 - on * 0.12;
+  } else if (flavour === 'musk') {
+    // robotic side-to-side arms
+    const s = Math.sin(t * 2.4 + off);
+    r.armL.rotation.x = 0.6 + s * 0.5;
+    r.armR.rotation.x = 0.6 - s * 0.5;
+    r.elL.rotation.z = s * 0.3; r.elR.rotation.z = -s * 0.3;
+    r.head.rotation.y = s * 0.4;
+  } else if (flavour === 'pepe') {
+    // happy hop, big eyes
+    const hop = Math.abs(Math.sin(t * 4 + off));
+    r.group.position.y = hop * 0.14;
+    r.armL.rotation.x = -0.5 + hop * 0.5;
+    r.armR.rotation.x = 1.5 - hop * 0.8;
+    r.head.rotation.z = Math.sin(t * 3 + off) * 0.18;
+    r.torso.rotation.z = Math.sin(t * 3 + off) * 0.1;
+  }
+  // legs share the beat shuffle
+  const step = Math.sin(t * 2 * (BPM / 60) + off * 2);
+  r.hL.rotation.x = 0.18 + step * 0.10;
+  r.hR.rotation.x = 0.18 - step * 0.10;
+  r.cL.rotation.x = -step * 0.08; r.cR.rotation.x = step * 0.08;
+}
+
+// ─────────────── camera presets ───────────────
+let camMode = 'auto';
+document.getElementById('cam').addEventListener('click', () => {
+  camMode = camMode === 'auto' ? 'manual' : 'auto';
+  document.getElementById('cam').textContent = '🎥 Camera: ' + (camMode === 'auto' ? 'Auto' : 'Manual');
+  controls.autoRotate = camMode === 'auto';
+});
+
+// ─────────────── render loop ───────────────
+const clock = new THREE.Clock();
+let elapsed = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  elapsed += dt;
+  const t = elapsed;
+
+  // spotlights subtly follow the key figure
+  key.target.position.x = Math.sin(t * 0.24) * 2.2;
+  key.target.position.z = Math.cos(t * 0.2) * 1.4;
+  magenta.target.position.x = Math.sin(t * 0.31 + 1) * 6;
+  cyan.target.position.x = Math.sin(t * 0.27 + 4) * 6;
+  moonGlow.material.opacity = 0.12 + Math.sin(t * 0.5) * 0.03;
+  stars.rotation.y = t * 0.003;
+  haze.material.opacity = 0.04 + Math.sin(t * 0.3) * 0.02;
+
+  // choreography
+  danceMJ(mj, t);
+  danceEcho(pepe,  t, 16, 'pepe');
+  danceEcho(trump, t, 8,  'trump');
+  danceEcho(musk,  t, 24, 'musk');
+
+  controls.update();
+  if (composer) composer.render(); else renderer.render(scene, camera);
+}
+animate();
+
+// ─────────────── resize ───────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// safety: if module CDN failed, show nothing graceful (shouldn't happen)
+console.log('Thriller scene ready.');
+</script>
+</body>
+</html>

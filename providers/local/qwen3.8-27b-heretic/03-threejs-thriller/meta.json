@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-heretic",
+  "model_display": "Qwen 3.8 27B Heretic",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-15T15:05:00Z",
+  "runner": "Qwen 3.8 27B Heretic via pi agent",
+  "notes": "Three.js r160 via jsdelivr CDN importmap (three + addons postprocessing), single self-contained HTML. Four characters built procedurally from capsules/spheres/boxes as articulated rigs (hips, torso, head, shoulder/elbow x2, hip/knee x2), each with distinct looks: MJ (black suit, red handkerchief, fedora, quiff, one white glove), Pepe (green frog, big eyes on stalks, wide smile, 0.72x scale, reduced bounce), Trump (orange skin, blonde swoosh, navy suit, long red tie), Musk (black tee, jeans, gray beard). Choreography: 118 BPM, 32-bar (65s) loop in four phases — THE WALK (signature shuffle, hip bounce on every beat, alternating leg swing), ZOMBIE POSE (arms straight out, menace sway, beat hop), THE SPIN (360 degrees in 2 bars with T-arms, then MJ's hand-to-brow hold with the others hands-on-hips), THE SLIDE (moonwalk left-right with scissor shuffle, then final freeze: MJ hand-to-brow, Trump finger-to-sky, Pepe V-arms, Musk bow). Joints are exponentially smoothed toward per-phase targets so transitions blend. Environment: moonlit graveyard — moon sphere + additive glow sprite, cold blue directional key light with 2048px soft shadows, warm/magenta accent spots, beat-pulse point light, FogExp2 (densifies during the final freeze), procedural dirt ground, 22 seeded tombstones (some cross graves), 9 cypress trees, 1400 stars, 150 drifting embers. Cinematic: ACESFilmic tone mapping, UnrealBloom + OutputPass, 4-shot camera timeline (wide dolly-in, low orbit, push-in, close orbit on MJ) with handheld noise and glide cuts, letterbox bars, vignette, 4-dot beat indicator. Verified in headless Chrome with WebGL: zero console errors; PNG pixel-scan of screenshots confirmed all four characters' colors present and dominant in the close shot (MJ 37.7k, Trump 4.4k, Musk 2.1k, Pepe green 112-246 px); dance verified by tracking Pepe's green-pixel centroid (106 px travel over 1.6 s); moon repositioned lower after math showed it sat ~28 degrees above the camera axis (outside the 38-degree vertical FOV); spot/point intensities raised into the candela range after realizing r160 uses physical 1/d^2 falloff; five runtime bugs fixed during verification (EMBERS TDZ, chars map self-reference, c.userData on plain object, stale e reference, joint smoother Y fallback).",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

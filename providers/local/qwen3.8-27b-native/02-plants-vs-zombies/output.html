@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lawn Defender — a tiny Plants vs Zombies</title>
+<style>
+  :root {
+    --grass-1: #58a83e; --grass-2: #4c9734;
+    --panel: rgba(18, 26, 14, 0.92);
+    --gold: #ffd84d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #101810; font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif; }
+  #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, #1d2b18, #0b110a 75%); }
+  #game { image-rendering: auto; box-shadow: 0 24px 80px rgba(0,0,0,.6); border-radius: 10px; }
+  /* ---------- overlay screens ---------- */
+  .screen { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 10, 5, 0.55); backdrop-filter: blur(2px); z-index: 10; }
+  .screen.show { display: flex; }
+  .panel { width: min(620px, 92vw); max-height: 92vh; overflow-y: auto; background: var(--panel); border: 3px solid #3c5a2c; border-radius: 18px; padding: 28px 30px; color: #e8f3d8; box-shadow: 0 30px 90px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08); }
+  .panel h1 { font-size: 44px; letter-spacing: 2px; color: var(--gold); text-shadow: 0 3px 0 #6b4d00, 0 6px 18px rgba(0,0,0,.6); margin-bottom: 4px; }
+  .panel h2 { font-size: 26px; color: #b7e08b; margin-bottom: 14px; letter-spacing: 1px; }
+  .panel .sub { color: #9db98a; margin-bottom: 20px; font-size: 14px; }
+  .btn { display: block; width: 100%; margin: 10px 0; padding: 13px 18px; font-size: 18px; font-weight: bold; font-family: inherit; letter-spacing: 1px; color: #26301a; background: linear-gradient(#cdeaa0, #8fbf5a); border: 2px solid #5d8a34; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 0 #46682a, 0 8px 16px rgba(0,0,0,.35); transition: transform .06s, box-shadow .06s; }
+  .btn:hover { filter: brightness(1.07); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #46682a; }
+  .btn.alt { background: linear-gradient(#e8f0e0, #b9c9ae); border-color: #7d8f70; box-shadow: 0 4px 0 #5c6b52, 0 8px 16px rgba(0,0,0,.35); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .btn { flex: 1; }
+  table.lb { width: 100%; border-collapse: collapse; margin: 12px 0 6px; }
+  table.lb th, table.lb td { padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.09); font-size: 15px; }
+  table.lb th { color: #b7e08b; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+  table.lb tr.me td { background: rgba(255, 216, 77, .12); }
+  .lb-rank { color: var(--gold); font-weight: bold; width: 34px; }
+  .howto-item { display: flex; gap: 12px; align-items: flex-start; margin: 10px 0; padding: 10px; background: rgba(255,255,255,.045); border-radius: 10px; }
+  .howto-icon { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; background: #24361a; border: 1px solid #46682a; }
+  .howto-item b { color: #d6efb4; font-size: 15px; }
+  .howto-item span { display: block; color: #a8bf95; font-size: 13px; line-height: 1.35; }
+  .cost { color: var(--gold); font-weight: bold; }
+  input.name-in { width: 100%; padding: 12px 14px; font-size: 17px; font-family: inherit; border-radius: 10px; border: 2px solid #5d8a34; background: #101c0c; color: #e8f3d8; outline: none; margin: 8px 0; }
+  input.name-in:focus { border-color: var(--gold); }
+  .big-score { font-size: 40px; color: var(--gold); text-align: center; margin: 8px 0 2px; text-shadow: 0 3px 0 rgba(0,0,0,.4); }
+  .center { text-align: center; }
+  .hint { color: #8ba377; font-size: 12.5px; text-align: center; margin-top: 10px; line-height: 1.5; }
+  .banner { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 9; pointer-events: none; font-size: 54px; font-weight: 900; letter-spacing: 4px; color: #ff5546; text-shadow: 0 0 24px rgba(255,60,40,.55), 0 4px 0 #4d0d08; opacity: 0; transition: opacity .3s; }
+  .banner.show { opacity: 1; }
+  .credit { margin-top: 16px; text-align: center; color: #6f8560; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="game" width="960" height="610"></canvas></div>
+
+<div class="banner" id="banner"></div>
+
+<!-- ============ MAIN MENU ============ -->
+<div class="screen" id="scr-menu">
+  <div class="panel center">
+    <h1>LAWN DEFENDER</h1>
+    <div class="sub">a tiny plants vs zombies · 10 waves · 5 plants · don't let them eat your brains</div>
+    <button class="btn" id="btn-start">▶ &nbsp;Start Game</button>
+    <div class="row2">
+      <button class="btn alt" id="btn-howto">How to Play</button>
+      <button class="btn alt" id="btn-lb">Leaderboard</button>
+    </div>
+    <button class="btn alt" id="btn-sound">Sound: ON</button>
+    <div class="hint">Keys: 1–5 select plant · S shovel · P / Esc pause<br>Click a card, then click the lawn. Click suns to collect them.</div>
+    <div class="credit">single-file build · no assets · no libraries</div>
+  </div>
+</div>
+
+<!-- ============ HOW TO PLAY ============ -->
+<div class="screen" id="scr-howto">
+  <div class="panel">
+    <h2>How to Play</h2>
+    <div class="howto-item"><div class="howto-icon">🌻</div><div><b>Sunflower — <span class="cost">50</span></b><span>Puts out 25 sun every few seconds. Your economy. Plant these first.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">🌱</div><div><b>Peashooter — <span class="cost">100</span></b><span>Shoots peas at any zombie in its lane. Your backbone.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">❄️</div><div><b>Snow Pea — <span class="cost">175</span></b><span>Like a peashooter, but its peas chill zombies and slow them down.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">🥜</div><div><b>Wall-Nut — <span class="cost">50</span></b><span>A tough wall that buys time. 2,000 HP of pure nut.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">🍒</div><div><b>Cherry Bomb — <span class="cost">150</span></b><span>Booms after 1 second, wrecking everything in a 3×3 area. Long reseed time.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">🧟</div><div><b>Zombies</b><span><b>Walker</b> (10 pts) · <b>Conehead</b> (20) · <b>Buckethead</b> (30, slow but huge). They march left and eat any plant they touch.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">🚜</div><div><b>Lawnmowers</b><span>One per lane. If a zombie reaches your yard's edge, the mower mows that whole lane. When it's gone, there's no backup.</span></div></div>
+    <div class="howto-item"><div class="howto-icon">☀️</div><div><b>Sun</b><span>Falls from the sky and pops out of sunflowers. <b>Click it</b> before it fades. 25 each.</span></div></div>
+    <button class="btn" id="btn-howto-back" style="margin-top:16px">Back</button>
+  </div>
+</div>
+
+<!-- ============ LEADERBOARD ============ -->
+<div class="screen" id="scr-lb">
+  <div class="panel">
+    <h2>Leaderboard</h2>
+    <div class="sub">Top 10 runs, saved on this device.</div>
+    <table class="lb">
+      <thead><tr><th>#</th><th>Name</th><th>Score</th><th>Wave</th><th>Date</th></tr></thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+    <div class="hint" id="lb-empty">No runs yet — go defend a lawn.</div>
+    <button class="btn" id="btn-lb-back" style="margin-top:14px">Back</button>
+  </div>
+</div>
+
+<!-- ============ PAUSE ============ -->
+<div class="screen" id="scr-pause">
+  <div class="panel center" style="width:min(420px,92vw)">
+    <h2 style="font-size:30px">Paused</h2>
+    <button class="btn" id="btn-resume">Resume</button>
+    <div class="row2">
+      <button class="btn alt" id="btn-restart">Restart</button>
+      <button class="btn alt" id="btn-pause-howto">How to Play</button>
+    </div>
+    <button class="btn alt" id="btn-quit">Main Menu</button>
+  </div>
+</div>
+
+<!-- ============ GAME OVER / VICTORY ============ -->
+<div class="screen" id="scr-end">
+  <div class="panel center" style="width:min(460px,92vw)">
+    <h1 id="end-title" style="font-size:36px">GAME OVER</h1>
+    <div class="sub" id="end-sub">The zombies ate your brains…</div>
+    <div class="big-score" id="end-score">0</div>
+    <div class="sub" id="end-wave">Reached wave 1 / 10</div>
+    <input class="name-in" id="end-name" maxlength="14" placeholder="Your name (for the leaderboard)">
+    <button class="btn" id="btn-save-run">Save to Leaderboard</button>
+    <div class="row2">
+      <button class="btn alt" id="btn-again">Play Again</button>
+      <button class="btn alt" id="btn-end-menu">Menu</button>
+    </div>
+    <div class="hint" id="end-lb-note"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+(function () {
+  // ================= canvas & scaling =================
+  const cv = document.getElementById("game");
+  const ctx = cv.getContext("2d");
+  const CW = 960, CH = 610;
+
+  function fit() {
+    const pad = 16;
+    const s = Math.min((innerWidth - pad) / CW, (innerHeight - pad) / CH);
+    cv.style.width = Math.floor(CW * s) + "px";
+    cv.style.height = Math.floor(CH * s) + "px";
+  }
+  addEventListener("resize", fit); fit();
+
+  function canvasXY(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * CW / r.width, y: (e.clientY - r.top) * CH / r.height };
+  }
+
+  // ================= audio (tiny synth, all optional) =================
+  let actx = null, master = null, soundOn = true;
+  function audio() {
+    if (!soundOn) return null;
+    try {
+      if (!actx) {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        master = actx.createGain();
+        master.gain.value = 0.22;
+        master.connect(actx.destination);
+      }
+      if (actx.state === "suspended") actx.resume();
+      return actx;
+    } catch (e) { return null; }
+  }
+  function tone(freq, dur, type, vol, slide, delay) {
+    const a = audio(); if (!a) return;
+    try {
+      const t0 = a.currentTime + (delay || 0);
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type || "square";
+      o.frequency.setValueAtTime(freq, t0);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t0 + dur);
+      g.gain.setValueAtTime(vol || 0.5, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g); g.connect(master);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) {}
+  }
+  function noiseBurst(dur, vol, delay) {
+    const a = audio(); if (!a) return;
+    try {
+      const t0 = a.currentTime + (delay || 0);
+      const len = Math.floor(a.sampleRate * dur);
+      const buf = a.createBuffer(1, len, a.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = a.createBufferSource(); src.buffer = buf;
+      const g = a.createGain(); g.gain.setValueAtTime(vol || 0.4, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900;
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start(t0);
+    } catch (e) {}
+  }
+  const SFX = {
+    plant:   () => { tone(190, 0.09, "square", 0.5, -60); tone(320, 0.07, "square", 0.25, 80, 0.05); },
+    shoot:   () => tone(680, 0.06, "square", 0.16, -240),
+    snow:    () => tone(880, 0.06, "square", 0.14, -320),
+    splat:   () => noiseBurst(0.07, 0.2),
+    hit:     () => tone(140, 0.05, "sawtooth", 0.2, -40),
+    sun:     () => { tone(880, 0.09, "sine", 0.4, 220); tone(1320, 0.12, "sine", 0.3, 240, 0.06); },
+    boom:    () => { noiseBurst(0.5, 0.7); tone(70, 0.5, "sawtooth", 0.5, -35); },
+    mower:   () => { tone(90, 0.4, "sawtooth", 0.4, 120); noiseBurst(0.3, 0.25); },
+    groan:   () => { tone(95, 0.35, "sawtooth", 0.22, -25); },
+    zombieDie:() => { tone(220, 0.25, "sawtooth", 0.28, -160); noiseBurst(0.15, 0.2); },
+    wave:    () => { tone(330, 0.16, "square", 0.35); tone(392, 0.16, "square", 0.35, 0, 0.16); tone(494, 0.3, "square", 0.4, 0, 0.32); },
+    win:     () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, "square", 0.35, 0, i * 0.14)); },
+    lose:    () => { [392, 330, 262, 196].forEach((f, i) => tone(f, 0.3, "sawtooth", 0.32, -20, i * 0.18)); },
+    click:   () => tone(500, 0.04, "square", 0.2),
+    shovel:  () => noiseBurst(0.12, 0.3),
+  };
+
+  // ================= game data =================
+  const COLS = 9, ROWS = 5;
+  const HUD_H = 88, BOARD_X = 14, BOARD_Y = 96, CELL_W = 103, CELL_H = 100;
+
+  const PLANTS = {
+    sunflower: { key: "sunflower", name: "Sunflower", cost: 50,  hp: 300,  cd: 5,  icon: "🌻" },
+    peashooter:{ key: "peashooter",name: "Peashooter",cost: 100, hp: 300,  cd: 5,  icon: "🌱" },
+    snowpea:   { key: "snowpea",   name: "Snow Pea",  cost: 175, hp: 300,  cd: 5,  icon: "❄️" },
+    wallnut:   { key: "wallnut",   name: "Wall-Nut",  cost: 50,  hp: 2000, cd: 12, icon: "🥜" },
+    cherry:    { key: "cherry",    name: "Cherry Bomb",cost:150, hp: 300,  cd: 20, icon: "🍒" },
+  };
+  const PLANT_ORDER = ["sunflower", "peashooter", "snowpea", "wallnut", "cherry"];
+  const ZTYPES = {
+    basic:  { hp: 200,  speed: 21,  score: 10, icon: "🧟" },
+    cone:   { hp: 560,  speed: 21,  score: 20, icon: "🧟" },
+    bucket: { hp: 1050, speed: 18,  score: 30, icon: "🧟" },
+  };
+  const WAVES = [
+    { basic: 1 },
+    { basic: 2 },
+    { basic: 2, cone: 1 },
+    { basic: 3, cone: 1 },
+    { basic: 3, cone: 2 },
+    { basic: 4, cone: 2, bucket: 1 },
+    { basic: 4, cone: 3, bucket: 1 },
+    { basic: 5, cone: 3, bucket: 2 },
+    { basic: 5, cone: 4, bucket: 2 },
+    { basic: 8, cone: 5, bucket: 3 },
+  ];
+
+  // ================= state =================
+  let state = "menu"; // menu | playing | paused | over | victory
+  let G = null;
+  let sun = 0, score = 0, waveIdx = 0;
+  let waveActive = false, waveSpawnQueue = [], waveSpawnTimer = 0, waveBreak = 0;
+  let selectedPlant = null, shovelMode = false;
+  let shake = 0, shakeX = 0, shakeY = 0;
+  let time = 0, skySunTimer = 7;
+  let endSaved = false;
+
+  function newGame() {
+    G = {
+      plants: [],      // {type,row,col,x,y,hp,age,shoot,produce,recoil,dead,deathT}
+      zombies: [],     // {type,row,x,age,hp,slow,eating,dead,deathT,flash,sway}
+      peas: [],        // {x,y,row,snow}
+      suns: [],        // {x,y,vy,age,life,pop}
+      mowers: [],      // {row,x,active,gone}
+      parts: [],       // particles {x,y,vx,vy,age,life,color,size,grav}
+      floaters: [],    // floating score text {x,y,txt,age,life,color}
+      grid: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
+    };
+    for (let r = 0; r < ROWS; r++) G.mowers.push({ row: r, x: BOARD_X - 22, active: false, gone: false });
+    sun = 50; score = 0; waveIdx = 0;
+    waveActive = false; waveBreak = 3.5; waveSpawnQueue = [];
+    selectedPlant = null; shovelMode = false;
+    skySunTimer = 6; shake = 0;
+    PLANT_ORDER.forEach(k => { PLANTS[k].ready = 0; });
+    endSaved = false;
+  }
+
+  // ================= helpers =================
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function cellCenter(c, r) { return { x: BOARD_X + c * CELL_W + CELL_W / 2, y: BOARD_Y + r * CELL_H + CELL_H / 2 }; }
+  function addPart(x, y, n, color, spd, size, grav, life) {
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2), v = rand(0.3, 1) * spd;
+      G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - spd * 0.4, age: 0, life: rand(0.5, life || 1), color, size: rand(2, size || 5), grav: grav === undefined ? 300 : grav });
+    }
+  }
+  function addFloater(x, y, txt, color) { G.floaters.push({ x, y, txt, age: 0, life: 1.1, color: color || "#fff" }); }
+  function banner(txt, ms) {
+    const b = document.getElementById("banner");
+    b.textContent = txt; b.classList.add("show");
+    clearTimeout(banner.t);
+    banner.t = setTimeout(() => b.classList.remove("show"), ms || 2200);
+  }
+
+  // ================= waves =================
+  function startWave() {
+    waveIdx++;
+    const def = WAVES[waveIdx - 1];
+    waveSpawnQueue = [];
+    for (const k in def) for (let i = 0; i < def[k]; i++) waveSpawnQueue.push(k);
+    // shuffle
+    for (let i = waveSpawnQueue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [waveSpawnQueue[i], waveSpawnQueue[j]] = [waveSpawnQueue[j], waveSpawnQueue[i]];
+    }
+    waveSpawnTimer = 1.2;
+    waveActive = true;
+    const final = waveIdx === WAVES.length;
+    banner(final ? "FINAL WAVE" : "WAVE " + waveIdx, 2400);
+    SFX.wave();
+  }
+  function waveCleared() {
+    if (!waveActive) return;
+    waveActive = false;
+    score += waveIdx * 50;
+    addFloater(CW / 2, CH / 2 - 60, "WAVE CLEAR  +" + waveIdx * 50, "#ffd84d");
+    if (waveIdx >= WAVES.length) { victory(); }
+    else waveBreak = 6;
+  }
+
+  // ================= zombies =================
+  function spawnZombie(type) {
+    const row = Math.floor(rand(0, ROWS));
+    const zt = ZTYPES[type];
+    const z = { type, row, x: CW + rand(30, 90), y: 0, hp: zt.hp, maxHp: zt.hp, slow: 0, eating: false, dead: false, deathT: 0, flash: 0, sway: rand(0, Math.PI * 2), age: 0 };
+    G.zombies.push(z);
+    SFX.groan();
+  }
+  function hurtZombie(z, dmg, slow) {
+    z.hp -= dmg; z.flash = 0.12;
+    if (slow) z.slow = 4;
+    if (z.hp <= 0 && !z.dead) {
+      z.dead = true; z.deathT = 0;
+      score += ZTYPES[z.type].score;
+      addFloater(z.x, laneY(z.row) - 70, "+" + ZTYPES[z.type].score, "#ffe08a");
+      addPart(z.x, laneY(z.row) - 40, 10, "#7a9e6a", 90, 5, 260, 0.9);
+      SFX.zombieDie();
+    }
+  }
+  const laneY = r => BOARD_Y + r * CELL_H + 52;
+
+  // ================= plants =================
+  function plantAt(type, row, col) {
+    const p = PLANTS[type];
+    const c = cellCenter(col, row);
+    G.plants.push({ type, row, col, x: c.x, y: c.y + 24, hp: p.hp, maxHp: p.hp, age: rand(0, 6), shoot: rand(0, 0.8), produce: type === "sunflower" ? 4.5 : 0, recoil: 0, dead: false, deathT: 0, arm: type === "cherry" ? 0 : -1, flash: 0 });
+    G.grid[row][col] = G.plants[G.plants.length - 1];
+    addPart(c.x, c.y, 8, "#8fce5a", 70, 4, 200, 0.6);
+    SFX.plant();
+    p.ready = p.cd;
+  }
+  function makeSun(x, y, pop) {
+    G.suns.push({ x, y, vy: 0, age: 0, life: 9, pop: pop ? 0.35 : 0, grounded: false });
+  }
+  function collectSun(s) {
+    sun += 25;
+    addFloater(s.x, s.y, "+25", "#ffe08a");
+    SFX.sun();
+  }
+
+  // ================= input =================
+  function hudRects() {
+    const cards = [];
+    const cw = 92, gap = 8;
+    let x = 14;
+    // sun box
+    cards.sunBox = { x: 14, y: 10, w: 84, h: 68 };
+    x = 106;
+    for (const k of PLANT_ORDER) {
+      cards[k] = { x, y: 10, w: cw, h: 68 };
+      x += cw + gap;
+    }
+    cards.shovel = { x, y: 10, w: 64, h: 68 };
+    x += 64 + 8;
+    cards.score = { x, y: 10, w: CW - x - 14, h: 68 };
+    return cards;
+  }
+  const HUD = hudRects();
+
+  cv.addEventListener("mousemove", e => {
+    const p = canvasXY(e);
+    mouse.x = p.x; mouse.y = p.y;
+    mouse.overBoard = p.x >= BOARD_X && p.x <= BOARD_X + COLS * CELL_W && p.y >= BOARD_Y && p.y <= BOARD_Y + ROWS * CELL_H;
+  });
+  const mouse = { x: -100, y: -100, overBoard: false };
+
+  cv.addEventListener("mousedown", e => {
+    const p = canvasXY(e);
+    if (state !== "playing") return;
+
+    // suns take priority (clickable anywhere)
+    for (let i = G.suns.length - 1; i >= 0; i--) {
+      const s = G.suns[i];
+      if (Math.hypot(p.x - s.x, p.y - s.y) < 34) { collectSun(s); G.suns.splice(i, 1); return; }
+    }
+    // HUD cards
+    if (p.y < HUD_H) {
+      for (const k of PLANT_ORDER) {
+        const r = HUD[k];
+        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+          if (PLANTS[k].ready <= 0 && sun >= PLANTS[k].cost) {
+            selectedPlant = (selectedPlant === k) ? null : k;
+            shovelMode = false;
+            SFX.click();
+          } else SFX.hit();
+          return;
+        }
+      }
+      const r = HUD.shovel;
+      if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+        shovelMode = !shovelMode; selectedPlant = null; SFX.click();
+        return;
+      }
+      return;
+    }
+    // board
+    if (mouse.overBoard) {
+      const col = Math.floor((p.x - BOARD_X) / CELL_W);
+      const row = Math.floor((p.y - BOARD_Y) / CELL_H);
+      if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+      if (shovelMode) {
+        const pl = G.grid[row][col];
+        if (pl && !pl.dead) {
+          G.grid[row][col] = null;
+          pl.dead = true; pl.deathT = 0;
+          addPart(pl.x, pl.y, 12, "#7a5c3a", 110, 5, 300, 0.8);
+          SFX.shovel();
+        }
+        return;
+      }
+      if (selectedPlant) {
+        const k = selectedPlant;
+        if (!G.grid[row][col] && sun >= PLANTS[k].cost && PLANTS[k].ready <= 0) {
+          sun -= PLANTS[k].cost;
+          plantAt(k, row, col);
+          selectedPlant = null;
+        } else SFX.hit();
+      }
+    }
+  });
+
+  addEventListener("keydown", e => {
+    if (e.key === "Escape" || e.key === "p" || e.key === "P") {
+      if (state === "playing") pauseGame();
+      else if (state === "paused") resumeGame();
+      return;
+    }
+    if (state !== "playing") return;
+    if (e.key >= "1" && e.key <= "5") {
+      const k = PLANT_ORDER[+e.key - 1];
+      if (PLANTS[k].ready <= 0 && sun >= PLANTS[k].cost) { selectedPlant = (selectedPlant === k) ? null : k; shovelMode = false; SFX.click(); }
+    }
+    if (e.key === "s" || e.key === "S") { shovelMode = !shovelMode; selectedPlant = null; SFX.click(); }
+  });
+
+  // ================= screens =================
+  const screens = {
+    menu: document.getElementById("scr-menu"),
+    howto: document.getElementById("scr-howto"),
+    lb: document.getElementById("scr-lb"),
+    pause: document.getElementById("scr-pause"),
+    end: document.getElementById("scr-end"),
+  };
+  function show(id) {
+    Object.values(screens).forEach(s => s.classList.remove("show"));
+    if (id) screens[id].classList.add("show");
+  }
+  function toMenu() { state = "menu"; show("menu"); }
+  function startGame() {
+    audio(); newGame(); state = "playing"; show(null);
+    banner("WAVE 1 INCOMING", 2000);
+  }
+  function pauseGame() { state = "paused"; show("pause"); }
+  function resumeGame() { state = "playing"; show(null); }
+  function endGame(won) {
+    state = won ? "victory" : "over";
+    document.getElementById("end-title").textContent = won ? "LAWN DEFENDED!" : "GAME OVER";
+    document.getElementById("end-sub").textContent = won ? "You survived all 10 waves. The lawn is safe." : "The zombies ate your brains…";
+    document.getElementById("end-score").textContent = score + (won ? 250 : 0);
+    if (won) score += 250;
+    document.getElementById("end-wave").textContent = "Reached wave " + Math.min(waveIdx, WAVES.length) + " / " + WAVES.length;
+    document.getElementById("end-name").value = "";
+    document.getElementById("btn-save-run").style.display = "";
+    document.getElementById("end-lb-note").textContent = "";
+    endSaved = false;
+    show("end");
+    if (won) SFX.win(); else SFX.lose();
+  }
+  const victory = () => endGame(true);
+
+  // ================= leaderboard =================
+  const LB_KEY = "lawn-defender-leaderboard-v1";
+  function loadLB() { try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch (e) { return []; } }
+  function saveLB(lb) { try { localStorage.setItem(LB_KEY, JSON.stringify(lb)); } catch (e) {} }
+  function renderLB(meEntry) {
+    const lb = loadLB();
+    const body = document.getElementById("lb-body");
+    body.innerHTML = "";
+    document.getElementById("lb-empty").style.display = lb.length ? "none" : "block";
+    lb.forEach((e, i) => {
+      const tr = document.createElement("tr");
+      if (meEntry && e === meEntry) tr.className = "me";
+      const d = document.createElement("td"); d.className = "lb-rank"; d.textContent = i + 1;
+      const n = document.createElement("td"); n.textContent = e.name;
+      const s = document.createElement("td"); s.textContent = e.score;
+      const w = document.createElement("td"); w.textContent = e.wave + " / " + WAVES.length;
+      const dt = document.createElement("td"); dt.textContent = e.date;
+      tr.append(d, n, s, w, dt);
+      body.appendChild(tr);
+    });
+  }
+  document.getElementById("btn-save-run").addEventListener("click", () => {
+    if (endSaved) return;
+    const name = (document.getElementById("end-name").value || "Anonymous").trim().slice(0, 14) || "Anonymous";
+    const entry = { name, score, wave: Math.min(waveIdx, WAVES.length), date: new Date().toLocaleDateString() };
+    const lb = loadLB();
+    lb.push(entry);
+    lb.sort((a, b) => b.score - a.score);
+    const trimmed = lb.slice(0, 10);
+    saveLB(trimmed);
+    renderLB(trimmed.includes(entry) ? entry : null);
+    endSaved = true;
+    document.getElementById("btn-save-run").style.display = "none";
+    document.getElementById("end-lb-note").textContent = trimmed.includes(entry)
+      ? "Saved! Rank #" + (trimmed.indexOf(entry) + 1) + " on the leaderboard."
+      : "Saved, but only the top 10 scores are kept.";
+    SFX.sun();
+  });
+
+  // ================= UI wiring =================
+  document.getElementById("btn-start").addEventListener("click", () => { SFX.click(); startGame(); });
+  document.getElementById("btn-howto").addEventListener("click", () => { SFX.click(); show("howto"); });
+  document.getElementById("btn-howto-back").addEventListener("click", () => { SFX.click(); show("menu"); });
+  document.getElementById("btn-lb").addEventListener("click", () => { SFX.click(); renderLB(); show("lb"); });
+  document.getElementById("btn-lb-back").addEventListener("click", () => { SFX.click(); show("menu"); });
+  document.getElementById("btn-sound").addEventListener("click", function () {
+    soundOn = !soundOn; this.textContent = "Sound: " + (soundOn ? "ON" : "OFF"); SFX.click();
+  });
+  document.getElementById("btn-resume").addEventListener("click", () => { SFX.click(); resumeGame(); });
+  document.getElementById("btn-restart").addEventListener("click", () => { SFX.click(); startGame(); });
+  document.getElementById("btn-quit").addEventListener("click", () => { SFX.click(); toMenu(); });
+  document.getElementById("btn-pause-howto").addEventListener("click", () => { SFX.click(); show("howto"); });
+  document.getElementById("btn-again").addEventListener("click", () => { SFX.click(); startGame(); });
+  document.getElementById("btn-end-menu").addEventListener("click", () => { SFX.click(); toMenu(); });
+
+  // ================= update =================
+  function update(dt) {
+    time += dt;
+    // card cooldowns
+    for (const k of PLANT_ORDER) if (PLANTS[k].ready > 0) PLANTS[k].ready -= dt;
+
+    // sky suns
+    skySunTimer -= dt;
+    if (skySunTimer <= 0) {
+      skySunTimer = rand(8, 13);
+      makeSun(rand(BOARD_X + 40, BOARD_X + COLS * CELL_W - 40), BOARD_Y - 20, false);
+    }
+    for (let i = G.suns.length - 1; i >= 0; i--) {
+      const s = G.suns[i];
+      s.age += dt;
+      if (s.pop > 0) { s.pop -= dt; }
+      else if (!s.grounded) {
+        s.y += 55 * dt;
+        if (s.y > BOARD_Y + ROWS * CELL_H - 40) s.grounded = true;
+      }
+      if (s.age > s.life) { addPart(s.x, s.y, 5, "#ffd84d", 50, 3, -40, 0.5); G.suns.splice(i, 1); }
+    }
+
+    // waves
+    if (state === "playing") {
+      if (!waveActive) {
+        waveBreak -= dt;
+        if (waveBreak <= 0) startWave();
+      } else {
+        waveSpawnTimer -= dt;
+        if (waveSpawnTimer <= 0 && waveSpawnQueue.length) {
+          spawnZombie(waveSpawnQueue.pop());
+          const final = waveIdx === WAVES.length;
+          waveSpawnTimer = final ? rand(1.6, 3.4) : rand(3.5, 7);
+        }
+        if (waveSpawnQueue.length === 0 && G.zombies.length === 0) waveCleared();
+      }
+    }
+
+    // plants
+    for (const p of G.plants) {
+      if (p.dead) { p.deathT += dt; continue; }
+      p.age += dt;
+      if (p.recoil > 0) p.recoil -= dt;
+      if (p.flash > 0) p.flash -= dt;
+      if (p.type === "cherry" && p.arm >= 0) {
+        p.arm += dt;
+        if (p.arm > 1.0) {
+          // BOOM
+          SFX.boom();
+          shake = 14;
+          addPart(p.x, p.y - 20, 34, "#ff7043", 220, 7, 240, 1);
+          addPart(p.x, p.y - 20, 22, "#ffd54f", 260, 6, 200, 0.8);
+          addPart(p.x, p.y - 20, 16, "#5d4037", 160, 8, 160, 1.1);
+          for (const z of G.zombies) {
+            if (!z.dead && Math.abs(z.row - p.row) <= 1 && Math.abs(z.x - p.x) <= CELL_W * 1.5) hurtZombie(z, 1800, false);
+          }
+          for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+            const r = p.row + dr, c = p.col + dc;
+            if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+              const other = G.grid[r][c];
+              if (other && other !== p) other.hp -= 0; // plants unharmed
+            }
+          }
+          p.dead = true; p.deathT = 0;
+          G.grid[p.row][p.col] = null;
+        }
+      }
+      if (p.type === "sunflower") {
+        p.produce -= dt;
+        if (p.produce <= 0) {
+          p.produce = rand(6.5, 8.5);
+          makeSun(p.x + rand(-14, 14), p.y - 52, true);
+        }
+      }
+      if (p.type === "peashooter" || p.type === "snowpea") {
+        const hasTarget = G.zombies.some(z => !z.dead && z.row === p.row && z.x > p.x - 10 && z.x < CW + 60);
+        p.shoot -= dt;
+        if (hasTarget && p.shoot <= 0) {
+          p.shoot = 1.4;
+          p.recoil = 0.18;
+          G.peas.push({ x: p.x + 26, y: p.y - 52, row: p.row, snow: p.type === "snowpea" });
+          if (p.type === "snowpea") SFX.snow(); else SFX.shoot();
+        }
+      }
+    }
+    G.plants = G.plants.filter(p => !(p.dead && p.deathT > 0.8));
+
+    // peas
+    for (let i = G.peas.length - 1; i >= 0; i--) {
+      const pea = G.peas[i];
+      pea.x += 380 * dt;
+      let hit = null;
+      for (const z of G.zombies) {
+        if (!z.dead && z.row === pea.row && Math.abs(z.x - pea.x) < 26) { hit = z; break; }
+      }
+      if (hit) {
+        hurtZombie(hit, 20, pea.snow);
+        addPart(pea.x, pea.y, 5, pea.snow ? "#9fd8ff" : "#8fce5a", 80, 3, 160, 0.5);
+        SFX.splat();
+        G.peas.splice(i, 1);
+      } else if (pea.x > CW + 30) G.peas.splice(i, 1);
+    }
+
+    // zombies
+    for (const z of G.zombies) {
+      if (z.dead) { z.deathT += dt; continue; }
+      z.age += dt;
+      if (z.flash > 0) z.flash -= dt;
+      if (z.slow > 0) z.slow -= dt;
+      const spd = (z.slow > 0 ? 0.45 : 1) * ZTYPES[z.type].speed;
+      // find plant to eat
+      let target = null;
+      for (const p of G.plants) {
+        if (p.dead || p.row !== z.row) continue;
+        if (z.x - p.x > 4 && p.x - z.x > -34) { target = p; break; }
+      }
+      z.eating = !!target;
+      if (target) {
+        target.hp -= 30 * dt;
+        target.flash = 0.1;
+        if (target.hp <= 0 && !target.dead) {
+          target.dead = true; target.deathT = 0;
+          G.grid[target.row][target.col] = null;
+          addPart(target.x, target.y, 10, "#8fce5a", 90, 4, 240, 0.8);
+        }
+      } else {
+        z.x -= spd * dt;
+      }
+      // lawnmower trigger
+      if (z.x < BOARD_X + 8) {
+        const m = G.mowers.find(m => m.row === z.row && !m.active && !m.gone);
+        if (m) { m.active = true; SFX.mower(); }
+      }
+      if (z.x < BOARD_X - 26 && !z.dead) { endGame(false); return; }
+    }
+    G.zombies = G.zombies.filter(z => !(z.dead && z.deathT > 1));
+
+    // lawnmowers
+    for (const m of G.mowers) {
+      if (!m.active || m.gone) continue;
+      m.x += 480 * dt;
+      for (const z of G.zombies) {
+        if (!z.dead && z.row === m.row && z.x < m.x + 30) {
+          z.dead = true; z.deathT = 0;
+          score += ZTYPES[z.type].score;
+          addFloater(z.x, laneY(z.row) - 70, "+" + ZTYPES[z.type].score, "#ffe08a");
+          addPart(z.x, laneY(z.row) - 30, 12, "#cfd8dc", 140, 5, 300, 0.7);
+        }
+      }
+      if (m.x > CW + 60) m.gone = true;
+    }
+
+    // particles & floaters
+    for (let i = G.parts.length - 1; i >= 0; i--) {
+      const pt = G.parts[i];
+      pt.age += dt;
+      pt.vy += pt.grav * dt;
+      pt.x += pt.vx * dt;
+      pt.y += pt.vy * dt;
+      if (pt.age > pt.life) G.parts.splice(i, 1);
+    }
+    for (let i = G.floaters.length - 1; i >= 0; i--) {
+      const f = G.floaters[i];
+      f.age += dt; f.y -= 34 * dt;
+      if (f.age > f.life) G.floaters.splice(i, 1);
+    }
+    if (shake > 0) {
+      shake = Math.max(0, shake - 40 * dt);
+      shakeX = rand(-shake, shake);
+      shakeY = rand(-shake, shake);
+    } else { shakeX = shakeY = 0; }
+  }
+
+  // ================= drawing =================
+  function drawBoard() {
+    // sky strip behind HUD
+    ctx.fillStyle = "#2a3d20";
+    ctx.fillRect(0, 0, CW, CH);
+    // lawn
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      ctx.fillStyle = (r + c) % 2 ? "#4c9734" : "#58a83e";
+      ctx.fillRect(BOARD_X + c * CELL_W, BOARD_Y + r * CELL_H, CELL_W, CELL_H);
+    }
+    // grass texture dots (deterministic)
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    for (let i = 0; i < 260; i++) {
+      const gx = BOARD_X + ((i * 137.5) % (COLS * CELL_W));
+      const gy = BOARD_Y + ((i * 89.3) % (ROWS * CELL_H));
+      ctx.fillRect(gx, gy, 2, 4);
+    }
+    // house edge
+    ctx.fillStyle = "#7a5c3a";
+    ctx.fillRect(0, BOARD_Y - 6, BOARD_X, ROWS * CELL_H + 12);
+    // yard edge
+    ctx.fillStyle = "#3c7a2a";
+    ctx.fillRect(BOARD_X + COLS * CELL_W, BOARD_Y, CW - BOARD_X - COLS * CELL_W, ROWS * CELL_H);
+    // hover cell
+    if (state === "playing" && mouse.overBoard && (selectedPlant || shovelMode)) {
+      const col = Math.floor((mouse.x - BOARD_X) / CELL_W);
+      const row = Math.floor((mouse.y - BOARD_Y) / CELL_H);
+      if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+        ctx.fillStyle = shovelMode ? "rgba(255,120,60,0.25)" : "rgba(255,255,150,0.28)";
+        ctx.fillRect(BOARD_X + col * CELL_W, BOARD_Y + row * CELL_H, CELL_W, CELL_H);
+        ctx.strokeStyle = shovelMode ? "rgba(255,120,60,0.8)" : "rgba(255,255,150,0.8)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(BOARD_X + col * CELL_W + 2, BOARD_Y + row * CELL_H + 2, CELL_W - 4, CELL_H - 4);
+      }
+    }
+  }
+
+  function drawPlant(p) {
+    const t = p.age;
+    const deadT = p.dead ? clamp(p.deathT / 0.8, 0, 1) : 0;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    if (deadT > 0) { ctx.globalAlpha = 1 - deadT; ctx.rotate(deadT * 0.5); ctx.translate(0, deadT * 14); }
+    const bob = Math.sin(t * 2.2) * 2;
+    const flash = p.flash > 0;
+
+    if (p.type === "sunflower") {
+      ctx.strokeStyle = "#3e7d2a"; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(-3, -14, 0, -30 + bob); ctx.stroke();
+      ctx.fillStyle = "#4c9734";
+      ctx.beginPath(); ctx.ellipse(-10, -6, 11, 5, -0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(10, -2, 11, 5, 0.5, 0, Math.PI * 2); ctx.fill();
+      const hy = -44 + bob;
+      ctx.fillStyle = flash ? "#fff3b0" : "#ffd84d";
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 + t * 0.4;
+        ctx.beginPath(); ctx.ellipse(Math.cos(a) * 15, hy + Math.sin(a) * 15, 9, 5, a, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = "#8a5a2a";
+      ctx.beginPath(); ctx.arc(0, hy, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#5d3a17";
+      ctx.beginPath(); ctx.arc(0, hy, 6, 0, Math.PI * 2); ctx.fill();
+    } else if (p.type === "peashooter" || p.type === "snowpea") {
+      const rec = p.recoil > 0 ? 6 : 0;
+      const body = p.type === "snowpea" ? "#7fc4e8" : "#58b23e";
+      const dark = p.type === "snowpea" ? "#4d94b8" : "#3e8a2a";
+      ctx.strokeStyle = dark; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(-2, -12, -rec, -34 + bob); ctx.stroke();
+      ctx.fillStyle = dark;
+      ctx.beginPath(); ctx.ellipse(-11, 0, 11, 5, -0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = body;
+      ctx.beginPath(); ctx.arc(-rec, -42 + bob, 16, 0, Math.PI * 2); ctx.fill();
+      // muzzle
+      ctx.beginPath(); ctx.arc(10 - rec, -44 + bob, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#1e3a16";
+      ctx.beginPath(); ctx.arc(12 - rec, -44 + bob, 4.5, 0, Math.PI * 2); ctx.fill();
+      // leaf
+      ctx.fillStyle = dark;
+      ctx.beginPath(); ctx.ellipse(-12 - rec, -52 + bob, 8, 4, -0.7, 0, Math.PI * 2); ctx.fill();
+      if (p.type === "snowpea") {
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.fillRect(-4 - rec, -56 + bob, 3, 8); ctx.fillRect(-6 - rec, -54 + bob, 8, 3);
+      }
+      // eye
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(2 - rec, -46 + bob, 3.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#222"; ctx.beginPath(); ctx.arc(3 - rec, -46 + bob, 1.7, 0, Math.PI * 2); ctx.fill();
+    } else if (p.type === "wallnut") {
+      const dmg = 1 - p.hp / p.maxHp;
+      const sq = 1 - (p.flash > 0 ? 0.08 : 0);
+      ctx.save(); ctx.scale(sq, 2 - sq);
+      ctx.fillStyle = flash ? "#e8c88a" : "#c89a5a";
+      ctx.beginPath(); ctx.ellipse(0, -18, 24, 30, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.beginPath(); ctx.ellipse(-8, -28, 8, 12, 0.3, 0, Math.PI * 2); ctx.fill();
+      // face
+      ctx.fillStyle = "#3a2a14";
+      ctx.beginPath(); ctx.arc(-7, -26, 2.6, 0, Math.PI * 2); ctx.arc(7, -26, 2.6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#3a2a14"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (dmg < 0.5) ctx.arc(0, -14, 6, 0.3, Math.PI - 0.3);
+      else if (dmg < 0.8) { ctx.moveTo(-6, -12); ctx.lineTo(6, -12); }
+      else ctx.arc(0, -8, 7, Math.PI + 0.4, -0.4);
+      ctx.stroke();
+      if (dmg >= 0.5) { ctx.beginPath(); ctx.moveTo(-14, -34); ctx.lineTo(-8, -26); ctx.lineTo(-13, -20); ctx.stroke(); }
+      if (dmg >= 0.8) { ctx.beginPath(); ctx.moveTo(10, -36); ctx.lineTo(16, -28); ctx.lineTo(11, -18); ctx.stroke(); }
+      ctx.restore();
+    } else if (p.type === "cherry") {
+      const pulse = p.arm >= 0 ? 1 + Math.sin(p.arm * 40) * 0.12 : 1 + Math.sin(t * 3) * 0.03;
+      const hot = p.arm >= 0 ? clamp(p.arm, 0, 1) : 0;
+      ctx.scale(pulse, pulse);
+      ctx.strokeStyle = "#3e7d2a"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-8, -18); ctx.quadraticCurveTo(-12, -34, -4, -40); ctx.moveTo(8, -18); ctx.quadraticCurveTo(14, -34, 4, -40); ctx.stroke();
+      const g1 = ctx.createRadialGradient(-10, -26, 2, -10, -22, 16);
+      g1.addColorStop(0, hot > 0.5 ? "#ffd0c0" : "#ff8a70"); g1.addColorStop(1, "#c62828");
+      ctx.fillStyle = g1; ctx.beginPath(); ctx.arc(-10, -22, 15, 0, Math.PI * 2); ctx.fill();
+      const g2 = ctx.createRadialGradient(10, -26, 2, 10, -22, 16);
+      g2.addColorStop(0, hot > 0.5 ? "#ffd0c0" : "#ff8a70"); g2.addColorStop(1, "#c62828");
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(10, -22, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(-14, -27, 3, 0, Math.PI * 2); ctx.arc(6, -27, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    // hp bar when damaged
+    if (!p.dead && p.hp < p.maxHp) {
+      const w = 34, h = 4, x = p.x - w / 2, y = p.y - 66;
+      ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = p.hp / p.maxHp > 0.4 ? "#8fce5a" : "#ff7043";
+      ctx.fillRect(x, y, w * clamp(p.hp / p.maxHp, 0, 1), h);
+    }
+  }
+
+  function drawZombie(z) {
+    const deadT = z.dead ? clamp(z.deathT / 1, 0, 1) : 0;
+    const y = laneY(z.row);
+    ctx.save();
+    ctx.translate(z.x, y);
+    if (deadT > 0) { ctx.globalAlpha = 1 - deadT; ctx.rotate(deadT * Math.PI / 2); }
+    const walk = Math.sin(z.age * 6 + z.sway) * (z.eating ? 0.25 : 1);
+    const eatBob = z.eating ? Math.sin(z.age * 12) * 3 : 0;
+    const skin = z.slow > 0 ? "#9fc4b8" : "#8aa872";
+    const suit = z.slow > 0 ? "#5a6a78" : "#5d5470";
+    // legs
+    ctx.strokeStyle = suit; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(walk * 7, 0); ctx.moveTo(0, -18); ctx.lineTo(-walk * 7, 0); ctx.stroke();
+    // body (tilted forward a bit)
+    ctx.save();
+    ctx.rotate(z.eating ? 0.16 : 0.08 + walk * 0.02);
+    ctx.fillStyle = suit;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-13, -52 + eatBob, 26, 38, 7) : ctx.rect(-13, -52 + eatBob, 26, 38); ctx.fill();
+    // tie
+    ctx.fillStyle = z.slow > 0 ? "#7fb8d8" : "#a83232";
+    ctx.beginPath(); ctx.moveTo(2, -48 + eatBob); ctx.lineTo(7, -30 + eatBob); ctx.lineTo(2, -26 + eatBob); ctx.closePath(); ctx.fill();
+    // arms forward
+    ctx.strokeStyle = skin; ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(4, -44 + eatBob); ctx.lineTo(20, -38 + eatBob + walk * 2);
+    ctx.moveTo(2, -40 + eatBob); ctx.lineTo(19, -33 + eatBob - walk * 2);
+    ctx.stroke();
+    // head
+    const hx = 8, hy = -62 + eatBob;
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.arc(hx, hy, 12, 0, Math.PI * 2); ctx.fill();
+    // jaw
+    ctx.beginPath(); ctx.arc(hx + 4, hy + 6, 6, 0, Math.PI * 2); ctx.fill();
+    // eyes
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(hx + 3, hy - 3, 3.4, 0, Math.PI * 2); ctx.arc(hx + 10, hy - 2, 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#402";
+    ctx.beginPath(); ctx.arc(hx + 4, hy - 3, 1.6, 0, Math.PI * 2); ctx.arc(hx + 11, hy - 2, 1.3, 0, Math.PI * 2); ctx.fill();
+    // mouth
+    ctx.strokeStyle = "#402"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(hx + 7, hy + 4, 3, 0.2, Math.PI - 0.6); ctx.stroke();
+    // headgear
+    if (z.type === "cone") {
+      ctx.fillStyle = "#e08a2e";
+      ctx.beginPath(); ctx.moveTo(hx - 10, hy - 6); ctx.lineTo(hx + 12, hy - 6); ctx.lineTo(hx + 1, hy - 26); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.fillRect(hx - 4, hy - 12, 10, 2);
+    } else if (z.type === "bucket") {
+      ctx.fillStyle = "#9aa4ad";
+      ctx.beginPath(); ctx.moveTo(hx - 11, hy - 8); ctx.lineTo(hx + 13, hy - 8); ctx.lineTo(hx + 10, hy - 24); ctx.lineTo(hx - 8, hy - 24); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#7c868f"; ctx.fillRect(hx - 11, hy - 9, 24, 3);
+      ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.fillRect(hx - 7, hy - 21, 4, 10);
+    }
+    ctx.restore();
+    // hit flash
+    if (z.flash > 0) {
+      ctx.globalAlpha = 0.5 * (z.flash / 0.12);
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(6, -40, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    // hp bar
+    if (!z.dead && z.hp < z.maxHp) {
+      const w = 36, h = 4, x = z.x - w / 2, yy = y - 88;
+      ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(x, yy, w, h);
+      ctx.fillStyle = z.slow > 0 ? "#7fc4e8" : "#e05a4a";
+      ctx.fillRect(x, yy, w * clamp(z.hp / z.maxHp, 0, 1), h);
+    }
+    if (!z.dead && z.slow > 0) {
+      ctx.fillStyle = "rgba(160,220,255,0.5)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText("❄", z.x - 6, y - 94);
+    }
+  }
+
+  function drawMower(m) {
+    if (m.gone) return;
+    const y = laneY(m.row);
+    ctx.save();
+    ctx.translate(m.x, y + 6);
+    ctx.fillStyle = "#c62828";
+    ctx.fillRect(-16, -18, 32, 14);
+    ctx.fillStyle = "#8e8e8e";
+    ctx.fillRect(-16, -8, 32, 4);
+    ctx.fillStyle = "#333";
+    ctx.beginPath(); ctx.arc(-9, -2, 6, 0, Math.PI * 2); ctx.arc(9, -2, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ddd";
+    ctx.beginPath(); ctx.arc(-9, -2, 2.5, 0, Math.PI * 2); ctx.arc(9, -2, 2.5, 0, Math.PI * 2); ctx.fill();
+    // handle
+    ctx.strokeStyle = "#666"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-14, -18); ctx.lineTo(-22, -34); ctx.stroke();
+    if (m.active) {
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(-30 - i * 8 - Math.random() * 4, -14 + Math.random() * 14, 6, 3);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawSun(s) {
+    const blink = s.age > s.life - 2.5 ? (Math.sin(s.age * 18) > 0 ? 0.35 : 1) : 1;
+    const popS = s.pop > 0 ? lerp(0.3, 1, 1 - s.pop / 0.35) : 1;
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.scale(popS, popS);
+    ctx.globalAlpha = blink;
+    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 30);
+    g.addColorStop(0, "rgba(255,235,150,0.9)");
+    g.addColorStop(1, "rgba(255,200,60,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ffd84d";
+    ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#ffb300"; ctx.lineWidth = 3;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + s.age * 1.2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 17, Math.sin(a) * 17);
+      ctx.lineTo(Math.cos(a) * 24, Math.sin(a) * 24);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.arc(-5, -5, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHUD() {
+    // HUD bg
+    const hg = ctx.createLinearGradient(0, 0, 0, HUD_H);
+    hg.addColorStop(0, "#3a4a2a"); hg.addColorStop(1, "#2c3a1f");
+    ctx.fillStyle = hg;
+    ctx.fillRect(0, 0, CW, HUD_H);
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(0, HUD_H - 3, CW, 3);
+
+    // sun counter
+    const sb = HUD.sunBox;
+    ctx.fillStyle = "#1c2614";
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(sb.x, sb.y, sb.w, sb.h, 8) : ctx.rect(sb.x, sb.y, sb.w, sb.h); ctx.fill();
+    ctx.strokeStyle = sun >= 50 ? "#ffd84d" : "#5d6a4a"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(sb.x, sb.y, sb.w, sb.h, 8) : ctx.rect(sb.x, sb.y, sb.w, sb.h); ctx.stroke();
+    drawSunStatic(sb.x + sb.w / 2, sb.y + 24, 14);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 19px Trebuchet MS, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(sun, sb.x + sb.w / 2, sb.y + 60);
+    ctx.textAlign = "left";
+
+    // seed cards
+    for (const k of PLANT_ORDER) {
+      const r = HUD[k], p = PLANTS[k];
+      const afford = sun >= p.cost, ready = p.ready <= 0;
+      const sel = selectedPlant === k;
+      ctx.fillStyle = sel ? "#4a5a34" : "#232e18";
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.x, r.y, r.w, r.h, 8) : ctx.rect(r.x, r.y, r.w, r.h); ctx.fill();
+      ctx.strokeStyle = sel ? "#ffd84d" : afford && ready ? "#7a9e5a" : "#44502f";
+      ctx.lineWidth = sel ? 3 : 2;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.x, r.y, r.w, r.h, 8) : ctx.rect(r.x, r.y, r.w, r.h); ctx.stroke();
+      // icon
+      ctx.globalAlpha = afford && ready ? 1 : 0.45;
+      ctx.font = "30px serif";
+      ctx.textAlign = "center";
+      ctx.fillText(p.icon, r.x + r.w / 2, r.y + 38);
+      ctx.globalAlpha = 1;
+      // cost
+      ctx.font = "bold 14px Trebuchet MS, sans-serif";
+      ctx.fillStyle = afford ? "#ffd84d" : "#e05a4a";
+      ctx.fillText(p.cost, r.x + r.w / 2, r.y + 60);
+      // key hint
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.font = "10px sans-serif";
+      ctx.fillText(PLANT_ORDER.indexOf(k) + 1, r.x + 8, r.y + 14);
+      // cooldown overlay
+      if (!ready) {
+        const frac = clamp(p.ready / p.cd, 0, 1);
+        ctx.fillStyle = "rgba(0,0,0,0.62)";
+        ctx.fillRect(r.x, r.y, r.w, r.h * frac);
+      }
+    }
+    // shovel
+    const r = HUD.shovel;
+    ctx.fillStyle = shovelMode ? "#5a4030" : "#232e18";
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.x, r.y, r.w, r.h, 8) : ctx.rect(r.x, r.y, r.w, r.h); ctx.fill();
+    ctx.strokeStyle = shovelMode ? "#ff9060" : "#44502f";
+    ctx.lineWidth = shovelMode ? 3 : 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.x, r.y, r.w, r.h, 8) : ctx.rect(r.x, r.y, r.w, r.h); ctx.stroke();
+    ctx.font = "30px serif"; ctx.textAlign = "center";
+    ctx.fillText("⛏️", r.x + r.w / 2, r.y + 40);
+    ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px sans-serif";
+    ctx.fillText("S", r.x + r.w / 2, r.y + 60);
+
+    // right block: wave + score
+    const r2 = HUD.score;
+    ctx.fillStyle = "#1c2614";
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r2.x, r2.y, r2.w, r2.h, 8) : ctx.rect(r2.x, r2.y, r2.w, r2.h); ctx.fill();
+    ctx.textAlign = "right";
+    ctx.font = "bold 15px Trebuchet MS, sans-serif";
+    ctx.fillStyle = "#ffd84d";
+    ctx.fillText("SCORE " + score, r2.x + r2.w - 12, r2.y + 26);
+    ctx.font = "13px Trebuchet MS, sans-serif";
+    ctx.fillStyle = "#cfe0b0";
+    ctx.fillText("Wave " + Math.max(1, waveActive ? waveIdx : Math.min(waveIdx + 1, WAVES.length)) + " / " + WAVES.length, r2.x + r2.w - 12, r2.y + 48);
+    // wave progress bar
+    const bw = r2.w - 24, bx = r2.x + 12, by = r2.y + 56;
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(bx, by, bw, 7);
+    let frac = 0;
+    if (waveActive) {
+      const total = WAVES[waveIdx - 1];
+      const totalZ = Object.values(total).reduce((a, b) => a + b, 0);
+      const alive = G.zombies.length + waveSpawnQueue.length;
+      frac = clamp(1 - alive / totalZ, 0, 1);
+    } else frac = 1;
+    ctx.fillStyle = "#8fce5a";
+    ctx.fillRect(bx, by, bw * frac, 7);
+    ctx.textAlign = "left";
+  }
+  function drawSunStatic(x, y, r) {
+    ctx.fillStyle = "#ffd84d";
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#ffb300"; ctx.lineWidth = 2.5;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * (r + 2), y + Math.sin(a) * (r + 2));
+      ctx.lineTo(x + Math.cos(a) * (r + 7), y + Math.sin(a) * (r + 7));
+      ctx.stroke();
+    }
+  }
+
+  function render() {
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+    if (G) {
+      drawBoard();
+      for (const m of G.mowers) drawMower(m);
+      for (const p of G.plants) if (p.y < laneY(p.row) + 10) drawPlant(p);
+      for (const z of G.zombies) if (!z.dead && z.deathT === 0) drawZombie(z);
+      // draw dying things on top
+      for (const p of G.plants) if (p.dead) drawPlant(p);
+      for (const z of G.zombies) if (z.dead) drawZombie(z);
+      for (const pea of G.peas) {
+        ctx.fillStyle = pea.snow ? "#9fd8ff" : "#8fce5a";
+        ctx.beginPath(); ctx.arc(pea.x, pea.y, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.beginPath(); ctx.arc(pea.x - 2, pea.y - 2, 2.4, 0, Math.PI * 2); ctx.fill();
+      }
+      for (const s of G.suns) drawSun(s);
+      for (const pt of G.parts) {
+        ctx.globalAlpha = clamp(1 - pt.age / pt.life, 0, 1);
+        ctx.fillStyle = pt.color;
+        ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+      }
+      ctx.globalAlpha = 1;
+      for (const f of G.floaters) {
+        ctx.globalAlpha = clamp(1 - f.age / f.life, 0, 1);
+        ctx.font = "bold 20px Trebuchet MS, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillText(f.txt, f.x + 2, f.y + 2);
+        ctx.fillStyle = f.color;
+        ctx.fillText(f.txt, f.x, f.y);
+        ctx.textAlign = "left";
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      // idle menu backdrop: gentle lawn
+      ctx.fillStyle = "#26331c";
+      ctx.fillRect(0, 0, CW, CH);
+      for (let r = 0; r < 6; r++) for (let c = 0; c < 10; c++) {
+        ctx.fillStyle = (r + c) % 2 ? "#2c3d20" : "#314526";
+        ctx.fillRect(c * 96, r * 100, 96, 100);
+      }
+    }
+    if (G) drawHUD();
+    ctx.restore();
+  }
+
+  // ================= main loop =================
+  let lastT = performance.now();
+  function loop(now) {
+    const dt = Math.min((now - lastT) / 1000, 0.05);
+    lastT = now;
+    if (state === "playing") update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  // boot
+  toMenu();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -73,11 +73,13 @@ Two independent axes are labelled:
 | Anthropic | Claude Opus 5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-5`](./providers/anthropic/claude-opus-5) |
 | Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 | DeepSeek | DeepSeek V4 Pro | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-pro`](./providers/deepseek/deepseek-v4-pro) |
+| DeepSeek | DeepSeek V4 Flash 0721 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-flash-0721`](./providers/deepseek/deepseek-v4-flash-0721) |
 | Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
 | Google | Gemini 3.5 Flash (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.5-flash-native`](./providers/google/gemini-3.5-flash-native) |
 | Google | Gemini 3.6 Flash High (Antigravity Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.6-flash-high`](./providers/google/gemini-3.6-flash-high) |
+| Google | Gemini 3.7 Flash High (Antigravity Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.7-flash-high`](./providers/google/gemini-3.7-flash-high) |
 | MiniMax | MiniMax-M3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3`](./providers/minimax/minimax-m3) |
 | MiniMax | MiniMax-M3 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/minimax/minimax-m3-native`](./providers/minimax/minimax-m3-native) |
 | OpenAI | GPT-5.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.5`](./providers/openai/gpt-5.5) |
@@ -98,6 +100,12 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Agents A1 0 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/agents-a1-0`](./providers/local/agents-a1-0) |
 | Qwen | Qwen 3.8 Max Preview | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/qwen/qwen-3.8-max-preview`](./providers/qwen/qwen-3.8-max-preview) |
 | Local (llama.cpp) | Qwen 3.6 27B A3B Uncensored | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.6-27b-a3b-uncensored`](./providers/local/qwen3.6-27b-a3b-uncensored) |
+| Local (llama.cpp) | Qwen 3.6 27B Fable Fusion 711 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.6-27b-fable-fusion-711`](./providers/local/qwen3.6-27b-fable-fusion-711) |
+| Local (llama.cpp) | Muse Glimmer 30B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/muse-glimmer-30b`](./providers/local/muse-glimmer-30b) |
+| Local (llama.cpp) | Dirk Qwen 3.8 27B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/dirk-qwen3.8-27b`](./providers/local/dirk-qwen3.8-27b) |
+| Local (llama.cpp) | Qwen 3.8 27B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b`](./providers/local/qwen3.8-27b) |
+| Local (llama.cpp) | Qwen 3.8 27B Heretic | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-heretic`](./providers/local/qwen3.8-27b-heretic) |
+| Local (llama.cpp) | Qwen 3.8 27B (Native Harness) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-native`](./providers/local/qwen3.8-27b-native) |
 | Local (llama.cpp) | Ornith 1.5 35B A3B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/ornith-1.5-35b-a3b`](./providers/local/ornith-1.5-35b-a3b) |
 
 ## How outputs were generated

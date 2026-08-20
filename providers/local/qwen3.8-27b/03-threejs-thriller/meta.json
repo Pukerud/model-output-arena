@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b",
+  "model_display": "Qwen 3.8 27B",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-14T21:20:00Z",
+  "runner": "Qwen 3.8 27B via pi agent",
+  "notes": "Three.js r160 via unpkg import map (CDN explicitly allowed by this prompt). Four fully procedural low-poly characters (Michael Jackson with fedora + white glove, Pepe the Frog, Donald Trump with blonde swoop + red tie, Elon Musk) on a moonlit graveyard set: 46 tombstones, dead trees, fog, fireflies, drifting mist, sweeping show spotlights, flickering torch, ACES tone mapping, PCF soft shadows. 32s choreography loop (arrival -> moonwalk -> zombie lurch -> anti-gravity lean -> finale) with per-character offsets and smooth crossfades; scripted cinematic camera with drag-to-orbit/scroll-zoom; procedural WebAudio backing track (kick/snare/hat/bass/heartbeat) started on click. Headless-browser verified: renders and animates without errors; fixed a pose-state reference bug (home position missing from anim state) and an audio variable-shadowing TDZ error found during verification.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": "RTX 4090"
+  }
+}

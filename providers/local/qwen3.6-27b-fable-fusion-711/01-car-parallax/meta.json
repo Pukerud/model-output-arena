@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.6-27b-fable-fusion-711",
+  "model_display": "Qwen 3.6 27B Fable Fusion 711",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-08T11:15:20Z",
+  "runner": "Qwen3.6-27B-Fable-Fusion-711 via pi.dev agent (llama.cpp)",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "Fable Fusion 711",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

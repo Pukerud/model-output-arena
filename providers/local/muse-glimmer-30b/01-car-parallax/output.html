@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parallax Car - Muse Glimmer 30B</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#000}
+canvas{display:block;width:100%;height:100%}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H;
+function resize(){W=canvas.width=innerWidth*devicePixelRatio;H=canvas.height=innerHeight*devicePixelRatio;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px'}
+addEventListener('resize',resize);resize();
+
+const skyTop='#0a1a2f',skyBottom='#ff9a3c';
+function drawSky(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,skyTop);g.addColorStop(1,skyBottom);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+const layers=[
+ {speed:0.05, y:H*0.55, draw:drawMountains},
+ {speed:0.12, y:H*0.65, draw:drawHills},
+ {speed:0.25, y:H*0.75, draw:drawTrees},
+ {speed:0.4,  y:H*0.85, draw:drawPoles},
+ {speed:0.6,  y:H*0.92, draw:drawRoadside},
+];
+let offsets={};
+
+function drawMountains(){
+  ctx.fillStyle='#1e2f4a';
+  for(let i=0;i<8;i++){
+    const x=(i*400+offsets.m)%(W+800)-400;
+    ctx.beginPath();
+    ctx.moveTo(x, H);
+    ctx.lineTo(x+150, H*0.45);
+    ctx.lineTo(x+300, H*0.55);
+    ctx.lineTo(x+450, H*0.42);
+    ctx.lineTo(x+600, H);
+    ctx.closePath();ctx.fill();
+  }
+}
+function drawHills(){
+  ctx.fillStyle='#2a3f5a';
+  for(let i=0;i<12;i++){
+    const x=(i*300+offsets.h)%(W+600)-300;
+    ctx.beginPath();
+    ctx.ellipse(x, H*0.68, 200, 80,0,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+function drawTrees(){
+  for(let i=0;i<20;i++){
+    const x=(i*250+offsets.t)%(W+500)-250;
+    const y=H*0.75;
+    ctx.fillStyle='#3a5f3a';
+    ctx.beginPath();ctx.ellipse(x, y, 60, 120,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4a2f1a';
+    ctx.fillRect(x-10,y-180,20,180);
+  }
+}
+function drawPoles(){
+  ctx.strokeStyle='#555';ctx.lineWidth=6;
+  for(let i=0;i<15;i++){
+    const x=(i*220+offsets.p)%(W+440)-220;
+    ctx.beginPath();ctx.moveTo(x,H*0.85);ctx.lineTo(x,H*0.55);ctx.stroke();
+    ctx.fillStyle='#ffcc00';ctx.fillRect(x-20,H*0.5,40,10);
+  }
+}
+function drawRoadside(){
+  ctx.fillStyle='#3a3a3a';
+  for(let i=0;i<30;i++){
+    const x=(i*180+offsets.r)%(W+360)-180;
+    ctx.fillRect(x,H*0.88,120, H*0.12);
+    ctx.fillStyle='#fff';ctx.fillRect(x+40,H*0.92,20,8);ctx.fillStyle='#3a3a3a';
+  }
+}
+
+function drawRoad(){
+  ctx.fillStyle='#2b2b2b';
+  ctx.fillRect(0,H*0.88,W,H*0.12);
+  ctx.strokeStyle='#fff';ctx.lineWidth=8;
+  ctx.setLineDash([40,40]);
+  ctx.beginPath();ctx.moveTo(-offsets.road%80,W*0);ctx.lineTo(W,-offsets.road%80); // dummy
+  ctx.beginPath();
+  for(let y=H*0.88;y<H;y+=20){ctx.moveTo(0,y);ctx.lineTo(W,y);}
+  ctx.stroke();ctx.setLineDash([]);
+}
+
+function drawCar(){
+  const cx=W*0.25;
+  const cy=H*0.78;
+  // body
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.fillStyle='#e53935';
+  ctx.beginPath();
+  ctx.ellipse(0,-20,120,45,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a1a1a';
+  ctx.fillRect(-100,-60,200,40);
+  // wheels
+  const wheelR=28;
+  const t=performance.now()*0.005;
+  const spin=t*3;
+  drawWheel(-80,30, wheelR, spin);
+  drawWheel(80,30, wheelR, spin);
+  ctx.restore();
+}
+function drawWheel(x,y,r,spin){
+  ctx.save();ctx.translate(x,y);ctx.rotate(spin);
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#555';ctx.lineWidth=4;
+  for(let i=0;i<8;i++){ctx.rotate(Math.PI/4);ctx.beginPath();ctx.moveTo(-r,0);ctx.lineTo(r,0);ctx.stroke();}
+  ctx.restore();
+}
+
+let last=0;
+function loop(ts){
+  const dt=Math.min(32,ts-last);last=ts;
+  drawSky();
+  // update offsets
+  offsets.m=(offsets.m||0)+layers[0].speed*dt*2;
+  offsets.h=(offsets.h||0)+layers[1].speed*dt*2;
+  offsets.t=(offsets.t||0)+layers[2].speed*dt*2;
+  offsets.p=(offsets.p||0)+layers[3].speed*dt*2;
+  offsets.r=(offsets.r||0)+layers[4].speed*dt*2;
+  offsets.road=(offsets.road||0)+1.5*dt;
+
+  ctx.save();
+  layers.forEach(l=>{
+    // simple parallax by offset
+    // already baked in draw functions via offsets
+  });
+  drawMountains();drawHills();drawTrees();drawPoles();drawRoadside();
+  ctx.restore();
+
+  drawRoad();
+  drawCar();
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
