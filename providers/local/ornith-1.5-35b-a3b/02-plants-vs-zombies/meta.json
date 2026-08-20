@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "ornith-1.5-35b-a3b",
+  "model_display": "Ornith 1.5 35B A3B",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-08T00:00:00Z",
+  "runner": "Ornith-1.5-35B-A3B via pi.dev agent (llama.cpp)",
+  "notes": "A3B active-parameter MoE (35B total / 3B active). Local open-weights build.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

@@ -98,6 +98,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Agents A1 0 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/agents-a1-0`](./providers/local/agents-a1-0) |
 | Qwen | Qwen 3.8 Max Preview | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/qwen/qwen-3.8-max-preview`](./providers/qwen/qwen-3.8-max-preview) |
 | Local (llama.cpp) | Qwen 3.6 27B A3B Uncensored | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.6-27b-a3b-uncensored`](./providers/local/qwen3.6-27b-a3b-uncensored) |
+| Local (llama.cpp) | Ornith 1.5 35B A3B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/ornith-1.5-35b-a3b`](./providers/local/ornith-1.5-35b-a3b) |
 
 ## How outputs were generated
 

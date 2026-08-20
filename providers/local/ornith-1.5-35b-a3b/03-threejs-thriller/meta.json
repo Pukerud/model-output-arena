@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "ornith-1.5-35b-a3b",
+  "model_display": "Ornith 1.5 35B A3B",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-08T00:00:00Z",
+  "runner": "Ornith-1.5-35B-A3B via pi.dev agent (llama.cpp)",
+  "notes": "A3B active-parameter MoE (35B total / 3B active). Local open-weights build.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "",
+    "variant": "",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

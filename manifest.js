@@ -491,6 +491,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.6-27b-a3b-uncensored/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.6-27b-a3b-uncensored/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "ornith-1.5-35b-a3b",
+      model_display: "Ornith 1.5 35B A3B",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/ornith-1.5-35b-a3b",
+      added: "2026-08-08",
+      outputs: {
+        "01-car-parallax":      "providers/local/ornith-1.5-35b-a3b/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/ornith-1.5-35b-a3b/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/ornith-1.5-35b-a3b/03-threejs-thriller/output.html",
+      },
     }
   ]
 };
