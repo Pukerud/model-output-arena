@@ -1,0 +1,13 @@
+{
+  "provider": "xai",
+  "provider_display": "xAI",
+  "model": "grok-4.6",
+  "model_display": "Grok 4.6",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-20T18:13:49Z",
+  "runner": "Grok 4.6 via Grok Build TUI",
+  "notes": "Vanilla canvas 2D, zero libraries. Sunset-dusk palette with stars, sun glow, and slow clouds. Parallax layers: far/mid/near hills, two tree bands, utility poles with sagging wires, asphalt road with scrolling dashes and flecks, near-foreground grass at 1.35x. Seeded hash scenery for a seamless varied loop. Coupe with gradient body, glass, 5-spoke rolling wheels, bounce/pitch, headlight beam and taillight. HDPI canvas, space/click to pause.",
+  "hosting": "api",
+  "weights": "closed"
+}

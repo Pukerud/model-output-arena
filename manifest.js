@@ -626,6 +626,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/ornith-1.5-35b-a3b/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/ornith-1.5-35b-a3b/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "xai",
+      provider_display: "xAI",
+      model: "grok-4.6",
+      model_display: "Grok 4.6",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/xai/grok-4.6",
+      added: "2026-08-20",
+      outputs: {
+        "01-car-parallax":      "providers/xai/grok-4.6/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/xai/grok-4.6/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/xai/grok-4.6/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

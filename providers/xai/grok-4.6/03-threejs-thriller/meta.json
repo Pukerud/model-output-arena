@@ -1,0 +1,13 @@
+{
+  "provider": "xai",
+  "provider_display": "xAI",
+  "model": "grok-4.6",
+  "model_display": "Grok 4.6",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-20T18:13:49Z",
+  "runner": "Grok 4.6 via Grok Build TUI",
+  "notes": "Three.js r160 CDN. Four procedural characters (MJ in red jacket/fedora/silver glove, Pepe, Trump in navy suit, Elon) plus backup zombie chorus. Keyframed Thriller cycle with arm snaps, side sway, MJ moonwalk, claw-hands section. Gothic cemetery (tombstones, dead trees, pumpkins, moon halo), ACES filmic tone mapping, shadow-mapped moonlight and colored spots, orbit/dolly camera, fog pulse.",
+  "hosting": "api",
+  "weights": "closed"
+}

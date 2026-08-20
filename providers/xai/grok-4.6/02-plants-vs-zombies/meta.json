@@ -1,0 +1,13 @@
+{
+  "provider": "xai",
+  "provider_display": "xAI",
+  "model": "grok-4.6",
+  "model_display": "Grok 4.6",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-20T18:13:49Z",
+  "runner": "Grok 4.6 via Grok Build TUI",
+  "notes": "Single-file game planned then implemented: 5 plants (Sunflower, Peashooter, Wall-nut, Snow Pea, Cherry Bomb), 5 zombie types (Basic, Conehead, Buckethead, Runner, Gargantuar), escalating waves. Main menu, how-to, pause, game-over name entry, localStorage leaderboard. Sun drops, cooldowns, freeze peas, splash bomb, 3 lives. Canvas lawn with seed packet HUD.",
+  "hosting": "api",
+  "weights": "closed"
+}
