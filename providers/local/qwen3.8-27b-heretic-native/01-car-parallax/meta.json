@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-heretic-native",
+  "model_display": "Qwen 3.8 27B Heretic (Native Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-20T18:01:00Z",
+  "runner": "Qwen 3.8 27B Heretic via qwen-code native harness",
+  "notes": "Vanilla canvas 2D, zero libraries, single file. Sunset cinematic: sky gradient with 110 twinkling stars, low sun with bled glow sitting behind the far ridge, drifting cloud deck (soft radial puffs), haze band at the horizon, and a backlit distant field. 7 parallax layers at speeds 0.03x-1.45x: clouds, far ridge, mid ridge, conifer/broadleaf treeline, roadside props (glowing streetlights with light pools, utility poles with sagging catenary wires, signs, bushes, rocks), the road itself, and a near-foreground swaying grass strip with pebbles. All scrolling layers are pre-rendered once per resize into tileable offscreen canvases; ridges are sums of sines whose periods divide the tile width, and every prop/tree position comes from a seeded hash of its tile index, so the loop is seamless but varied. Road: asphalt gradient, 420 flecks, cracks, potholes, worn edge lines, and center lane dashes with a 160px period dividing the 1600px tile. Car: maroon coupe drawn in body space (ground origin, axles at -44) with vertical sunset gradient, top rim light, reflective two-pane glass with streak highlights, door line, handles, mirror, headlight cone (additive), taillight glow, bumpers, exhaust tip. Wheels: 5-spoke rims rotated by true rolling (dist/44, no slip), fixed brake caliper, hub, sidewall glint. Body suspension: layered sine road noise drives a +/-3px bob and a ~0.34-degree pitch. Exhaust puffs spawn stochastically and drift/fade. Cinematic pass: letterbox bars, radial vignette, warm grade, shifting 160px film-grain tile (overlay blend), 3-dot lens-flare ghosts along the sun axis. Verified: node --check on extracted script (OK), headless Chrome --headless=new with 8s virtual time budget produced a screenshot with zero console errors; visually confirmed sun, ridges, treeline, poles+wires, lamps with glow, car body/glass/wheels/beam and grass all render correctly. One geometry bug caught during review: wheel arches were initially centered at y=0 instead of axle height -44 (bottom edge would have dipped below the ground); fixed by re-deriving the body path with arcs centered at axle height and wheels placed at axle y.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_0",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

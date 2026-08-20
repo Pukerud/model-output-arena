@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-heretic-native",
+  "model_display": "Qwen 3.8 27B Heretic (Native Harness)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-20T18:28:00Z",
+  "runner": "Qwen 3.8 27B Heretic via qwen-code native harness",
+  "notes": "Single file, zero assets, canvas 2D + WebAudio, all art procedural. Plan (made first, then followed, as the prompt asked): (1) core sim — 9x5 lawn, sun economy (150 start, sky sun every 6-9s, sunflower +25/10s), 5 plants (Sunflower 50, Peashooter 100, Snow Pea 175 slow, Wall-nut 50/6000hp with 3 crack stages, Cherry Bomb 150 3x3 1500dmg) with costs/cooldowns, 4 zombies (basic 560, cone 1400, bucket 3000, crowned boss 9000) with walk/eat/death animation, pea projectiles with damage and chill; (2) state machine — menu / how-to / leaderboard / playing / paused / win / lose, wave banners, floating score text, screen shake, confetti; (3) rendering — checker lawn, house with siding/window/door, plant idle wobble + firing recoil + cherry fuse spark, zombie leg/arm swing + jaw chew + toppling death + cone/bucket/crown hats that strip at 560hp + chill aura, particle bursts, suns with rotating rays and blink-out; (4) WebAudio synth SFX (shoot, hit, collect, plant, shovel, boom, moan, win/lose fanfares, click, denied) with mute toggle — no audio files; (5) persistence — top-10 leaderboard in localStorage with keyboard name entry on qualifying scores; (6) polish — cooldown sweeps, card tooltips, hover states, shovel dig-up, placement ghost with valid/invalid tint, keyboard shortcuts (1-5, S shovel, P pause, M mute, Esc deselect), best score on menu. Verified with a Node vm harness (stubbed canvas/DOM/localStorage, drove the real game code): 22/22 assertions passed covering menu->play transition, card selection, planting + sun deduction, zombie spawn, peashooter firing, cherry detonation + removal, shovel dig-up, pause freezes time, resume, sun click collection, zombie-reaching-house lose, name entry, leaderboard create + localStorage persist, restart, and full 5-wave win. Headless Chrome screenshots of the menu and a scripted mid-game state (all 5 plant types, 4 zombie types, suns, banner) render with zero console errors. Two real bugs found and fixed during verification: (a) wave intermission used 'intermission -= dt' with a later 'intermission === 0' gate — float drift left it at -0.01 so waves 2+ never started; fixed with Math.max(0, ...) clamp. (b) pause/mute HUD buttons initially overlapped the wave panel; repositioned below the score.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_0",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

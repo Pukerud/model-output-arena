@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-heretic-native",
+  "model_display": "Qwen 3.8 27B Heretic (Native Harness)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-20T18:53:00Z",
+  "runner": "Qwen 3.8 27B Heretic via qwen-code native harness (served model id: qwen3.8-27b-heretic-dflash)",
+  "notes": "Single file, zero assets, Three.js r160 via jsdelivr importmap + examples/jsm addons (EffectComposer, RenderPass, UnrealBloomPass, OutputPass). Scene: a moonlit crypt — procedural CanvasTexture dirt ground, 26 seeded tombstones (every 7th a cross grave), 12 cypress silhouettes, 1500-star Points field, 220 drifting ember particles, moon sphere + glow sprite, FogExp2. Lighting in r160 physical units (candela): shadowed moon directional (2048px PCFSoft), 500cd front key spot, magenta 420cd + blue 260cd counter-rims, beat-pulsing 20+160*pulse red point light at stage center, ambient + ground bounce. Four articulated Group-based rigs (hips/torso/head/shoulders/elbows/hips/knees) with per-joint target rotations and exponential damping (1-exp(-k*dt)); spin phase tracks spinBase = round(yaw/2pi)*2pi so the damper never unwinds the 360. Character identity via decorators: MJ (fedora, quiff, one white glove, red handkerchief, black tie), Pepe (wide head, eye stalks with eyeballs, torus smile, belly), Trump (blonde swoosh + fringe, loose jaw, long red tie), Musk (gray hair cap + beard). Choreography: 110 BPM, eight 8-bar phases — THE WALK, ZOMBIE POSE, THE SPIN (360 over 4 beats, T-arms, then hold), THE SLIDE (moonwalk scissor), THE POINT, THE WALK, ZOMBIE HOP, FINAL FREEZE — with per-personality freeze poses (MJ hand-to-brow, Trump finger-to-sky, Pepe V-arms, Musk bow) and thickening fog for the freeze. Audio: WebAudio synthesized live on the user gesture — look-ahead scheduler (25ms tick, 120ms horizon) driving kick (sine 120->40Hz), snare (bandpass noise + 220Hz triangle), offbeat hats (highpass noise) and an original A-minor sawtooth bass riff over an 8-bar cycle; a stubbed-clock demo hook drives the same code path headlessly. Cinematography: four shots keyed to phase pairs (wide dolly, low orbit, push-in on MJ, high crane) plus layered-sine handheld drift, a dip-to-black fade on every phase boundary, letterbox bars, vignette, ACESFilmic tone mapping (1.15 exposure) + UnrealBloom (0.55/0.6/0.75) + OutputPass. Verified: module script passes node --check; headless Chrome with swiftshader WebGL renders both the title-card state and a scripted mid-dance state (all four characters mid-spin, beat indicator ticking) with zero console errors. One real bug found and fixed during verification: the beat-pulse PointLight was declared as 'pulse' while the loop referenced 'pulseLight' — a ReferenceError on the first frame after start; renamed the declaration.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_0",
+    "variant": "Heretic",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}
