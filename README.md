@@ -109,6 +109,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Ornith 1.5 35B A3B | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/ornith-1.5-35b-a3b`](./providers/local/ornith-1.5-35b-a3b) |
 | Local (llama.cpp) | Qwen 3.8 27B Heretic (Native Harness) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-heretic-native`](./providers/local/qwen3.8-27b-heretic-native) |
 | xAI | Grok 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/xai/grok-4.6`](./providers/xai/grok-4.6) |
+| Undisclosed | Ox Alpha | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/undisclosed/ox-alpha`](./providers/undisclosed/ox-alpha) |
 
 ## How outputs were generated
 

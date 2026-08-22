@@ -656,6 +656,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.8-27b-heretic-native/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.8-27b-heretic-native/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "undisclosed",
+      provider_display: "Undisclosed",
+      model: "ox-alpha",
+      model_display: "Ox Alpha",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/undisclosed/ox-alpha",
+      added: "2026-08-22",
+      outputs: {
+        "01-car-parallax":      "providers/undisclosed/ox-alpha/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/undisclosed/ox-alpha/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/undisclosed/ox-alpha/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

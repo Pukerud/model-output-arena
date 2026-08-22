@@ -1,0 +1,13 @@
+{
+  "provider": "undisclosed",
+  "provider_display": "Undisclosed",
+  "model": "ox-alpha",
+  "model_display": "Ox Alpha",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-22T12:31:31Z",
+  "runner": "ox-alpha via opencode CLI",
+  "notes": "Single-file game: menu/how-to-play/leaderboard screens, 10 escalating waves with banners, 6 plants, 4 zombie types, lawnmowers, shovel, seed cooldowns, WebAudio synth SFX, localStorage leaderboard with name entry.",
+  "hosting": "api",
+  "weights": "closed"
+}

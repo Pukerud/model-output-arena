@@ -1,0 +1,13 @@
+{
+  "provider": "undisclosed",
+  "provider_display": "Undisclosed",
+  "model": "ox-alpha",
+  "model_display": "Ox Alpha",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-22T12:31:31Z",
+  "runner": "ox-alpha via opencode CLI",
+  "notes": "Single-file vanilla canvas. Procedural infinite scrolling (hash-seeded scenery + sum-of-sines ridges) so the loop is seamless by construction. Sunset palette, five parallax layers, spinning spoked wheels, suspension bob/pitch.",
+  "hosting": "api",
+  "weights": "closed"
+}
