@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-ud-iq3-xxs",
+  "model_display": "Qwen3.8 Flash Next UD-IQ3_XXS",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-27T09:45:00Z",
+  "runner": "Qwen3.8 Flash Next UD-IQ3_XXS via Qwen Code agent",
+  "notes": "Single HTML file, three@0.166.0 pinned through an importmap (jsdelivr build/three.module.js plus examples/jsm addons). Night graveyard: exponential fog, moon sphere with an additive halo sprite built from a CanvasTexture, 26 grass patches, 15 tombstones with arc-capped slabs, a 34-railed iron fence, a dead tree, drifting mist sheets and hands pushing up through the soil. Four performers (Michael Jackson, Pepe, Donald Trump, Elon Musk) are built as articulated Object3D rigs — hips -> torso -> neck -> head, shoulder -> elbow -> hand + fingers, hip -> knee -> foot — with per-identity heads (curly hair and cap, top-of-skull eyes and wide mouth, blond sweep with brows and red tie, crop with stubble and glasses) and per-identity palettes. Choreography runs off a 131 BPM beat clock: five 16-beat sections (claw, shuffle, kick, bang, jump) written as functions of the beat, each pose block resetting the rig it does not touch, so blocks cannot leak into each other. Cinematic layer: ACESFilmic tone mapping, PCF soft shadows from a shadow-ortho moon light, cool/warm key spots plus rim and bounce, EffectComposer -> RenderPass -> UnrealBloomPass -> OutputPass, six camera setups with per-shot fov switching every 8 beats and handheld drift, OrbitControls for manual mode (UI pills for auto camera / bloom / dance / reset view, double-click to toggle). Verified by a Node harness run against a local install of three@0.166.0: 109/109 checks — the module body parses as ESM under node --check, the importmap pins the verified version, all 31 THREE.* symbols used exist, all five addon entry points resolve and export what is imported, 22 constructor mirrors (including partial theta/phi spheres, open-arc cylinders, capsule rig segments, sprite + material blending, shadow-camera property writes, spot with target) build cleanly, UnrealBloomPass argument order confirmed as (resolution, strength, radius, threshold), OrbitControls(camera, domElement) constructs against a stub element with every option the scene assigns (enableDamping, dampingFactor, min/maxDistance, maxPolarAngle, enabled, autoRotate, target) plus the start event and update(), and the rig/animation contract is checked so every chain a pose writes is built by the performer factory and zeroed by resetPose. Visual/pixel output was not inspected — no browser could be launched from this shell.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "UD-IQ3_XXS",
+    "variant": "Flash Next",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

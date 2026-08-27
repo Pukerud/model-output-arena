@@ -110,6 +110,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Qwen 3.8 27B Heretic (Native Harness) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-heretic-native`](./providers/local/qwen3.8-27b-heretic-native) |
 | xAI | Grok 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/xai/grok-4.6`](./providers/xai/grok-4.6) |
 | Undisclosed | Ox Alpha | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/undisclosed/ox-alpha`](./providers/undisclosed/ox-alpha) |
+| Local (llama.cpp) | Qwen3.8 Flash Next UD-IQ3_XXS | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-ud-iq3-xxs`](./providers/local/qwen3.8-flash-next-ud-iq3-xxs) |
 
 ## How outputs were generated
 

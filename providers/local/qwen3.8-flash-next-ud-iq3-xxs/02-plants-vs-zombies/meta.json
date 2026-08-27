@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-ud-iq3-xxs",
+  "model_display": "Qwen3.8 Flash Next UD-IQ3_XXS",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-27T09:25:00Z",
+  "runner": "Qwen3.8 Flash Next UD-IQ3_XXS via Qwen Code agent",
+  "notes": "Single file, no libraries, no image/audio assets — lawn, house, plants, zombies, seed packets and UI are all drawn on one canvas; the same draw functions render the seed-packet icons at a smaller scale. Plan was written first as an HTML comment at the top of the body and followed. Sim runs on a fixed 1/60 accumulator (dt clamped) over a 9x5 lawn: sun economy (sky sun + sunflowers), 5 plants (Sunflower 50, Peashooter 100, Wall-nut 50, Snow Pea 175 with chill, Cherry Bomb 150 with a 3x3 900-damage blast), 4 zombie types (basic, conehead 240 armour, buckethead 560 armour, sprinter) with chew DPS, 10 generated waves with huge-wave banners and a flag, one-shot per-row lawnmowers as the last line of defence, menu/how-to/leaderboard/playing/paused/win/lose states, and a top-10 localStorage leaderboard with name entry and current-run highlight. Verified with a Node harness that loads the real script against stubbed window/document/canvas/localStorage and drives it: 41/41 checks pass across boot, a full defended match (kills, pea damage, sun collection, wave progression, positive score, run under ~6 min), an undefended defeat that trips the mowers, leaderboard sort/cap/truncation/highlight, cherry-bomb blast radius crossing rows, tile-occupancy guard, shovel and pause/resume. Separately an 8-run batch confirmed a static competent layout wins, which forced a difficulty rebalance (cone 280->240, bucket 720->560, pea interval 1.45->1.35, wave-10 filler 11->8) because a competent layout was losing ~40% of runs. Six bugs found and fixed while verifying: showOver was called but never defined (ReferenceError on the end screen), hurt() accidentally wrote a zero score to the leaderboard, dead plants kept blocking their tile, the leaderboard highlight never matched the new row, the house wall painted over the lawnmowers, and an invalid CSS rule. Pixel output was not inspected — no browser could be launched from this shell.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "UD-IQ3_XXS",
+    "variant": "Flash Next",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}

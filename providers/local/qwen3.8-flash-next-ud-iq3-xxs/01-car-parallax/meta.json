@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-ud-iq3-xxs",
+  "model_display": "Qwen3.8 Flash Next UD-IQ3_XXS",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-27T09:05:00Z",
+  "runner": "Qwen3.8 Flash Next UD-IQ3_XXS via Qwen Code agent",
+  "notes": "Single canvas-2D file, zero libraries and zero assets: everything (sky gradient, moon, mountain/tree/pole/grass silhouettes, road, car, grain) is drawn procedurally. Layers scroll by a per-layer parallax factor with integer tile-culling and a deterministic integer hash per tile index, so far-layer content is stable across frames instead of flickering. Silhouette ridges are sums of sines keyed off world-x (no wrap seam); conifers/broadleafs, catenary-wire poles, signs, bushes and guardrail are hashed per tile. Wheels use true rolling (angle = distance / radius) plus speed-based spoke blur; body has suspension bob/pitch from summed sines; exhaust particles, headlight beam, taillight glow, travelling roof highlight, wind streaks, vignette, animated film-grain tile and letterbox as post. Themes (dusk/day/night) and speed are keyboard-changeable (Space, arrows, 1/2/3). Verified by headless Chrome screenshot at 1280x720: composition, layer order and car reads correctly; three visual defects found and fixed in that loop (tree rim-light reading as holes, road sun-sheen too strong, wind streaks reading as screen scratches). Scroll/wheel motion itself was not frame-by-frame verified in-browser — no browser could be launched for a second capture after the fixes.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "UD-IQ3_XXS",
+    "variant": "Flash Next",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop GPU"
+  }
+}
