@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-hauhaucs-q8-k-p",
+  "model_display": "Qwen3.8-27B HauhauCS Q8_K_P",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-08-27T20:41:19Z",
+  "runner": "Qwen3.8-27B HauhauCS Q8_K_P via Qwen Code agent",
+  "notes": "Three.js 0.160.0 via unpkg importmap (only external dependency, as permitted by the prompt). 48-second seamless loop at 116 BPM: four procedurally rigged characters (Pepe, Michael Jackson, Donald Trump, Elon Musk) in a moonlit graveyard - tombstones, dead trees, moon with glow, starfield, dust particles, fog surge at the loop seam, keyframed cinematic camera with handheld shake, UnrealBloom post-processing, ACES tone mapping, film grain + vignette + letterbox overlays. Choreographed phases (rise, point, robot, spin, moonwalk, finale) with MJ moonwalk and group-advance offsets. Procedural WebAudio score (kick/snare/hats, B-minor bassline, chord stabs, whistle) with M=mute; #autoplay deep-link for embeds, #t=N to seek. Verified headless: module parses clean, no console errors, two frames captured (fade-in and t=14s full scene with all four characters, lights and bloom rendering correctly). Audio not audibly verified (headless).",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "Q8_K_P",
+    "variant": "HauhauCS",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

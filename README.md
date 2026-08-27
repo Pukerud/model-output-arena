@@ -111,6 +111,7 @@ Two independent axes are labelled:
 | xAI | Grok 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/xai/grok-4.6`](./providers/xai/grok-4.6) |
 | Undisclosed | Ox Alpha | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/undisclosed/ox-alpha`](./providers/undisclosed/ox-alpha) |
 | Local (llama.cpp) | Qwen3.8 Flash Next UD-IQ3_XXS | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-ud-iq3-xxs`](./providers/local/qwen3.8-flash-next-ud-iq3-xxs) |
+| Local (llama.cpp) | Qwen3.8-27B HauhauCS Q8_K_P | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-hauhaucs-q8-k-p`](./providers/local/qwen3.8-27b-hauhaucs-q8-k-p) |
 
 ## How outputs were generated
 

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-hauhaucs-q8-k-p",
+  "model_display": "Qwen3.8-27B HauhauCS Q8_K_P",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-08-27T20:41:19Z",
+  "runner": "Qwen3.8-27B HauhauCS Q8_K_P via Qwen Code agent",
+  "notes": "Single-file canvas 2D scene, no dependencies. Dusk side-view car driving through layered parallax scenery (sky, sun glow, stars, clouds, birds, 3 ridge layers, treeline, grass, road, roadside props, near-ground). True wheel rolling, suspension bob/pitch, exhaust particles, headlight beam, soft-light color grade, vignette, animated film grain, cinematic letterbox. Verified headless (Chromium --headless): script parses clean, two frames captured and visually inspected - scene renders and parallax layers scroll. No audio in this test.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "Q8_K_P",
+    "variant": "HauhauCS",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}
