@@ -701,6 +701,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.8-27b-hauhaucs-q8-k-p/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.8-27b-hauhaucs-q8-k-p/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "tiel-coder-35b-a3b-gguf-mtp-q8",
+      model_display: "Tiel-Coder 35B A3B GGUF MTP q8",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/tiel-coder-35b-a3b-gguf-mtp-q8",
+      added: "2026-08-30",
+      outputs: {
+        "01-car-parallax":      "providers/local/tiel-coder-35b-a3b-gguf-mtp-q8/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/tiel-coder-35b-a3b-gguf-mtp-q8/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/tiel-coder-35b-a3b-gguf-mtp-q8/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

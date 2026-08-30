@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "tiel-coder-35b-a3b-gguf-mtp-q8",
+  "model_display": "Tiel-Coder 35B A3B GGUF MTP q8",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-08-30T07:10:13Z",
+  "runner": "Tiel-Coder-35B-A3B-GGUF-MTP-q8 via pi.dev agent (llama.cpp)",
+  "notes": "Tiel-Coder variant of Ornith-1.5-35B-A3B (A3B active-parameter MoE). GGUF Q8_K quant with MTP. Single-file playable PvZ: sun economy, 5 plants, 5 waves, zombies, and a localStorage leaderboard. No libraries.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "Q8_K",
+    "variant": "MTP",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}
