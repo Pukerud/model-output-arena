@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-uncensored-iq4xs-ngq4",
+  "model_display": "Qwen3.8 Flash Next Uncensored IQ4XS_NGQ4",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-01T14:37:52Z",
+  "runner": "Qwen3.8-Flash-Next-Uncensored-IQ4XS_NGQ4 via Qwen Code agent",
+  "notes": "Three.js (CDN ES module, importmap) graveyard stage: ACES tone mapping, soft-shadow moonlight + tri-colour stage spots, exponential fog, tilting tombstones, bare trees, drifting ground mist, full moon. Four dancers (Michael, Pepe, Donald, Elon) on small jointed rigs perform the Thriller rack: sway, crouch-pop, head-roll and final freeze on a phase timeline; slow cinematic dolly arc.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ4XS_NGQ4",
+    "variant": "Flash Next Uncensored",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

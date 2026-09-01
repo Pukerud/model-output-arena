@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plants vs Zombies — Front Lawn</title>
+<style>
+  :root {
+    --lawn-a: #5da13f; --lawn-b: #55963b; --ui: #2c1e12;
+    --card: #d8b06a; --card-hi: #f0d9a8; --ink: #241608;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(1200px 700px at 50% 20%, #3e6b2f, #1d3818 70%, #12250f);
+    color: #fff; display: grid; place-items: center; overflow: hidden; user-select: none;
+  }
+  #stage { position: relative; width: min(100vw, 1180px); padding: 10px 0 0; }
+  h1 { font-size: 26px; text-align: center; letter-spacing: 1px;
+       text-shadow: 0 3px 0 #00000055; margin-bottom: 8px; }
+  h1 .z { color: #b9e769; }
+  /* ---------- seed bar ---------- */
+  #hud { display: flex; gap: 10px; justify-content: center; align-items: stretch;
+         margin: 4px 0 10px; }
+  #sunBank {
+    background: linear-gradient(#f7df9e, #dfb25c); color: var(--ink);
+    border: 3px solid #7c5a22; border-radius: 12px; padding: 6px 16px;
+    font-size: 26px; font-weight: 700; align-self: center; min-width: 86px;
+    text-align: center; box-shadow: 0 4px 0 #0004;
+  }
+  #sunBank .n { font-size: 20px; text-align: center; }
+  #sunBank .t { font-size: 13px; text-align: center; opacity: .75; }
+  .card {
+    position: relative; width: 96px; background: linear-gradient(#e9c787, #cba15c);
+    border: 3px solid #7c5a22; border-radius: 12px; color: var(--ink);
+    padding: 6px 6px 8px; text-align: center; cursor: pointer;
+    box-shadow: 0 4px 0 #0004; transition: transform .08s;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card.sel { outline: 3px solid #fff; outline-offset: 2px; }
+  .card .emoji { font-size: 34px; line-height: 1.25; filter: drop-shadow(0 2px 0 #0005); }
+  .card .nm { font-weight: 700; font-size: 13px; }
+  .card .cost { font-size: 12px; font-weight: 700; }
+  .card .key { position: absolute; top: 3px; left: 6px; font-size: 11px; opacity: .6; font-weight: 700; }
+  .card.cool { filter: grayscale(.9) brightness(.65); pointer-events: none; }
+  /* ---------- lawn ---------- */
+  #board {
+    display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(3, 118px);
+    gap: 0; border: 6px solid #3c2a14; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 14px 40px #000a;
+  }
+  .cell { position: relative; cursor: pointer; }
+  .cell:nth-child(odd)  { background: var(--lawn-a); }
+  .cell:nth-child(even) { background: var(--lawn-b); }
+  .cell:hover { outline: 3px solid #ffffff66; outline-offset: -3px; }
+  .plant {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 52px; pointer-events: none; filter: drop-shadow(0 4px 3px #0006);
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  .plant.eat { animation: bite .5s ease-in-out infinite; }
+  @keyframes bob   { 50% { transform: translateY(-5px) } }
+  @keyframes bite  { 50% { transform: translateY(-2px) scale(1.06, .94) } }
+  /* ---------- zombies ---------- */
+  .z { position: absolute; bottom: 6px; font-size: 50px; line-height: 1;
+       pointer-events: none; filter: drop-shadow(0 5px 3px #0007);
+       transform: translateX(-50%); animation: lurch 1s ease-in-out infinite; }
+  @keyframes lurch { 50% { transform: translateX(-50%) translateY(-5px) rotate(-4deg) } }
+  .z .hp { position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+           width: 44px; height: 5px; background: #0006; border-radius: 4px; }
+  .z .hp i { display: block; height: 100%; width: 100%; background: #ff6b5e;
+             border-radius: 4px; }
+  /* falling sun */
+  .sun { position: absolute; font-size: 34px; pointer-events: auto; cursor: pointer;
+         filter: drop-shadow(0 0 12px #ffd75e); z-index: 5; transform: translate(-50%, -50%); }
+  .sun.pop { transition: all .45s ease-out; opacity: 0; }
+  /* ---------- banners ---------- */
+  #bar { display: flex; align-items: center; gap: 10px; justify-content: center;
+         margin-top: 12px; font-size: 15px; }
+  #waveTrack { width: 280px; height: 16px; background: #0005; border-radius: 9px;
+              position: relative; border: 2px solid #ffffff33; }
+  #waveFill { position: absolute; inset: 2px; width: 0%; background: linear-gradient(90deg, #b9e769, #f7df9e);
+              border-radius: 7px; transition: width .3s; }
+  #flag { position: absolute; right: -2px; top: -4px; font-size: 18px; }
+  /* ---------- overlays ---------- */
+  .screen { position: absolute; inset: 0; background: #0d1f0aee; display: grid;
+            place-items: center; z-index: 10; border-radius: 14px; }
+  .screen.hidden { display: none; }
+  .panel { text-align: center; max-width: 620px; padding: 30px; }
+  .panel h2 { font-size: 38px; color: #b9e769; text-shadow: 0 4px 0 #0006; margin-bottom: 12px; }
+  .panel p  { opacity: .85; line-height: 1.6; margin-bottom: 16px; }
+  .panel .big { font-size: 19px; margin: 12px 0 18px; }
+  .btn { display: inline-block; margin: 4px; padding: 12px 26px; font: 700 17px inherit;
+         font-family: inherit; color: #241608; background: linear-gradient(#f7df9e, #dfb25c);
+         border: 3px solid #7c5a22; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 0 #0005; }
+  .btn:hover { transform: translateY(-2px); }
+  #boardWrap { position: relative; }
+  #boardWrap .screen { position: absolute; }
+  ol#lb { margin: 6px auto 18px; width: 300px; text-align: left; font-size: 18px; }
+  ol#lb li { background: #ffffff12; border-radius: 8px; padding: 5px 12px; margin: 4px 0; }
+  ol#lb li.me { outline: 2px solid #f7df9e; }
+  #nameIn { font: 16px inherit; font-family: inherit; padding: 8px 12px; width: 240px;
+            border-radius: 10px; border: 3px solid #7c5a22; background: #f7df9e; color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <h1>🌻 PLANTS <span style="opacity:.7">vs</span> ZOMBIES <span class="z">— Front Lawn</span></h1>
+  <div id="hud">
+    <div id="sunBank"><div class="n" id="sunN">50</div><div class="t">sun ☀</div></div>
+    <div id="cards"></div>
+  </div>
+  <div id="boardWrap">
+    <div id="board"></div>
+    <div class="screen hidden" id="menuScreen">
+      <div class="panel">
+        <h2>🌻 Plants vs Zombies</h2>
+        <p>The lawn has had a long week. Six waves of the undead are walking in.<br>
+           Grow sun, grow peas, hold the line — and don't let a single zombie reach the porch.</p>
+        <p class="big">Click falling sun ☀ to collect · click a seed card · plant on the lawn.<br>
+           Keys: 1–4 pick seeds · Esc cancels.</p>
+        <button class="btn" onclick="startRun()">▶ Start wave 1</button>
+        <button class="btn" onclick="showBoard()">🏆 Leaderboard</button>
+      </div>
+    </div>
+    <div class="screen hidden" id="boardScreen">
+      <div class="panel">
+        <h2>🏆 Lawn Leaderboard</h2>
+        <ol id="lb"></ol>
+        <button class="btn" onclick="hideBoard()">Back</button>
+      </div>
+    </div>
+    <div class="screen hidden" id="endScreen">
+      <div class="panel">
+        <h2 id="endTitle">🧟 The zombies ate your brains</h2>
+        <p id="endMsg"></p>
+        <p class="big">Name for the leaderboard:</p>
+        <input id="nameIn" maxlength="14" placeholder="Your name" onkeydown="if(event.key==='Enter')endNameOk()">
+        <div><button class="btn" onclick="endNameOk()">✔ Submit score</button>
+             <button class="btn" onclick="skipName()">Skip</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="bar">
+    <span id="waveTxt">Wave —</span>
+    <div id="waveTrack"><div id="waveFill"></div><div id="flag">🚩</div></div>
+    <span>🧟 <span id="zTxt">0</span></span>
+  </div>
+</div>
+<script>
+"use strict";
+/* ------------------------------------------------------------------ */
+/* PLANT PLAN: grow sun economy first, defensive walls on wave 3+,    */
+/* never let a lane be empty when a wave walks in.                    */
+/* ------------------------------------------------------------------ */
+const PLANTS = [
+  { id: "pea",   n: "Peashooter", e: "🌱", cost: 100, cd: 5,  hp: 3 },
+  { id: "sun",   n: "Sunflower",  e: "🌻", cost: 50,  cd: 5,  hp: 3 },
+  { id: "wall",  n: "Wall-nut",   e: "🥥", cost: 50,  cd: 12, hp: 12 },
+  { id: "snow",  n: "Snow pea",   e: "❄️", cost: 175, cd: 6,  hp: 3 },
+];
+const ROWS = 3, COLS = 5;
+const ZI = { norm: ["🧟", 1.0, 2], cone: ["🧟‍♂️", 1.15, 4], bucket: ["🪣", 1.3, 8] };
+
+const S = {
+  sun: 50, wave: 0, waveT: 0, waveDur: 18, zombies: [], spawnLeft: 0, spawnT: 0,
+  running: false, selected: null, cool: {}, grid: [], t: 0,
+};
+const $ = id => document.getElementById(id);
+const board = $("board");
+
+/* build lawn */
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const d = document.createElement("div");
+  d.className = "cell";
+  d.dataset.r = r; d.dataset.c = c;
+  d.addEventListener("click", () => {
+    if (!S.running) return;
+    const slot = S.grid[r][c];
+    if (S.selected && !slot) {
+      const P = PLANTS[S.selected];
+      if (S.sun >= P.cost) {
+        S.sun -= P.cost;
+        S.cool[S.selected] = P.cd;
+        const slot = { plant: S.selected, hp: P.hp, maxHp: P.hp, fire: 0.4 + Math.random() * 0.6 };
+        S.grid[r][c] = slot;
+        const p = document.createElement("div");
+        p.className = "plant";
+        p.textContent = P.e;
+        d.appendChild(p);
+        slot.el = p;
+        S.selected = null;
+        render();
+      }
+    }
+  });
+  board.appendChild(d);
+}
+S.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+
+/* seed cards */
+const cards = $("cards");
+cards.style.cssText = "display:flex;gap:10px;";
+PLANTS.forEach((P, i) => {
+  const d = document.createElement("div");
+  d.className = "card";
+  d.innerHTML = `<div class="key">${i + 1}</div><div class="emoji">${P.e}</div>
+                 <div class="nm">${P.n}</div><div class="cost">${P.cost} ☀</div>`;
+  d.onclick = () => pick(i);
+  d.id = "card" + i;
+  cards.appendChild(d);
+});
+function pick(i) {
+  if (!S.running) return;
+  S.selected = (S.selected === i) ? null : i;
+  render();
+}
+addEventListener("keydown", e => {
+  if (!S.running) return;
+  const i = "1234".indexOf(e.key);
+  if (i >= 0) pick(i);
+  if (e.key === "Escape") { S.selected = null; render(); }
+});
+
+/* ---------- game flow ---------- */
+async function startRun() {
+  $("menuScreen").classList.add("hidden");
+  S.running = true; S.sun = 50; S.wave = 0; S.waveT = 0;
+  S.zombies = []; S.cool = {}; S.selected = null;
+  for (const row of S.grid) row.fill(null);
+  board.querySelectorAll(".z,.sun").forEach(n => n.remove());
+  nextWave();
+  render();
+}
+
+function nextWave() {
+  S.wave++;
+  S.spawnLeft = 1 + S.wave;            // wave n sends n+1 zombies
+  S.spawnT = 2;                          // grace period at wave start
+  $("waveTxt").textContent = "Wave " + S.wave + " / 6";
+  $("waveFill").style.width = (S.wave === 1 ? 0 : (S.wave - 1) / 5 * 100) + "%";
+}
+
+function spawnZombie() {
+  const pool = S.wave < 2 ? ["norm"] :
+               S.wave < 4 ? ["norm", "norm", "cone"] : ["norm", "cone", "cone", "bucket"];
+  const kind = pool[Math.floor(Math.random() * pool.length)];
+  const row = Math.floor(Math.random() * ROWS);
+  const z = { kind, row, x: 1.08, speed: ZI[kind][1] / 26, hp: ZI[kind][2], maxHp: ZI[kind][2],
+              el: null, eating: null };
+  const d = document.createElement("div");
+  d.className = "z";
+  d.innerHTML = ZI[kind][0] + '<div class="hp"><i></i></div>';
+  board.children[row * COLS].appendChild(d);
+  z.el = d;
+  S.zombies.push(z);
+  $("zTxt").textContent = S.wave + " incoming / " + S.zombies.length + " on lawn";
+}
+
+let raf = 0, last = 0, sunT = 0;
+function loop(t) {
+  raf = requestAnimationFrame(loop);
+  if (!S.running) return;
+  const dt = Math.min(0.05, (t - last) / 1000 || 0.016);
+  last = t; S.t += dt;
+
+  /* wave clock */
+  S.waveT += dt;
+  const progress = Math.min(1, (S.wave - 1 + Math.min(1, S.waveT / S.waveDur)) / 5);
+  $("waveFill").style.width = progress * 100 + "%";
+
+  if (S.spawnLeft > 0) {
+    S.spawnT -= dt;
+    if (S.spawnT <= 0) { S.spawnT = 2.2 + Math.random() * 2.5; S.spawnLeft--; spawnZombie(); }
+  } else if (S.zombies.length === 0 && S.waveT > 4) {
+    if (S.wave >= 6) return endGame(true);
+    nextWave(); render(); return;
+  }
+
+  /* sun economy */
+  sunT -= dt;
+  if (sunT <= 0) { sunT = 7 + Math.random() * 4; dropSkySun(); }
+
+  /* plants */
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const slot = S.grid[r][c];
+    if (!slot) continue;
+    slot.fire -= dt;
+    if (slot.fire > 0) continue;
+    if (slot.plant === "sun") { slot.fire = 8; dropSunFromCell(r, c); }
+    if (slot.plant === "pea" || slot.plant === "snow") {
+      slot.fire = 1.4;
+      const inLane = S.zombies.some(z => z.row === r && z.x > (c + 0.5) / COLS);
+      if (inLane) firePea(r, c, slot.plant === "snow" ? "❄️" : "🟢");
+    }
+  }
+
+  /* zombies walk & eat */
+  for (const z of [...S.zombies]) {
+    const colFloat = z.x * COLS;
+    const c = Math.floor(colFloat), r = z.row;
+    const slot = (c >= 0 && c < COLS) ? S.grid[r][c] : null;
+    if (slot && colFloat < c + 0.62) {
+      /* eating */
+      slot.hp -= dt * 1.0 * (z.kind === "bucket" ? 1.15 : z.kind === "cone" ? 1.05 : 1);
+      z.eating = slot;
+      slot.el && slot.el.classList.add("eat");
+      if (slot.hp <= 0) { S.grid[r][c] = null; paintCell(r, c); }
+    } else {
+      z.eating = null;
+      if (slot && slot.el) slot.el.classList.remove("eat");
+      z.x -= z.speed * dt;
+    }
+    placeZombie(z);
+    if (z.x <= 0.02) return endGame(false);
+    const bar = z.el.querySelector(".hp i");
+    if (bar) bar.style.width = Math.max(0, z.hp / z.maxHp * 100) + "%";
+  }
+  $("zTxt").textContent = "wave " + S.wave + "/6 · " + S.zombies.length + " on lawn";
+  render();
+}
+
+function placeZombie(z) {
+  /* each zombie lives in its entry cell; position it cell-relative so it can
+     drift across the lane as x shrinks */
+  const bw = board.clientWidth / COLS, bh = board.clientHeight / ROWS;
+  const c = Math.max(0, Math.min(COLS - 1, Math.floor(z.x * COLS)));
+  z.el.style.left = ((z.x - c) * bw) + "px";
+  z.el.style.bottom = "8px";
+}
+
+function firePea(r, c, emoji) {
+  const cell = board.children[r * COLS + c];
+  const p = document.createElement("div");
+  p.className = "sun";
+  p.textContent = emoji;
+  p.style.pointerEvents = "none";
+  p.style.zIndex = 4;
+  cell.appendChild(p);
+  const bw = board.clientWidth / COLS;
+  const t0 = performance.now();
+  (function fly() {
+    if (!p.isConnected) return;
+    const k = (performance.now() - t0) / 700;
+    p.style.left = (bw / 2 + k * (COLS - c - 1) * bw) + "px"; /* cell-relative */
+    p.style.top = "46%";
+    if (k >= 1) { p.remove(); return; }
+    /* landing check against zombies in lane: pea head position in lane units */
+    const xk = (c + 0.5 + k * (COLS - c - 0.5)) / COLS;
+    const hit = S.zombies.find(z => z.row === r && Math.abs(z.x - xk) < 0.06);
+    if (hit) {
+      hit.hp -= (emoji === "❄️" ? 1.2 : 1);
+      if (hit.hp <= 0) {
+        hit.el.remove();
+        S.zombies.splice(S.zombies.indexOf(hit), 1);
+      }
+      p.remove(); return;
+    }
+    requestAnimationFrame(fly);
+  })();
+}
+function z2x(z) { return z.x * COLS; }
+
+function dropSkySun() {
+  const r = Math.floor(Math.random() * ROWS), c = Math.floor(Math.random() * COLS);
+  const d = sunOnCell(r, c, "☀️");
+  d.style.top = "30%";
+}
+function dropSunFromCell(r, c) {
+  const d = sunOnCell(r, c, "☀️");
+  d.style.top = "42%";
+}
+function sunOnCell(r, c, glyph) {
+  const cell = board.children[r * COLS + c];
+  const d = document.createElement("div");
+  d.className = "sun";
+  d.textContent = glyph;
+  d.style.left = "50%";
+  cell.appendChild(d);
+  d.onclick = () => { S.sun += 25; d.classList.add("pop"); setTimeout(() => d.remove(), 450); render(); };
+  setTimeout(() => { if (d.isConnected) d.remove(); }, 10000);
+  return d;
+}
+
+function paintCell(r, c) {
+  const el = board.children[r * COLS + c];
+  el.querySelectorAll(".plant").forEach(n => n.remove());
+}
+
+function render() {
+  $("sunN").textContent = S.sun;
+  PLANTS.forEach((P, i) => {
+    const d = $("card" + i);
+    const cd = S.cool[i] || 0;
+    d.classList.toggle("cool", cd > 0 || S.sun < P.cost);
+    d.classList.toggle("sel", S.selected === i);
+  });
+  /* (plants re-painted lazily in paintPlants called from loop) */
+}
+
+function showBoard() {
+  const lb = $("lb");
+  lb.innerHTML = "";
+  loadScores().forEach(([n, s], i) => {
+    const li = document.createElement("li");
+    li.textContent = n + " — " + s;
+    lb.appendChild(li);
+  });
+  $("menuScreen").classList.add("hidden");
+  $("boardScreen").classList.remove("hidden");
+}
+function hideBoard() {
+  $("boardScreen").classList.add("hidden");
+  $("menuScreen").classList.remove("hidden");
+}
+function skipName() { $("endScreen").classList.add("hidden"); $("menuScreen").classList.remove("hidden"); }
+function endNameOk() {
+  const name = $("nameIn").value.trim() || "Anonymous";
+  const score = S.wave * 100 - S.zombies.reduce((a, z) => a + Math.ceil(z.hp), 0) + S.sun / 5 | 0;
+  const scores = loadScores();
+  scores.push([name, Math.max(0, score)]);
+  scores.sort((a, b) => b[1] - a[1]);
+  localStorage.setItem("pvz-lb", JSON.stringify(scores.slice(0, 8)));
+  $("nameIn").value = "";
+  $("endScreen").classList.add("hidden");
+  $("menuScreen").classList.remove("hidden");
+}
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem("pvz-lb") || "[]"); }
+  catch { return []; }
+}
+
+function endGame(won) {
+  S.running = false;
+  $("endTitle").textContent = won ? "🌻 The lawn holds! Brains saved." : "🧟 The zombies ate your brains";
+  $("endMsg").textContent = won ? "You survived all six waves. The neighbourhood owes you one."
+                                 : "A zombie reached the porch on wave " + S.wave + ".";
+  $("endScreen").classList.remove("hidden");
+  $("menuScreen").classList.remove("hidden");
+}
+
+/* initial paint */
+$("menuScreen").classList.remove("hidden");
+last = performance.now();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

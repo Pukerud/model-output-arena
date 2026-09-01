@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-uncensored-iq4xs-ngq4",
+  "model_display": "Qwen3.8 Flash Next Uncensored IQ4XS_NGQ4",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-09-01T14:37:52Z",
+  "runner": "Qwen3.8-Flash-Next-Uncensored-IQ4XS_NGQ4 via Qwen Code agent",
+  "notes": "Full-page vanilla canvas (zero libraries): procedural layered parallax (far mountains, hills, tree line, poles, fence, road, near grass), per-tile deterministic hashing for stable varied scenery, wheels at true rolling speed with speed-based spoke blur, suspension bob/pitch, warm dusk grade and vignette; speed eases with pointer drag, continuous seamless loop.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ4XS_NGQ4",
+    "variant": "Flash Next Uncensored",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-uncensored-iq4xs-ngq4",
+  "model_display": "Qwen3.8 Flash Next Uncensored IQ4XS_NGQ4",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-01T14:37:52Z",
+  "runner": "Qwen3.8-Flash-Next-Uncensored-IQ4XS_NGQ4 via Qwen Code agent",
+  "notes": "Self-contained DOM/CSS mini-PvZ: menu, 6 escalating waves with progress bar, 4 seed cards with sun costs and cooldowns, falling-sun collection, 3 zombie types with per-zombie HP bars and eating animation, win/lose overlays, name entry and a persistent top-8 leaderboard (localStorage); keys 1-4 select seeds, Esc cancels.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ4XS_NGQ4",
+    "variant": "Flash Next Uncensored",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}
