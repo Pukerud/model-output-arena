@@ -731,6 +731,21 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4/03-threejs-thriller/output.html",
       },
+    },
+    {
+      provider: "meta",
+      provider_display: "Meta",
+      model: "muse-spark-1.3",
+      model_display: "Muse Spark 1.3",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/meta/muse-spark-1.3",
+      added: "2026-09-03",
+      outputs: {
+        "01-car-parallax":      "providers/meta/muse-spark-1.3/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/meta/muse-spark-1.3/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/meta/muse-spark-1.3/03-threejs-thriller/output.html",
+      },
     }
   ]
 };

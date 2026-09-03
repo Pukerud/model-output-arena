@@ -114,6 +114,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Qwen3.8-27B HauhauCS Q8_K_P | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-hauhaucs-q8-k-p`](./providers/local/qwen3.8-27b-hauhaucs-q8-k-p) |
 | Local (llama.cpp) | Tiel-Coder 35B A3B GGUF MTP q8 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/tiel-coder-35b-a3b-gguf-mtp-q8`](./providers/local/tiel-coder-35b-a3b-gguf-mtp-q8) |
 | Local (llama.cpp) | Qwen3.8 Flash Next Uncensored IQ4XS_NGQ4 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4`](./providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4) |
+| Meta | Muse Spark 1.3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/meta/muse-spark-1.3`](./providers/meta/muse-spark-1.3) |
 
 ## How outputs were generated
 
