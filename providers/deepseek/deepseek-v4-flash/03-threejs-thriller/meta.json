@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-flash",
+  "model_display": "DeepSeek V4 Flash",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-03T18:09:10Z",
+  "runner": "DeepSeek V4 Flash via OpenClaw agent",
+  "notes": "Importmap + three@0.164.1 + EffectComposer (bloom, OutputPass). Procedural cast: Michael Jackson (red jacket, white glove), Pepe the Frog (bug eyes), Donald Trump (tan + combover + tie), Elon Musk. Articulated skeleton (pelvis/torso/neck/head/shoulders+elbows/hips+knees) danced by a beat-synced choreography at ~117 BPM: crouched zombie shuffle, claw-arm pumps, alternating kicks, head snaps on 2&4, full turn on the 8th beat, grand pose on the 16th, per-dancer stagger. Coloured key spots with additive volumetric shafts that re-colour every 4 beats, back rim rig, white strobe on the backbeat, fog, canvas-textured warehouse, drifting smoke sprites, glossy floor pools, drifting cinematic camera with micro-shake. Click for slow-mo, space pauses.",
+  "hosting": "api",
+  "weights": "closed"
+}

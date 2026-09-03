@@ -67,6 +67,7 @@ Two independent axes are labelled:
 | Provider | Model | Type | Weights | Path |
 |----------|-------|------|---------|------|
 | Anthropic | Claude Fable 5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-fable-5`](./providers/anthropic/claude-fable-5) |
+| Anthropic | Claude Fable 5.1 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-fable-5.1`](./providers/anthropic/claude-fable-5.1) |
 | Anthropic | Claude Haiku 4.5 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-haiku-4-5`](./providers/anthropic/claude-haiku-4-5) |
 | Anthropic | Claude Opus 4.8 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8`](./providers/anthropic/claude-opus-4-8) |
 | Anthropic | Claude Opus 4.8 (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-opus-4-8-native`](./providers/anthropic/claude-opus-4-8-native) |
@@ -74,6 +75,7 @@ Two independent axes are labelled:
 | Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 | DeepSeek | DeepSeek V4 Pro | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-pro`](./providers/deepseek/deepseek-v4-pro) |
 | DeepSeek | DeepSeek V4 Flash 0721 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-flash-0721`](./providers/deepseek/deepseek-v4-flash-0721) |
+| DeepSeek | DeepSeek V4 Flash | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-flash`](./providers/deepseek/deepseek-v4-flash) |
 | Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
@@ -114,6 +116,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Qwen3.8-27B HauhauCS Q8_K_P | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-hauhaucs-q8-k-p`](./providers/local/qwen3.8-27b-hauhaucs-q8-k-p) |
 | Local (llama.cpp) | Tiel-Coder 35B A3B GGUF MTP q8 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/tiel-coder-35b-a3b-gguf-mtp-q8`](./providers/local/tiel-coder-35b-a3b-gguf-mtp-q8) |
 | Local (llama.cpp) | Qwen3.8 Flash Next Uncensored IQ4XS_NGQ4 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4`](./providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4) |
+| Meta | Muse Spark 1.3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/meta/muse-spark-1.3`](./providers/meta/muse-spark-1.3) |
 | Local (llama.cpp) | Nemotron 3.5 Lightning Free | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/nemotron-3.5-lightning-free`](./providers/local/nemotron-3.5-lightning-free) |
 
 ## How outputs were generated

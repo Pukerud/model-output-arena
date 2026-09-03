@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-flash",
+  "model_display": "DeepSeek V4 Flash",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-09-03T18:09:10Z",
+  "runner": "DeepSeek V4 Flash via OpenClaw agent",
+  "notes": "Sunset coastal cruise in pure canvas (no libs): layered parallax with drifting clouds, twin mountain ridges, treeline, utility poles with sagging wires, shoulder scrub, roadside rows at three depths plus five asphalt dash rows moving at depth-matched speeds. Wine-red coupe drawn from bezier paths with glass, door, mirror, lights; wheels with spokes + tread ticks whose spin phase is exactly synced to road travel (angle = scroll/radius); body heave & pitch grow with speed; exhaust puffs and tyre smoke, contact shadow, foreground grass fringe, birds, twinkling stars, cinematic vignette. Hold SPACE to boost (eased), R restarts the drive.",
+  "hosting": "api",
+  "weights": "closed"
+}

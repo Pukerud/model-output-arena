@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-fable-5.1",
+  "model_display": "Claude Fable 5.1",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-03T13:17:51Z",
+  "runner": "Claude Fable 5.1 via pi agent",
+  "notes": "Single-file canvas game with polished menus, how-to-play screen, persistent top-10 leaderboard, plant selection and planting, sun economy, cooldowns, escalating waves, combat, mowers, pause, game-over flow, audio, particles, and responsive HUD. Browser-tested with no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

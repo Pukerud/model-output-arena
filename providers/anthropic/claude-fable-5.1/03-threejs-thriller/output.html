@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THRILLER — a Three.js graveyard dance</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: "Helvetica Neue", Arial, sans-serif; }
+  canvas { display: block; }
+  #bars .bar { position: fixed; left: 0; right: 0; height: 7.5vh; background: #000; z-index: 5; pointer-events: none; }
+  #bars .top { top: 0; } #bars .bottom { bottom: 0; }
+  #title {
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 6; pointer-events: none; text-align: center; color: #fff;
+    animation: titleFade 7s ease forwards;
+  }
+  #title h1 {
+    margin: 0; font-family: Impact, "Arial Black", sans-serif; font-size: clamp(56px, 12vw, 170px); letter-spacing: 0.12em;
+    color: #ff3b1f; text-shadow: 0 0 18px rgba(255,60,20,.9), 0 0 60px rgba(255,40,0,.55), 0 6px 0 #4a0800;
+    transform: scaleY(1.15);
+  }
+  #title p { margin: 12px 0 0; font-size: clamp(12px, 1.6vw, 20px); letter-spacing: .35em; text-transform: uppercase; color: #cfd6ff; opacity: .9; }
+  @keyframes titleFade { 0% { opacity: 0; } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+  #hint {
+    position: fixed; right: 18px; bottom: calc(7.5vh + 12px); z-index: 7; color: rgba(255,255,255,.55); font-size: 12px; letter-spacing: .12em;
+    text-transform: uppercase; transition: opacity .4s;
+  }
+  #hint b { color: #ffd0a0; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #889; z-index: 8; letter-spacing: .3em; font-size: 14px; text-transform: uppercase; }
+  #shotlabel { position: fixed; left: 18px; bottom: calc(7.5vh + 12px); z-index: 7; color: rgba(255,255,255,.45); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div id="bars"><div class="bar top"></div><div class="bar bottom"></div></div>
+<div id="title"><h1>THRILLER</h1><p>starring Michael Jackson · Pepe the Frog · Donald Trump · Elon Musk</p></div>
+<div id="shotlabel"></div>
+<div id="hint"><b>click</b> sound &nbsp;·&nbsp; <b>C</b> free camera &nbsp;·&nbsp; <b>space</b> pause</div>
+<div id="loading">loading the graveyard…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+const TAU = Math.PI * 2;
+const BPM = 119;                       // "Thriller" tempo
+const clamp01 = x => Math.max(0, Math.min(1, x));
+const smooth = x => { x = clamp01(x); return x * x * (3 - 2 * x); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const pulse = (b, period = 1) => Math.pow(Math.max(0, Math.sin(Math.PI * b / period)), 2);       // one bump per period
+const sq = (b, period = 2, k = 5) => Math.tanh(k * Math.sin(Math.PI * b / period));              // smooth square wave
+const bob = b => Math.abs(Math.cos(Math.PI * b));                                                  // 1 on the beat, 0 between
+const rand = (a, b) => a + Math.random() * (b - a);
+let seedState = 1337;
+const srand = () => { seedState = (seedState * 1664525 + 1013904223) >>> 0; return seedState / 4294967296; }; // deterministic layout
+
+// ============================================================================
+// Renderer, scene, camera, post
+// ============================================================================
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const NIGHT = new THREE.Color(0x060810);
+const FLASH = new THREE.Color(0x3a4470);
+scene.background = NIGHT.clone();
+scene.fog = new THREE.FogExp2(0x070a14, 0.032);
+
+const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 300);
+camera.position.set(0, 2.2, 11);
+
+const CinematicShader = {
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, vignette: { value: 0.75 }, grain: { value: 0.035 }, aberration: { value: 0.0035 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float time, vignette, grain, aberration; varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    void main(){
+      vec2 d = vUv - 0.5; float r2 = dot(d, d);
+      vec2 off = d * aberration * (1.0 + r2 * 6.0);
+      vec3 col;
+      col.r = texture2D(tDiffuse, vUv + off).r;
+      col.g = texture2D(tDiffuse, vUv).g;
+      col.b = texture2D(tDiffuse, vUv - off).b;
+      float vig = 1.0 - smoothstep(0.25, 0.95, length(d) * 1.4142) * vignette;
+      col *= vig;
+      col += (hash(vUv * vec2(1920.0, 1080.0) + fract(time * 7.0)) - 0.5) * grain;
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+};
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.7, 0.72);
+composer.addPass(bloom);
+const cinePass = new ShaderPass(CinematicShader);
+composer.addPass(cinePass);
+composer.addPass(new OutputPass());
+
+// ============================================================================
+// Lighting — cold moonlight key, hot orange/magenta rims (Thriller poster palette)
+// ============================================================================
+const hemi = new THREE.HemisphereLight(0x3a4a7a, 0x0a0810, 0.35);
+scene.add(hemi);
+
+const key = new THREE.SpotLight(0x9fb3ff, 220, 60, 0.55, 0.65, 1.4);
+key.position.set(5, 11, 9);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.bias = -0.0004;
+key.shadow.normalBias = 0.02;
+key.shadow.camera.near = 2; key.shadow.camera.far = 40;
+key.target.position.set(0, 1, 0);
+scene.add(key, key.target);
+
+const fill = new THREE.SpotLight(0xff7a3a, 90, 40, 0.7, 0.8, 1.5);
+fill.position.set(-8, 5, 6); fill.target.position.set(0, 1, 0);
+scene.add(fill, fill.target);
+
+const rim = new THREE.SpotLight(0xd040ff, 140, 40, 0.6, 0.7, 1.4);
+rim.position.set(0, 6, -8); rim.target.position.set(0, 1.2, 0);
+scene.add(rim, rim.target);
+
+const lightning = new THREE.DirectionalLight(0xbcc8ff, 0);
+lightning.position.set(-6, 20, -30);
+scene.add(lightning);
+
+// ============================================================================
+// Environment
+// ============================================================================
+function noiseCanvas(size, fn) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  const img = g.createImageData(size, size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4;
+    const [r, gg, b, a] = fn(x / size, y / size);
+    img.data[i] = r; img.data[i + 1] = gg; img.data[i + 2] = b; img.data[i + 3] = a;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+// cheap value noise
+const P = new Uint8Array(512); for (let i = 0; i < 256; i++) P[i] = i;
+for (let i = 255; i > 0; i--) { const j = Math.floor(srand() * (i + 1)); [P[i], P[j]] = [P[j], P[i]]; }
+for (let i = 0; i < 256; i++) P[256 + i] = P[i];
+function vnoise(x, y) {
+  const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255, xf = x - Math.floor(x), yf = y - Math.floor(y);
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const h = (a, b) => P[P[a] + b] / 255;
+  return lerp(lerp(h(xi, yi), h(xi + 1, yi), u), lerp(h(xi, yi + 1), h(xi + 1, yi + 1), u), v);
+}
+function fbm(x, y, oct = 5) { let a = 0.5, f = 1, s = 0; for (let i = 0; i < oct; i++) { s += a * vnoise(x * f, y * f); a *= 0.5; f *= 2; } return s; }
+
+// Ground: wet cracked asphalt with puddles (roughness map drives reflections)
+const groundColorTex = new THREE.CanvasTexture(noiseCanvas(512, (u, v) => {
+  const n = fbm(u * 8, v * 8), c = fbm(u * 40 + 3, v * 40 + 7, 3);
+  const crack = Math.pow(Math.abs(c - 0.5) * 2, 6);
+  const base = 26 + n * 30 - crack * 20;
+  return [base, base + 2, base + 6, 255];
+}));
+const groundRoughTex = new THREE.CanvasTexture(noiseCanvas(512, (u, v) => {
+  const p = fbm(u * 5 + 11, v * 5 + 3, 4);
+  const wet = smooth((p - 0.52) * 6);                // puddles
+  const r = Math.round(lerp(235, 40, wet));
+  return [r, r, r, 255];
+}));
+for (const t of [groundColorTex, groundRoughTex]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 6); t.colorSpace = THREE.NoColorSpace; }
+groundColorTex.colorSpace = THREE.SRGBColorSpace;
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(120, 120),
+  new THREE.MeshStandardMaterial({ map: groundColorTex, roughnessMap: groundRoughTex, roughness: 1, metalness: 0.15, color: 0xffffff })
+);
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+scene.add(ground);
+
+// Moon + halo + stars
+const moon = new THREE.Mesh(new THREE.SphereGeometry(4.2, 32, 32), new THREE.MeshBasicMaterial({ color: 0xe8eeff, fog: false }));
+moon.position.set(-24, 22, -70);
+scene.add(moon);
+const haloTex = new THREE.CanvasTexture((() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128, 128, 20, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(200,215,255,0.55)'); gr.addColorStop(0.35, 'rgba(160,180,255,0.18)'); gr.addColorStop(1, 'rgba(120,140,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return c;
+})());
+const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
+halo.position.copy(moon.position); halo.scale.set(34, 34, 1);
+scene.add(halo);
+{
+  const n = 1800, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const th = srand() * TAU, ph = Math.acos(srand() * 0.85), r = 180;
+    pos[i * 3] = r * Math.sin(ph) * Math.cos(th); pos[i * 3 + 1] = r * Math.cos(ph) + 2; pos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xcfd8ff, size: 0.55, sizeAttenuation: true, fog: false, transparent: true, opacity: 0.8 })));
+}
+
+// Materials for props
+const stoneMat = new THREE.MeshStandardMaterial({ color: 0x6d7079, roughness: 0.95 });
+const stoneDark = new THREE.MeshStandardMaterial({ color: 0x4a4d55, roughness: 0.95 });
+const ironMat = new THREE.MeshStandardMaterial({ color: 0x1a1a20, roughness: 0.45, metalness: 0.75 });
+const barkMat = new THREE.MeshStandardMaterial({ color: 0x1b1612, roughness: 0.95 });
+
+// Tombstones & crosses
+function tombstone(x, z, kind) {
+  const g = new THREE.Group();
+  if (kind < 0.55) {
+    const w = 0.55 + srand() * 0.3, h = 0.75 + srand() * 0.5;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.14), srand() < 0.5 ? stoneMat : stoneDark);
+    body.position.y = h / 2; g.add(body);
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(w / 2, w / 2, 0.14, 24, 1, false, 0, Math.PI), body.material);
+    top.rotation.set(Math.PI / 2, 0, Math.PI / 2); top.position.y = h; g.add(top);
+  } else if (kind < 0.8) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.4, 0.16), stoneMat); post.position.y = 0.7; g.add(post);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.16, 0.16), stoneMat); arm.position.y = 1.05; g.add(arm);
+  } else {
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.9), stoneDark); base.position.y = 0.175; g.add(base);
+    const ob = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.2, 1.8, 4), stoneMat); ob.position.y = 1.25; g.add(ob);
+  }
+  g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  g.position.set(x, 0, z);
+  g.rotation.set((srand() - 0.5) * 0.25, srand() * TAU, (srand() - 0.5) * 0.2);
+  scene.add(g);
+}
+for (let i = 0; i < 46; i++) {
+  const x = (srand() - 0.5) * 44, z = -6 - srand() * 22;
+  if (Math.abs(x) < 4 && z > -9) continue;
+  tombstone(x, z, srand());
+}
+
+// Dead trees (recursive)
+function branch(parent, len, radius, depth) {
+  const geo = new THREE.CylinderGeometry(radius * 0.55, radius, len, 6);
+  geo.translate(0, len / 2, 0);
+  const m = new THREE.Mesh(geo, barkMat); m.castShadow = true;
+  parent.add(m);
+  if (depth <= 0) return;
+  const n = depth > 2 ? 3 : 2;
+  for (let i = 0; i < n; i++) {
+    const child = new THREE.Group();
+    child.position.y = len * (0.7 + srand() * 0.3);
+    child.rotation.set((srand() - 0.5) * 1.3, srand() * TAU, (srand() - 0.5) * 1.3);
+    m.add(child);
+    branch(child, len * (0.6 + srand() * 0.15), radius * 0.55, depth - 1);
+  }
+}
+for (const [x, z, s] of [[-9, -5, 1.2], [10, -7, 1.35], [-16, -13, 1.6], [16, -16, 1.5], [-4, -19, 1.7], [7, -22, 1.4]]) {
+  const t = new THREE.Group(); t.position.set(x, 0, z); t.scale.setScalar(s); t.rotation.y = srand() * TAU;
+  branch(t, 2.6, 0.22, 4);
+  scene.add(t);
+}
+
+// Wrought-iron fence behind the dancers
+{
+  const fence = new THREE.Group();
+  for (let x = -16; x <= 16; x += 0.7) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.5, 6), ironMat);
+    post.position.set(x, 0.75, -4.8); post.castShadow = true; fence.add(post);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.16, 6), ironMat); tip.position.set(x, 1.58, -4.8); fence.add(tip);
+  }
+  for (const y of [0.45, 1.25]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(32.4, 0.05, 0.05), ironMat); rail.position.set(0, y, -4.8); fence.add(rail);
+  }
+  for (const x of [-16.4, 16.4]) {
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.0, 0.5), stoneDark); pillar.position.set(x, 1.0, -4.8); pillar.castShadow = true; fence.add(pillar);
+  }
+  scene.add(fence);
+}
+
+// Street lamps with warm point lights
+const lampBulbs = [];
+for (const x of [-6.5, 6.5]) {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 4.4, 10), ironMat); pole.position.y = 2.2; pole.castShadow = true; g.add(pole);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.9), ironMat); arm.position.set(0, 4.35, -0.4); g.add(arm);
+  const hood = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.3, 12, 1, true), ironMat); hood.position.set(0, 4.25, -0.85); hood.material.side = THREE.DoubleSide; g.add(hood);
+  const bulbMat = new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffb054, emissiveIntensity: 4, roughness: 0.4 });
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), bulbMat); bulb.position.set(0, 4.15, -0.85); g.add(bulb);
+  const light = new THREE.PointLight(0xffa860, 28, 14, 1.8); light.position.set(0, 4.0, -0.85); g.add(light);
+  g.position.set(x, 0, 3.2);
+  scene.add(g);
+  lampBulbs.push({ mat: bulbMat, light, phase: srand() * TAU });
+}
+
+// Ground mist: layered planes with noisy alpha, slowly drifting
+const mistTex = new THREE.CanvasTexture(noiseCanvas(256, (u, v) => {
+  const n = fbm(u * 4, v * 4, 4);
+  const edge = smooth(Math.min(u, 1 - u, v, 1 - v) * 4);   // soft border so tiles don't show
+  return [255, 255, 255, Math.round(clamp01((n - 0.42) * 2.2) * edge * 255)];
+}));
+mistTex.wrapS = mistTex.wrapT = THREE.RepeatWrapping;
+const mists = [];
+for (let i = 0; i < 7; i++) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), new THREE.MeshBasicMaterial({
+    map: mistTex, transparent: true, opacity: 0.16 + srand() * 0.1, depthWrite: false, color: 0x8ea0c8, fog: true,
+  }));
+  m.rotation.x = -Math.PI / 2;
+  m.position.set((srand() - 0.5) * 12, 0.12 + i * 0.09, -2 + (srand() - 0.5) * 10);
+  m.rotation.z = srand() * TAU;
+  m.userData = { vx: (srand() - 0.5) * 0.12, vz: (srand() - 0.5) * 0.06, rot: (srand() - 0.5) * 0.02 };
+  scene.add(m); mists.push(m);
+}
+
+// Drifting dust motes
+const dust = (() => {
+  const n = 900, pos = new Float32Array(n * 3), vel = new Float32Array(n);
+  for (let i = 0; i < n; i++) { pos[i * 3] = (srand() - 0.5) * 30; pos[i * 3 + 1] = srand() * 6; pos[i * 3 + 2] = (srand() - 0.5) * 30 - 3; vel[i] = 0.05 + srand() * 0.15; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xaab6ff, size: 0.045, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  p.userData.vel = vel; scene.add(p); return p;
+})();
+
+// ============================================================================
+// Characters — procedural rigs built from capsules/spheres/boxes
+// ============================================================================
+function std(color, roughness = 0.7, metalness = 0, extra = {}) {
+  return new THREE.MeshStandardMaterial(Object.assign({ color, roughness, metalness }, extra));
+}
+function buildCharacter(spec) {
+  const M = {
+    skin: std(spec.skin, 0.55),
+    hair: std(spec.hair || 0x1a1410, 0.85),
+    top: std(spec.top, spec.topRough ?? 0.65, spec.topMetal ?? 0),
+    shirt: std(spec.shirt || 0xdddddd, 0.75),
+    pants: std(spec.pants, 0.8),
+    shoes: std(spec.shoes, 0.35, 0.05),
+    socks: std(spec.socks || spec.pants, 0.85),
+    eye: std(0xffffff, 0.2),
+    pupil: std(0x0a0a0a, 0.3),
+    mouth: std(spec.mouth || 0x3a1a1a, 0.6),
+  };
+  const s = spec.scale || 1;
+  const root = new THREE.Group();
+  const body = new THREE.Group(); body.scale.setScalar(s); root.add(body);
+  const R = { root, body, spec };
+  const shadowed = m => { m.castShadow = true; m.receiveShadow = true; return m; };
+  const cap = (r, len, mat) => shadowed(new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 6, 14), mat));
+  const sph = (r, mat, seg = 24) => shadowed(new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.max(8, seg / 2)), mat));
+  const box = (w, h, d, mat) => shadowed(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat));
+
+  // Pelvis / hips
+  R.hips = new THREE.Group(); R.hips.position.y = 0.98; body.add(R.hips);
+  const pelvis = cap(0.15, 0.1, M.pants); pelvis.rotation.z = Math.PI / 2; pelvis.scale.set(0.75, 1, 0.7); pelvis.position.y = -0.02; R.hips.add(pelvis);
+
+  // Spine / torso
+  R.spine = new THREE.Group(); R.spine.position.y = 0.05; R.hips.add(R.spine);
+  const torso = cap(0.18, 0.22, M.top); torso.scale.set(1.05, 1, 0.65); torso.position.y = 0.29; R.spine.add(torso);
+  if (spec.shirtFront) { const sf = box(0.16, 0.36, 0.02, M.shirt); sf.position.set(0, 0.32, 0.12); R.spine.add(sf); }
+  if (spec.tie) { const tie = box(0.06, 0.4, 0.015, std(spec.tie, 0.5)); tie.position.set(0, 0.24, 0.135); R.spine.add(tie); const knot = box(0.07, 0.05, 0.02, std(spec.tie, 0.5)); knot.position.set(0, 0.47, 0.13); R.spine.add(knot); }
+  if (spec.lapels) { for (const sgn of [-1, 1]) { const l = box(0.06, 0.32, 0.015, std(spec.lapels, 0.6)); l.position.set(sgn * 0.08, 0.35, 0.128); l.rotation.z = sgn * 0.28; R.spine.add(l); } }
+  if (spec.stripes) { for (const sgn of [-1, 1]) for (let i = 0; i < 3; i++) { const st = box(0.16, 0.018, 0.012, std(0x0b0b0b, 0.5)); st.position.set(sgn * (0.13 - i * 0.02), 0.47 - i * 0.055, 0.125); st.rotation.z = sgn * -0.7; R.spine.add(st); } const belt = box(0.36, 0.035, 0.24, std(0x0b0b0b, 0.5)); belt.position.set(0, 0.02, 0); R.spine.add(belt); }
+  if (spec.logo) { const lg = box(0.05, 0.05, 0.01, std(spec.logo, 0.4, 0, { emissive: spec.logo, emissiveIntensity: 0.3 })); lg.position.set(0, 0.38, 0.125); lg.rotation.z = Math.PI / 4; R.spine.add(lg); }
+  const neck = cap(0.045, 0.04, M.skin); neck.position.y = 0.6; R.spine.add(neck);
+
+  // Head
+  R.head = new THREE.Group(); R.head.position.y = 0.62; R.spine.add(R.head);
+  const face = spec.face || 'human';
+  const head = sph(0.125, M.skin, 32);
+  if (face === 'pepe') { head.scale.set(1.45, 0.95, 1.2); head.position.y = 0.1; }
+  else { head.scale.set(1, 1.1, 1); head.position.y = 0.12; }
+  R.head.add(head);
+  if (face === 'pepe') {
+    for (const sgn of [-1, 1]) {
+      const eye = sph(0.052, M.eye, 20); eye.position.set(sgn * 0.085, 0.17, 0.11); R.head.add(eye);
+      const pupil = sph(0.02, M.pupil, 12); pupil.position.set(sgn * 0.085, 0.165, 0.158); R.head.add(pupil);
+      const lid = sph(0.056, M.skin, 20); lid.scale.set(1, 0.55, 1); lid.position.set(sgn * 0.085, 0.195, 0.108); R.head.add(lid);
+    }
+    const lips = box(0.2, 0.04, 0.06, std(0xb5332a, 0.5)); lips.position.set(0, 0.055, 0.135); R.head.add(lips);
+    const lipTop = box(0.22, 0.02, 0.05, std(0x8f2620, 0.5)); lipTop.position.set(0, 0.078, 0.14); R.head.add(lipTop);
+    const chin = sph(0.09, M.skin, 20); chin.scale.set(1.5, 0.6, 0.9); chin.position.set(0, 0.03, 0.05); R.head.add(chin);
+  } else {
+    for (const sgn of [-1, 1]) {
+      const eye = sph(0.023, M.eye, 14); eye.position.set(sgn * 0.045, 0.14, 0.106); R.head.add(eye);
+      const pupil = sph(0.011, M.pupil, 10); pupil.position.set(sgn * 0.045, 0.14, 0.126); R.head.add(pupil);
+      const brow = box(0.05, 0.012, 0.012, M.hair); brow.position.set(sgn * 0.045, 0.172, 0.114); brow.rotation.z = sgn * (spec.browAngle ?? 0.1); R.head.add(brow);
+    }
+    const nose = sph(0.02, M.skin, 12); nose.scale.set(0.8, 1, 1); nose.position.set(0, 0.11, 0.128); R.head.add(nose);
+    const mouth = box(0.055, 0.012, 0.012, M.mouth); mouth.position.set(0, 0.075, 0.117); R.head.add(mouth);
+    if (spec.hairStyle === 'mj') {
+      const hair = sph(0.132, M.hair, 24); hair.scale.set(1.06, 0.95, 1.06); hair.position.set(0, 0.15, -0.01); R.head.add(hair);
+      for (const [x, y, z] of [[-0.115, 0.07, 0.07], [0.115, 0.07, 0.07], [-0.13, 0.11, 0.0], [0.13, 0.11, 0.0], [-0.08, 0.05, 0.1], [0.085, 0.05, 0.1], [-0.05, 0.22, 0.11], [0.05, 0.225, 0.11]]) {
+        const curl = sph(0.036, M.hair, 10); curl.position.set(x, y, z); R.head.add(curl);
+      }
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.012, 32), std(0x0a0a0a, 0.5)); brim.position.set(0, 0.235, 0.015); brim.rotation.x = 0.12; shadowed(brim); R.head.add(brim);
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.118, 0.14, 32), std(0x0a0a0a, 0.5)); crown.position.set(0, 0.305, 0.005); crown.rotation.x = 0.12; shadowed(crown); R.head.add(crown);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.121, 0.121, 0.025, 32), std(0x2a2a2a, 0.4)); band.position.set(0, 0.255, 0.008); band.rotation.x = 0.12; R.head.add(band);
+    } else if (spec.hairStyle === 'trump') {
+      const hair = sph(0.14, M.hair, 24); hair.scale.set(1.08, 0.62, 1.1); hair.position.set(0, 0.215, -0.01); R.head.add(hair);
+      const swoop = box(0.2, 0.05, 0.14, M.hair); swoop.position.set(0.03, 0.225, 0.09); swoop.rotation.set(-0.35, 0.1, -0.15); R.head.add(swoop);
+      const side = sph(0.06, M.hair, 12); side.scale.set(0.6, 1, 1); side.position.set(-0.125, 0.15, 0.0); R.head.add(side);
+      const side2 = side.clone(); side2.position.x = 0.125; R.head.add(side2);
+    } else if (spec.hairStyle === 'short') {
+      const hair = sph(0.13, M.hair, 24); hair.scale.set(1.03, 0.78, 1.03); hair.position.set(0, 0.165, -0.015); R.head.add(hair);
+    } else if (spec.hairStyle === 'zombie') {
+      for (let i = 0; i < 5; i++) { const tuft = box(0.03, 0.09, 0.03, M.hair); tuft.position.set((srand() - 0.5) * 0.16, 0.25, (srand() - 0.5) * 0.14); tuft.rotation.set((srand() - 0.5) * 0.8, 0, (srand() - 0.5) * 0.8); R.head.add(tuft); }
+    }
+  }
+
+  // Arms
+  const buildArm = (side) => {
+    const sgn = side === 'l' ? 1 : -1;
+    const shoulder = new THREE.Group(); shoulder.position.set(sgn * 0.235, 0.5, 0); R.spine.add(shoulder);
+    const sleeveMat = spec.sleeves === 'skin' ? M.skin : M.top;
+    const upper = cap(0.055, 0.17, sleeveMat); upper.position.y = -0.15; shoulder.add(upper);
+    const shoulderPad = sph(0.07, M.top, 14); shoulderPad.position.y = -0.02; shoulder.add(shoulderPad);
+    const elbow = new THREE.Group(); elbow.position.y = -0.3; shoulder.add(elbow);
+    const foreMat = spec.sleeves === 'skin' ? M.skin : (spec.longSleeves === false ? M.skin : M.top);
+    const fore = cap(0.047, 0.16, foreMat); fore.position.y = -0.14; elbow.add(fore);
+    const wrist = new THREE.Group(); wrist.position.y = -0.28; elbow.add(wrist);
+    const gloved = spec.glove === side;
+    const handMat = gloved ? std(0xffffff, 0.25, 0.35, { emissive: 0x334455, emissiveIntensity: 0.35 }) : M.skin;
+    const hand = sph(0.06, handMat, 16); hand.scale.set(0.8, 1.15, 0.45); hand.position.y = -0.06; wrist.add(hand);
+    for (let i = 0; i < 3; i++) { const f = cap(0.012, 0.045, handMat); f.position.set((i - 1) * 0.028, -0.13, 0.0); wrist.add(f); }
+    R[side + 'Shoulder'] = shoulder; R[side + 'Elbow'] = elbow; R[side + 'Hand'] = wrist;
+  };
+  buildArm('l'); buildArm('r');
+
+  // Legs
+  const buildLeg = (side) => {
+    const sgn = side === 'l' ? 1 : -1;
+    const hip = new THREE.Group(); hip.position.set(sgn * 0.1, -0.06, 0); R.hips.add(hip);
+    const upper = cap(0.075, 0.26, M.pants); upper.position.y = -0.22; hip.add(upper);
+    const knee = new THREE.Group(); knee.position.y = -0.43; hip.add(knee);
+    const lower = cap(0.06, 0.26, M.pants); lower.position.y = -0.2; knee.add(lower);
+    if (spec.socks) { const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.064, 0.064, 0.09, 14), M.socks); sock.position.y = -0.36; knee.add(sock); }
+    const ankle = new THREE.Group(); ankle.position.y = -0.42; knee.add(ankle);
+    const foot = box(0.11, 0.07, 0.27, M.shoes); foot.position.set(0, -0.035, 0.06); ankle.add(foot);
+    const toe = sph(0.055, M.shoes, 12); toe.scale.set(1, 0.6, 1); toe.position.set(0, -0.04, 0.19); ankle.add(toe);
+    R[side + 'Hip'] = hip; R[side + 'Knee'] = knee; R[side + 'Ankle'] = ankle;
+  };
+  buildLeg('l'); buildLeg('r');
+  return R;
+}
+
+// Pose application. Symmetric semantics: *Out = abduction (away from body), *Fwd = forward,
+// elbowBend = forearm forward, elbowSwing = forearm continues the arm's arc (out -> up -> in).
+function applyPose(R, P) {
+  const g = k => P[k] || 0;
+  R.root.position.set(R.home.x + g('rootX'), g('rootY'), R.home.z + g('rootZ'));
+  R.root.rotation.y = R.home.ry + g('rootRY');
+  R.hips.rotation.set(g('hipsX'), g('hipsY'), g('hipsZ'));
+  R.spine.rotation.set(g('spineX'), g('spineY'), g('spineZ'));
+  R.head.rotation.set(g('headX'), g('headY'), g('headZ'));
+  R.lShoulder.rotation.set(-g('lArmFwd'), g('lArmTwist'), g('lArmOut'));
+  R.lElbow.rotation.set(-g('lElbowBend'), 0, g('lElbowSwing'));
+  R.lHand.rotation.set(g('lHandBend'), 0, g('lHandSide'));
+  R.lHip.rotation.set(-g('lLegFwd'), 0, g('lLegOut'));
+  R.lKnee.rotation.x = g('lKneeBend');
+  R.lAnkle.rotation.x = g('lFootBend');
+  R.rShoulder.rotation.set(-g('rArmFwd'), -g('rArmTwist'), -g('rArmOut'));
+  R.rElbow.rotation.set(-g('rElbowBend'), 0, -g('rElbowSwing'));
+  R.rHand.rotation.set(g('rHandBend'), 0, -g('rHandSide'));
+  R.rHip.rotation.set(-g('rLegFwd'), 0, -g('rLegOut'));
+  R.rKnee.rotation.x = g('rKneeBend');
+  R.rAnkle.rotation.x = g('rFootBend');
+}
+function LR(l, r) {
+  const o = {};
+  for (const k in l) o['l' + k[0].toUpperCase() + k.slice(1)] = l[k];
+  for (const k in r) o['r' + k[0].toUpperCase() + k.slice(1)] = r[k];
+  return o;
+}
+const both = v => LR(v, v);
+function blendPose(a, b, t) {
+  const o = {};
+  for (const k in a) o[k] = a[k] * (1 - t);
+  for (const k in b) o[k] = (o[k] || 0) + b[k] * t;
+  return o;
+}
+
+// ============================================================================
+// Choreography — eight 8-beat phrases inspired by the Thriller routine
+// ============================================================================
+const MOVES = [
+  // 0 — Zombie lurch: hunched, dangling claws, dragging steps, head lolling
+  b => {
+    const step = Math.sin(Math.PI * b), tilt = sq(b, 2, 3), dip = 1 - bob(b);
+    return Object.assign({
+      rootY: -0.07 - 0.05 * dip, spineX: 0.42, hipsX: 0.05, headX: -0.2, headZ: 0.32 * tilt, headY: 0.15 * tilt,
+    }, LR(
+      { armFwd: 0.55, armOut: 0.3, elbowBend: 1.8 + 0.25 * Math.sin(b * 5.1), handBend: 1.0, legFwd: 0.3 * step, kneeBend: 0.3 + 0.35 * Math.max(0, step), footBend: 0.2 * Math.max(0, step) },
+      { armFwd: 0.5, armOut: 0.35, elbowBend: 1.6 + 0.25 * Math.cos(b * 4.3), handBend: 1.1, legFwd: -0.3 * step, kneeBend: 0.3 + 0.35 * Math.max(0, -step), footBend: 0.2 * Math.max(0, -step) }
+    ));
+  },
+  // 1 — Claw hands up beside the head, swaying, knees pumping on the beat
+  b => {
+    const sway = Math.sin(Math.PI * b / 2), dip = 1 - bob(b), claw = 0.25 * Math.sin(b * TAU);
+    return Object.assign({
+      rootX: 0.12 * sway, rootY: -0.06 * dip, spineZ: -0.12 * sway, spineX: 0.08, headZ: 0.2 * sway, headX: -0.15,
+    }, both({ armOut: 1.15, armFwd: 0.35, elbowSwing: 2.25, elbowBend: 0.15, handBend: 0.9 + claw, handSide: claw, legOut: 0.18, kneeBend: 0.25 + 0.3 * dip }));
+  },
+  // 2 — Side step with shoulder shimmy: four beats right, four beats back
+  b => {
+    const dirS = sq(b, 4, 4);                  // +1 travelling right, -1 travelling back; smooth at the turn
+    const prog = b < 4 ? b / 4 : (8 - b) / 4;
+    const step = Math.sin(Math.PI * b), shimmy = Math.sin(TAU * b), dip = 1 - bob(b);
+    return Object.assign({
+      rootX: (prog - 0.5) * 1.2, rootY: -0.04 * dip, spineY: 0.28 * shimmy, spineZ: 0.06 * shimmy, headY: -0.15 * shimmy, headZ: 0.1 * dirS,
+    }, LR(
+      { armOut: 0.35 + 0.1 * shimmy, armFwd: 0.2, elbowBend: 0.7, handBend: 0.5, legOut: 0.05 + 0.3 * Math.max(0, step) * Math.max(0, dirS), kneeBend: 0.2 + 0.25 * Math.max(0, step) },
+      { armOut: 0.35 - 0.1 * shimmy, armFwd: 0.2, elbowBend: 0.7, handBend: 0.5, legOut: 0.05 + 0.3 * Math.max(0, -step) * Math.max(0, -dirS), kneeBend: 0.2 + 0.25 * Math.max(0, -step) }
+    ));
+  },
+  // 3 — Head snaps and hip pops, arms locked straight at the sides
+  b => {
+    const snap = sq(b, 2, 7), dip = 1 - bob(b), pop = pulse(b, 1);
+    return Object.assign({
+      rootY: -0.05 * dip, hipsX: -0.12 * pop, hipsZ: 0.08 * snap, spineX: 0.05 * pop, spineZ: -0.06 * snap, headY: 0.85 * snap, headX: 0.05,
+    }, both({ armFwd: -0.15, armOut: 0.12, elbowBend: 0.25, handBend: 0.1, legOut: 0.08, kneeBend: 0.12 + 0.2 * dip }));
+  },
+  // 4 — Hip thrust with alternating arm punch
+  b => {
+    const beat = Math.floor(b) % 2, p = pulse(b, 1);
+    const lp = beat === 0 ? p : 0, rp = beat === 1 ? p : 0;
+    return Object.assign({
+      rootY: -0.04 * (1 - bob(b)), hipsX: -0.25 * p, spineX: -0.12 * p, spineY: 0.25 * (lp - rp), headX: -0.1 * p, headY: -0.2 * (lp - rp),
+    }, LR(
+      { armFwd: 0.3 + 1.3 * lp, armOut: 0.15, elbowBend: 1.2 - 1.0 * lp, handBend: 0.2 - 0.6 * lp, legFwd: 0.2, kneeBend: 0.35 },
+      { armFwd: 0.3 + 1.3 * rp, armOut: 0.15, elbowBend: 1.2 - 1.0 * rp, handBend: 0.2 - 0.6 * rp, legFwd: -0.2, kneeBend: 0.35 }
+    ));
+  },
+  // 5 — Monster: arms out, forearms forward, torso twisting, heavy stomps
+  b => {
+    const twist = sq(b, 2, 3), step = Math.sin(Math.PI * b), dip = 1 - bob(b);
+    return Object.assign({
+      rootY: -0.06 * dip, spineY: 0.45 * twist, spineX: -0.08, headY: 0.35 * twist, headX: 0.12, hipsY: -0.1 * twist,
+    }, LR(
+      { armOut: 1.45, armFwd: 0.1, elbowBend: 1.5, handBend: 1.0, handSide: 0.3 * twist, legFwd: 0.25 * Math.max(0, step), legOut: 0.2, kneeBend: 0.3 + 0.5 * Math.max(0, step) },
+      { armOut: 1.45, armFwd: 0.1, elbowBend: 1.5, handBend: 1.0, handSide: -0.3 * twist, legFwd: 0.25 * Math.max(0, -step), legOut: 0.2, kneeBend: 0.3 + 0.5 * Math.max(0, -step) }
+    ));
+  },
+  // 6 — Knee lifts with claps in between
+  b => {
+    const beat = Math.floor(b) % 2, p = pulse(b, 1), lp = beat === 0 ? p : 0, rp = beat === 1 ? p : 0;
+    const clap = pulse(b + 0.5, 1);
+    return Object.assign({
+      rootY: -0.03 - 0.04 * p, spineX: 0.15 * p, hipsZ: 0.1 * (lp - rp), headX: 0.1 * p,
+    }, LR(
+      { armFwd: 0.9, armOut: 0.55 - 0.45 * clap, elbowBend: 0.9, handSide: -0.5, legFwd: 1.1 * lp, kneeBend: 1.5 * lp + 0.15, footBend: 0.3 * lp },
+      { armFwd: 0.9, armOut: 0.55 - 0.45 * clap, elbowBend: 0.9, handSide: -0.5, legFwd: 1.1 * rp, kneeBend: 1.5 * rp + 0.15, footBend: 0.3 * rp }
+    ));
+  },
+  // 7 — Spin, then the big arms-wide finish
+  b => {
+    let spin = smooth(b / 3.5) * TAU; if (spin > TAU - 1e-4) spin = 0;
+    const open = smooth((b - 4) / 1.5), dip = 1 - bob(b);
+    const sway = Math.sin(Math.PI * (b - 4) / 2) * open;
+    return Object.assign({
+      rootRY: spin, rootY: -0.05 * dip * (1 - open) - 0.02 * open, spineX: -0.15 * open, spineZ: 0.08 * sway, headX: -0.3 * open, headZ: 0.1 * sway,
+    }, both({ armOut: 0.2 + 1.4 * open, armFwd: 0.1 + 0.3 * open, elbowBend: 0.4 * (1 - open) + 0.1, handBend: -0.4 * open, legOut: 0.1 + 0.15 * open, kneeBend: 0.15 + 0.25 * dip * (1 - open) }));
+  },
+];
+const PHRASE = 8, BLEND = 0.6;
+function routine(beat) {
+  const n = MOVES.length;
+  const idx = ((Math.floor(beat / PHRASE) % n) + n) % n;
+  const b = ((beat % PHRASE) + PHRASE) % PHRASE;
+  let pose = MOVES[idx](b);
+  if (b < BLEND) {
+    const prev = MOVES[(idx - 1 + n) % n](PHRASE + b);
+    pose = blendPose(prev, pose, smooth(b / BLEND));
+  }
+  return pose;
+}
+
+// ============================================================================
+// Cast
+// ============================================================================
+const cast = [];
+function addDancer(spec, home, style) {
+  const R = buildCharacter(spec);
+  R.home = home; R.style = style;
+  R.root.position.set(home.x, 0, home.z);
+  scene.add(R.root);
+  cast.push(R);
+  return R;
+}
+const mj = addDancer({
+  skin: 0xa8734c, hair: 0x0c0a08, hairStyle: 'mj', top: 0xb0121c, topRough: 0.32, topMetal: 0.12, stripes: true,
+  pants: 0x0d0d0f, shoes: 0x0a0a0a, socks: 0xffffff, glove: 'r', browAngle: 0.15, scale: 1.0,
+}, { x: -0.9, z: 0.9, ry: 0 }, { delay: 0, energy: 1.08, name: 'Michael' });
+const pepe = addDancer({
+  skin: 0x4f9a3a, face: 'pepe', top: 0x2f5ec4, pants: 0x2a2a2e, shoes: 0x5a3a1a, sleeves: 'skin', scale: 0.96,
+}, { x: -2.7, z: -0.3, ry: 0 }, { delay: 0.08, energy: 1.18, name: 'Pepe' });
+const trump = addDancer({
+  skin: 0xf0a06a, hair: 0xf1cf6b, hairStyle: 'trump', top: 0x162447, lapels: 0x0e1730, shirt: 0xf4f4f4, shirtFront: true, tie: 0xd0202a,
+  pants: 0x162447, shoes: 0x1a1210, browAngle: -0.25, scale: 1.02,
+}, { x: 0.9, z: 0.3, ry: 0 }, { delay: 0.14, energy: 0.82, name: 'Donald' });
+const elon = addDancer({
+  skin: 0xe8c5a7, hair: 0x2b2118, hairStyle: 'short', top: 0x15161a, shirt: 0x2c2f36, shirtFront: true, logo: 0xdddddd,
+  pants: 0x2a3350, shoes: 0xe6e6e6, browAngle: 0.05, scale: 1.04,
+}, { x: 2.7, z: -0.3, ry: 0 }, { delay: 0.2, energy: 0.92, name: 'Elon' });
+// Backup zombies in the shadows
+for (let i = 0; i < 6; i++) {
+  const x = -5.5 + i * 2.2 + (srand() - 0.5) * 0.5, z = -3.2 - srand() * 0.6;
+  const shade = 0x7a8c6a + Math.floor(srand() * 0x101010);
+  addDancer({
+    skin: shade, hair: 0x2a2620, hairStyle: 'zombie', top: [0x3e3a35, 0x5a4d3e, 0x2f3a45][i % 3], pants: [0x2a2a30, 0x3a2f28][i % 2], shoes: 0x1a1512, longSleeves: false,
+    browAngle: 0.4, mouth: 0x1a0a0a, scale: 0.94 + srand() * 0.1,
+  }, { x, z, ry: 0 }, { delay: 0.28 + srand() * 0.12, energy: 0.78 + srand() * 0.1, zombie: true });
+}
+
+// ============================================================================
+// Camera direction — shots cut on the beat, with a hint of handheld
+// ============================================================================
+const SHOTS = [
+  { len: 8, name: 'wide · dolly in',      fn: u => ({ pos: [0, lerp(2.5, 1.9, u), lerp(12, 8.6, u)], look: [0, 1.05, 0], fov: 38 }) },
+  { len: 8, name: 'low angle · push',     fn: u => ({ pos: [lerp(-3.6, -1.6, u), lerp(0.45, 0.7, u), lerp(6.8, 4.2, u)], look: [-0.3, 1.1, 0.5], fov: 42 }) },
+  { len: 8, name: 'lateral track',        fn: u => ({ pos: [lerp(6.5, -6.5, u), 1.6, 4.4], look: [0, 1.15, 0.2], fov: 40 }) },
+  { len: 4, name: 'close · michael',      fn: u => ({ pos: [lerp(-0.4, -1.3, u), lerp(1.8, 1.65, u), lerp(3.6, 3.0, u)], look: 'mj', fov: 34 }) },
+  { len: 4, name: 'close · pepe',         fn: u => ({ pos: [lerp(-4.2, -3.6, u), 1.55, lerp(2.2, 1.9, u)], look: 'pepe', fov: 36 }) },
+  { len: 8, name: 'crane down',           fn: u => ({ pos: [lerp(0.2, 0.6, u), lerp(6, 1.7, u), lerp(8.5, 6.8, u)], look: [0, 1.0, 0], fov: 40 }) },
+  { len: 4, name: 'close · donald',       fn: u => ({ pos: [lerp(2.4, 1.9, u), 1.6, lerp(2.9, 2.5, u)], look: 'trump', fov: 36 }) },
+  { len: 4, name: 'close · elon',         fn: u => ({ pos: [lerp(4.6, 4.0, u), 1.7, lerp(2.0, 1.6, u)], look: 'elon', fov: 36 }) },
+  { len: 8, name: 'orbit',                fn: u => { const a = lerp(-0.6, 0.6, u) * Math.PI; return { pos: [Math.sin(a) * 7.5, 1.9, Math.cos(a) * 7.5 - 0.5], look: [0, 1.1, 0], fov: 40 }; } },
+  { len: 8, name: 'hero · low wide',      fn: u => ({ pos: [lerp(0.8, -0.8, u), 0.35, 5.8], look: [0, 1.3, 0], fov: 50 }) },
+];
+const SHOT_TOTAL = SHOTS.reduce((s, x) => s + x.len, 0);
+const lookTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), headWorld = new THREE.Vector3();
+const shotLabel = document.getElementById('shotlabel');
+let lastShotIdx = -1;
+
+function directCamera(beat, time) {
+  let b = ((beat % SHOT_TOTAL) + SHOT_TOTAL) % SHOT_TOTAL, idx = 0;
+  while (b >= SHOTS[idx].len) { b -= SHOTS[idx].len; idx++; }
+  const shot = SHOTS[idx], u = b / shot.len, s = shot.fn(u);
+  if (idx !== lastShotIdx) { lastShotIdx = idx; shotLabel.textContent = `shot ${idx + 1}/${SHOTS.length} — ${shot.name}`; }
+  camPos.set(s.pos[0], s.pos[1], s.pos[2]);
+  if (typeof s.look === 'string') {
+    const R = { mj, pepe, trump, elon }[s.look];
+    R.head.getWorldPosition(headWorld);
+    lookTarget.copy(headWorld).add(new THREE.Vector3(0, 0.05, 0));
+  } else lookTarget.set(s.look[0], s.look[1], s.look[2]);
+  // handheld micro-motion
+  camPos.x += Math.sin(time * 0.9) * 0.035 + Math.sin(time * 2.3) * 0.012;
+  camPos.y += Math.sin(time * 1.3 + 1) * 0.025;
+  lookTarget.x += Math.sin(time * 0.7 + 2) * 0.02;
+  lookTarget.y += Math.sin(time * 1.1 + 0.5) * 0.015;
+  camera.position.copy(camPos);
+  camera.lookAt(lookTarget);
+  camera.fov = s.fov; camera.updateProjectionMatrix();
+}
+
+// Optional free camera
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enabled = false; controls.target.set(0, 1, 0); controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49;
+let freeCam = false;
+
+// ============================================================================
+// Music — a synthesized funk groove at 119 BPM, scheduled on the same beat clock
+// ============================================================================
+const Music = {
+  ac: null, master: null, on: false, next16: 0,
+  start() {
+    if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); this.on = !this.on; return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    this.ac = new AC(); this.master = this.ac.createGain(); this.master.gain.value = 0.32; this.master.connect(this.ac.destination);
+    this.comp = this.ac.createDynamicsCompressor(); this.comp.connect(this.master);
+    this.on = true; this.next16 = Math.ceil(songBeat() * 4);
+  },
+  env(node, at, a, d, peak = 1) { node.gain.setValueAtTime(0.0001, at); node.gain.exponentialRampToValueAtTime(peak, at + a); node.gain.exponentialRampToValueAtTime(0.0001, at + a + d); },
+  kick(at) { const o = this.ac.createOscillator(), g = this.ac.createGain(); o.frequency.setValueAtTime(165, at); o.frequency.exponentialRampToValueAtTime(42, at + 0.22); this.env(g, at, 0.004, 0.32, 1.0); o.connect(g); g.connect(this.comp); o.start(at); o.stop(at + 0.4); },
+  noiseBuf() { if (this._nb) return this._nb; const n = this.ac.sampleRate; const b = this.ac.createBuffer(1, n, n); const d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return (this._nb = b); },
+  snare(at) { const s = this.ac.createBufferSource(); s.buffer = this.noiseBuf(); const f = this.ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1400; const g = this.ac.createGain(); this.env(g, at, 0.003, 0.18, 0.55); s.connect(f); f.connect(g); g.connect(this.comp); s.start(at); s.stop(at + 0.25); const o = this.ac.createOscillator(), g2 = this.ac.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(210, at); o.frequency.exponentialRampToValueAtTime(120, at + 0.1); this.env(g2, at, 0.003, 0.12, 0.4); o.connect(g2); g2.connect(this.comp); o.start(at); o.stop(at + 0.15); },
+  hat(at, vol) { const s = this.ac.createBufferSource(); s.buffer = this.noiseBuf(); const f = this.ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000; const g = this.ac.createGain(); this.env(g, at, 0.002, 0.045, 0.22 * vol); s.connect(f); f.connect(g); g.connect(this.comp); s.start(at); s.stop(at + 0.08); },
+  bass(at, freq, len) { const o = this.ac.createOscillator(), f = this.ac.createBiquadFilter(), g = this.ac.createGain(); o.type = 'sawtooth'; o.frequency.value = freq; f.type = 'lowpass'; f.Q.value = 6; f.frequency.setValueAtTime(900, at); f.frequency.exponentialRampToValueAtTime(140, at + len); this.env(g, at, 0.006, len, 0.42); o.connect(f); f.connect(g); g.connect(this.comp); o.start(at); o.stop(at + len + 0.05); },
+  stab(at, freqs) { for (const fr of freqs) { const o = this.ac.createOscillator(), g = this.ac.createGain(); o.type = 'square'; o.frequency.value = fr; this.env(g, at, 0.004, 0.16, 0.06); o.connect(g); g.connect(this.comp); o.start(at); o.stop(at + 0.2); } },
+  thunder() { if (!this.ac || !this.on) return; const at = this.ac.currentTime + 0.15; const s = this.ac.createBufferSource(); s.buffer = this.noiseBuf(); s.loop = true; const f = this.ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(400, at); f.frequency.exponentialRampToValueAtTime(60, at + 2.5); const g = this.ac.createGain(); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.9, at + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, at + 3.0); s.connect(f); f.connect(g); g.connect(this.master); s.start(at); s.stop(at + 3.1); },
+  schedule(n16, at) {
+    const step = n16 % 16, bar = Math.floor(n16 / 16);
+    if (step === 0 || step === 8 || step === 10) this.kick(at);
+    if (step === 4 || step === 12) this.snare(at);
+    if (step % 2 === 0) this.hat(at, step % 4 === 2 ? 0.55 : 1);
+    if (step === 14 && bar % 2 === 1) this.hat(at + 0.06, 0.7);
+    const E1 = 41.2;
+    const pattern = [0, null, 0, 12, null, 0, 3, null, 5, null, 3, 0, null, 7, 5, 3];       // semitone offsets, funk riff
+    const p = pattern[step];
+    if (p !== null) this.bass(at, E1 * Math.pow(2, p / 12), step % 4 === 0 ? 0.28 : 0.16);
+    if (step === 6 || step === 13) this.stab(at, [164.8, 196, 246.9, 293.7]);              // Em7 stab
+  },
+  update(songTime) {
+    if (!this.ac || !this.on) return;
+    const lookahead = 0.3;
+    for (let guard = 0; guard < 32; guard++) {
+      const tBeat = (this.next16 / 4) * 60 / BPM;
+      if (tBeat > songTime + lookahead) break;
+      const at = this.ac.currentTime + Math.max(0.005, tBeat - songTime);
+      this.schedule(this.next16, at);
+      this.next16++;
+    }
+  },
+};
+
+// ============================================================================
+// Main loop
+// ============================================================================
+let songTime = 0, paused = false, lastNow = performance.now();
+let flash = 0, nextFlash = 5 + Math.random() * 6, flashSeq = 0;
+const songBeat = () => songTime * BPM / 60;
+const tmpPose = {};
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  let dt = Math.min(0.05, (now - lastNow) / 1000); lastNow = now;
+  if (paused) dt = 0;
+  songTime += dt;
+  const beat = songBeat();
+  const t = now / 1000;
+
+  // Dancers
+  for (const R of cast) {
+    const st = R.style;
+    const base = routine(beat - st.delay);
+    for (const k in tmpPose) delete tmpPose[k];
+    for (const k in base) tmpPose[k] = base[k] * st.energy;
+    // breathing + idle micro-motion keep them alive between accents
+    tmpPose.spineX = (tmpPose.spineX || 0) + 0.02 * Math.sin(t * 1.6 + st.delay * 40) + (st.zombie ? 0.22 : 0);
+    tmpPose.headY = (tmpPose.headY || 0) + 0.03 * Math.sin(t * 0.7 + st.delay * 30);
+    if (st.zombie) { tmpPose.headZ = (tmpPose.headZ || 0) + 0.15 * Math.sin(t * 0.9 + st.delay * 50); tmpPose.lHandBend = (tmpPose.lHandBend || 0) + 0.4; tmpPose.rHandBend = (tmpPose.rHandBend || 0) + 0.4; }
+    applyPose(R, tmpPose);
+  }
+
+  // Camera
+  if (freeCam) controls.update(); else directCamera(beat, t);
+
+  // Atmosphere
+  for (const m of mists) { m.position.x += m.userData.vx * dt; m.position.z += m.userData.vz * dt; m.rotation.z += m.userData.rot * dt; if (m.position.x > 8) m.position.x = -8; if (m.position.x < -8) m.position.x = 8; }
+  {
+    const pos = dust.geometry.attributes.position.array, vel = dust.userData.vel;
+    for (let i = 0; i < vel.length; i++) { pos[i * 3 + 1] += vel[i] * dt; pos[i * 3] += Math.sin(t * 0.5 + i) * 0.002; if (pos[i * 3 + 1] > 6) pos[i * 3 + 1] = 0; }
+    dust.geometry.attributes.position.needsUpdate = true;
+  }
+  for (const lb of lampBulbs) { const fl = 0.85 + 0.15 * Math.sin(t * 17 + lb.phase) * Math.sin(t * 3.1 + lb.phase); lb.light.intensity = 28 * fl; lb.mat.emissiveIntensity = 4 * fl; }
+
+  // Lightning
+  nextFlash -= dt;
+  if (nextFlash <= 0) { flash = 1; flashSeq = 0.35; nextFlash = 7 + Math.random() * 11; Music.thunder(); }
+  if (flash > 0) {
+    flash = Math.max(0, flash - dt * 4.5);
+    flashSeq -= dt;
+    const flicker = flash * (flashSeq > 0 ? (0.55 + 0.45 * Math.abs(Math.sin(t * 70))) : 1);
+    lightning.intensity = 7 * flicker;
+    hemi.intensity = 0.35 + 2.2 * flicker;
+    scene.background.copy(NIGHT).lerp(FLASH, flicker);
+    scene.fog.color.copy(scene.background);
+    cinePass.uniforms.grain.value = 0.035 + 0.05 * flicker;
+  } else { lightning.intensity = 0; hemi.intensity = 0.35; }
+
+  // Beat-synced accents: key light throbs subtly, bloom breathes
+  const beatPulse = Math.pow(Math.max(0, Math.cos(Math.PI * beat)), 8);
+  key.intensity = 220 + 30 * beatPulse;
+  rim.intensity = 140 + 40 * beatPulse;
+  bloom.strength = 0.55 + 0.12 * beatPulse;
+
+  cinePass.uniforms.time.value = t;
+  Music.update(songTime);
+  composer.render();
+}
+
+// ============================================================================
+// Events
+// ============================================================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  bloom.resolution.set(window.innerWidth, window.innerHeight);
+});
+const hint = document.getElementById('hint');
+window.addEventListener('pointerdown', () => { Music.start(); hint.innerHTML = `<b>click</b> sound ${Music.on ? 'on' : 'off'} &nbsp;·&nbsp; <b>C</b> free camera &nbsp;·&nbsp; <b>space</b> pause`; }, { passive: true });
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') { paused = !paused; e.preventDefault(); }
+  if (e.key === 'c' || e.key === 'C') { freeCam = !freeCam; controls.enabled = freeCam; if (freeCam) { controls.target.set(0, 1, 0); camera.fov = 40; camera.updateProjectionMatrix(); } shotLabel.textContent = freeCam ? 'free camera — drag to orbit, wheel to zoom' : ''; lastShotIdx = -1; }
+});
+
+document.getElementById('loading').remove();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

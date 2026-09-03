@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-v4-flash",
+  "model_display": "DeepSeek V4 Flash",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-03T18:09:10Z",
+  "runner": "DeepSeek V4 Flash via OpenClaw agent",
+  "notes": "Full PvZ mini-game, single HTML, no assets: 5x9 lawn economy (sky suns + sunflower minting, click to collect), seed-packet bar with affordability/cooldowns and ghost preview, shovel & pause, 5 canvas-drawn plants (Sunflower/Peashooter/Snow Pea/Wall-nut/Cherry Bomb), zombies with cone & bucket armour, HP scaling and wave announcements per endless level, lawn-mower last-stand per lane, particles, screen shake, WebAudio SFX, menus (help, leaderboard), localStorage top-10 with name entry. Keys 1-5 select cards, P/Esc pause.",
+  "hosting": "api",
+  "weights": "closed"
+}
