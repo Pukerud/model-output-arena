@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animated Car with Parallax Background</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #0a0a0f; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let frame = 0;
+    const maxFrames = 120;
+
+    // Resize canvas
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Car properties
+    const car = {
+      x: 100,
+      y: canvas.height - 100,
+      width: 80,
+      height: 50,
+      speed: 2,
+      angle: 0,
+      bodyOffset: 0,
+      wheelRotation: 0
+    };
+
+    // Parallax layers
+    const layers = [
+      { // Ground - fastest
+        items: [],
+        speed: 0.8
+      },
+      { // Roadside - medium
+        items: [],
+        speed: 0.5
+      },
+      { // Trees - slower
+        items: [],
+        speed: 0.3
+      },
+      { // Distant hills - slowest
+        items: [],
+        speed: 0.1
+      }
+    ];
+
+    // Initialize parallax items
+    function initLayers() {
+      // Ground lines
+      for (let i = 0; i < canvas.width * 2; i += 40) {
+        layers[0].items.push({ x: i, width: 40, height: 20, dx: 0 });
+      }
+      // Roadside trees
+      for (let i = 0; i < canvas.width; i += 100) {
+        layers[1].items.push({ x: i, width: 30, height: 80, dx: 0 });
+      }
+      // Trees
+      for (let i = 0; i < canvas.width; i += 150) {
+        layers[2].items.push({ x: i, width: 50, height: 120, dx: 0 });
+      }
+      // Distant hills
+      for (let i = 0; i < canvas.width * 2; i += 200) {
+        layers[3].items.push({ x: i, width: 200, height: 80, dx: 0 });
+      }
+    }
+    initLayers();
+
+    // Sky gradient
+    function drawSky() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, '#1a0a20');
+      gradient.addColorStop(0.7, '#0d0510');
+      gradient.addColorStop(1, '#050208');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Moon
+    function drawMoon() {
+      ctx.save();
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      const moonX = canvas.width - 150;
+      const moonY = 100;
+      const radius = 30;
+      ctx.arc(moonX, moonY, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Stars
+    function drawStars() {
+      ctx.fillStyle = '#ff6b6b';
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height * 0.3;
+        const size = Math.random() * 2 + 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Ground
+    function drawGround() {
+      ctx.fillStyle = '#2a3a2a';
+      ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+    }
+
+    // Car body
+    function drawCar() {
+      ctx.save();
+      ctx.translate(car.x + car.width / 2, car.y + car.height / 2);
+      ctx.rotate(car.angle);
+      ctx.translate(-(car.width / 2), -(car.height / 2));
+
+      // Body motion
+      car.bodyOffset = Math.sin(frame * 0.1) * 2;
+
+      // Car body color - cinematic sunset look
+      ctx.fillStyle = '#c62828';
+      ctx.beginPath();
+      ctx.roundRect(car.x, car.y + car.bodyOffset, car.width, car.height / 2, 8);
+      ctx.fill();
+
+      // Car roof
+      ctx.fillStyle = '#e53935';
+      ctx.beginPath();
+      ctx.roundRect(car.x + 15, car.y + 10, 50, 30, 5);
+      ctx.fill();
+
+      // Windows
+      ctx.fillStyle = '#ffb74d';
+      ctx.beginPath();
+      ctx.roundRect(car.x + 20, car.y + 15, 40, 20, 4);
+      ctx.fill();
+
+      // Doors
+      ctx.fillStyle = '#b71c1c';
+      ctx.beginPath();
+      ctx.roundRect(car.x + 5, car.y + 15, 15, 25, 4);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Wheels
+    function drawWheels() {
+      const wheelXFront = car.x + 10;
+      const wheelXRear = car.x + car.width - 10;
+      const wheelY = car.y + car.height;
+
+      // Front wheel
+      ctx.save();
+      ctx.translate(wheelXFront, wheelY);
+      ctx.rotate(car.wheelRotation);
+      ctx.translate(-wheelXFront, -wheelY);
+      ctx.fillStyle = '#2d2d2d';
+      ctx.beginPath();
+      ctx.arc(wheelXFront, car.y + car.height, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(wheelXFront, car.y + car.height, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Rear wheel
+      ctx.save();
+      ctx.translate(wheelXRear, wheelY);
+      ctx.rotate(car.wheelRotation);
+      ctx.translate(-wheelXRear, -wheelY);
+      ctx.fillStyle = '#2d2d2d';
+      ctx.beginPath();
+      ctx.arc(wheelXRear, car.y + car.height, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(wheelXRear, car.y + car.height, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Parallax layers
+    function drawParallax() {
+      const carCenterX = car.x + car.width / 2;
+
+      layers.forEach((layer, idx) => {
+        layer.items.forEach(item => {
+          item.dx += layer.speed * 0.5;
+
+          // Reset position when off-screen
+          if (item.dx > canvas.width + item.width) {
+            item.dx = -item.width;
+          }
+
+          // Draw item
+          ctx.save();
+          ctx.fillStyle = idx === 0 ? '#4a5a4a' : (idx === 1 ? '#5a6a5a' : idx === 2 ? '#6a7a6a' : '#7a8a7a');
+          ctx.fillRect(item.dx, canvas.height - 50 - (idx * 20), item.width, idx === 3 ? 50 : 40);
+          ctx.restore();
+        });
+      });
+    }
+
+    // Loop animation
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawSky();
+      drawMoon();
+      drawStars();
+      drawGround();
+      drawParallax();
+      drawCar();
+      drawWheels();
+
+      // Car movement
+      car.x += car.speed;
+      car.wheelRotation += 0.3;
+      if (car.x > canvas.width + 100) {
+        car.x = -car.width;
+      }
+
+      frame++;
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "nemotron-3.5-lightning-free",
+  "model_display": "Nemotron 3.5 Lightning Free",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-09-03T22:05:00Z",
+  "runner": "Nemotron 3.5 Lightning Free via pi agent",
+  "notes": "Vanilla canvas animation, no libraries. Parallax scrolling background with layered scenery. Cinematic sunset lighting. Seamless looping animation.",
+  "hosting": "local",
+  "weights": "open"
+}

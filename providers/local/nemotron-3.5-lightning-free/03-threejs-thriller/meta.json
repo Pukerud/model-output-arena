@@ -1,0 +1,13 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "nemotron-3.5-lightning-free",
+  "model_display": "Nemotron 3.5 Lightning Free",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-03T22:10:00Z",
+  "runner": "Nemotron 3.5 Lightning Free via pi agent",
+  "notes": "Three.js scene featuring Michael Jackson, Pepe the Frog, Donald Trump, and Elon Musk performing Thriller choreography. Multiple character groups with individual animations. Particle effects. Cinematic lighting and camera work.",
+  "hosting": "local",
+  "weights": "open"
+}

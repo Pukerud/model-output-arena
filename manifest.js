@@ -10,6 +10,21 @@ window.ARENA = {
     { id: "01-car-parallax",      title: "01 · Animated Car — Parallax (vanilla canvas)" },
     { id: "02-plants-vs-zombies", title: "02 · Mini Plants vs Zombies (single HTML)" },
     { id: "03-threejs-thriller",  title: "03 · Three.js \"Thriller\" Dance Scene" },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "nemotron-3.5-lightning-free",
+      model_display: "Nemotron 3.5 Lightning Free",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/nemotron-3.5-lightning-free",
+      added: "2026-09-03",
+      outputs: {
+        "01-car-parallax":      "providers/local/nemotron-3.5-lightning-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/nemotron-3.5-lightning-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/nemotron-3.5-lightning-free/03-threejs-thriller/output.html",
+      },
+    },
   ],
   models: [
     {
@@ -731,7 +746,22 @@ window.ARENA = {
         "02-plants-vs-zombies": "providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4/02-plants-vs-zombies/output.html",
         "03-threejs-thriller":  "providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4/03-threejs-thriller/output.html",
       },
-    }
+    },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "nemotron-3.5-lightning-free",
+      model_display: "Nemotron 3.5 Lightning Free",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/nemotron-3.5-lightning-free",
+      added: "2026-09-03",
+      outputs: {
+        "01-car-parallax":      "providers/local/nemotron-3.5-lightning-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/nemotron-3.5-lightning-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/nemotron-3.5-lightning-free/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

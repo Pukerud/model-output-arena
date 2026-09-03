@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Thriller Dance Scene</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #000; }
+    canvas { display: block; }
+    #ui { position: absolute; top: 20px; left: 20px; color: white; font-family: sans-serif; }
+    #info { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div id="info">
+      <h2>Thriller Dance</h2>
+      <p>Michael Jackson, Pepe the Frog, Donald Trump, Elon Musk</p>
+    </div>
+  </canvas>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/controls/OrbitControls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+      }
+    }
+  </script>
+  <script>
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/controls/OrbitControls.js';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(5, 10, 7.5);
+    scene.add(directionalLight);
+
+    // Floor
+    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    // Spotlight for dramatic effect
+    const spotlight = new THREE.SpotLight(0xffffff, 2);
+    spotlight.position.set(0, 10, 0);
+    spotlight.angle = Math.PI / 4;
+    spotlight.penumbra = 0.5;
+    spotlight.decay = 2;
+    spotlight.distance = 100;
+    spotlight.target = floor;
+    scene.add(spotlight);
+
+    // ===== MICHAEL JACKSON =====
+    const mjGroup = new THREE.Group();
+    scene.add(mjGroup);
+
+    // MJ body
+    const mjBodyGeometry = new THREE.BoxGeometry(2, 5, 1);
+    const mjBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const mjBody = new THREE.Mesh(mjBodyGeometry, mjBodyMaterial);
+    mjBody.position.y = 2.5;
+    mjGroup.add(mjBody);
+
+    // MJ head
+    const mjHeadGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const mjHead = new THREE.Mesh(mjHeadGeometry, mjBodyMaterial);
+    mjHead.position.y = 5.5;
+    mjHead.rotation.x = -Math.PI / 2;
+    mjGroup.add(mjHead);
+
+    // MJ hat
+    const hatGeometry = new THREE.ConeGeometry(1.5, 2, 32);
+    const hatMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const hat = new THREE.Mesh(hatGeometry, hatMaterial);
+    hat.position.y = 6.5;
+    hat.rotation.z = Math.PI / 2;
+    mjGroup.add(hat);
+
+    // MJ left arm
+    const armGeo = new THREE.BoxGeometry(0.5, 3, 0.5);
+    const mjLeftArm = new THREE.Mesh(armGeo, mjBodyMaterial);
+    mjLeftArm.position.set(-1.5, 2, 0);
+    mjGroup.add(mjLeftArm);
+
+    // MJ right arm
+    const mjRightArm = new THREE.Mesh(armGeo, mjBodyMaterial);
+    mjRightArm.position.set(1.5, 2, 0);
+    mjGroup.add(mjRightArm);
+
+    // MJ left leg
+    const legGeo = new THREE.BoxGeometry(0.5, 3, 0.5);
+    const mjLeftLeg = new THREE.Mesh(legGeo, mjBodyMaterial);
+    mjLeftLeg.position.set(-0.5, 0.5, 0);
+    mjGroup.add(mjLeftLeg);
+
+    // MJ right leg
+    const mjRightLeg = new THREE.Mesh(legGeo, mjBodyMaterial);
+    mjRightLeg.position.set(0.5, 0.5, 0);
+    mjGroup.add(mjRightLeg);
+
+    // MJ dance animation - iconic pose sequence
+    let mjDancePhase = 0;
+    let mjDanceTimer = 0;
+
+    function updateMjDance() {
+      mjDanceTimer++;
+      if (mjDanceTimer > 30) {
+        mjDanceTimer = 0;
+        mjDancePhase = (mjDancePhase + 1) % 4;
+      }
+
+      switch (mjDancePhase) {
+        case 0: // Forward lean
+          mjLeftArm.rotation.z = -0.5;
+          mjRightArm.rotation.z = 0.5;
+          mjLeftLeg.rotation.z = 0.3;
+          mjRightLeg.rotation.z = -0.3;
+          break;
+        case 1: // Back lean
+          mjLeftArm.rotation.z = 0.5;
+          mjRightArm.rotation.z = -0.5;
+          mjLeftLeg.rotation.z = -0.3;
+          mjRightLeg.rotation.z = 0.3;
+          break;
+        case 2: // Moonwalk pose
+          mjLeftArm.rotation.z = 0;
+          mjRightArm.rotation.z = 0;
+          mjLeftLeg.rotation.z = 0.5;
+          mjRightLeg.rotation.z = -0.5;
+          break;
+        case 3: // Arm swing
+          mjLeftArm.rotation.z = Math.sin(mjDanceTimer * 0.5) * 0.5;
+          mjRightArm.rotation.z = Math.sin(mjDanceTimer * 0.5) * -0.5;
+          break;
+      }
+    }
+
+    // ===== PEPE THE FROG =====
+    const pepeGroup = new THREE.Group();
+    scene.add(pepeGroup);
+
+    // Pepe body
+    const pepeBodyGeometry = new THREE.BoxGeometry(2, 3, 1);
+    const pepeBody = new THREE.Mesh(pepeBodyGeometry, new THREE.MeshStandardMaterial({ color: 0x00aaff }));
+    pepeBody.position.y = 1.5;
+    pepeGroup.add(pepeBody);
+
+    // Pepe eyes
+    const eyeGeo = new THREE.SphereGeometry(0.3, 16, 16);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0xfff000 });
+    const pepeLeftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    pepeLeftEye.position.set(-0.5, 0.5, 1.2);
+    pepeGroup.add(pepeLeftEye);
+
+    const pepeRightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    pepeRightEye.position.set(0.5, 0.5, 1.2);
+    pepeGroup.add(pepeRightEye);
+
+    // Pepe smile
+    const smileShape = new THREE.Shape();
+    smileShape.arc(0, 0, 0.5, 0, Math.PI);
+    const smileGeom = new THREE.ShapeGeometry(smileShape);
+    const smileMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const pepeSmile = new THREE.Mesh(smileGeom, smileMat);
+    pepeSmile.position.set(0, -0.2, 1.1);
+    pepeGroup.add(pepeSmile);
+
+    // Pepe dance animation
+    let pepeDancePhase = 0;
+    let pepeDanceTimer = 0;
+
+    function updatePepeDance() {
+      pepeDanceTimer++;
+      if (pepeDanceTimer > 20) {
+        pepeDanceTimer = 0;
+        pepeDancePhase = (pepeDancePhase + 1) % 4;
+      }
+
+      switch (pepeDancePhase) {
+        case 0:
+          pepeGroup.rotation.z = 0.1;
+          break;
+        case 1:
+          pepeGroup.rotation.z = -0.1;
+          break;
+        case 2:
+          pepeGroup.rotation.z = 0;
+          break;
+        case 3:
+          pepeGroup.rotation.z = 0.05;
+          break;
+      }
+    }
+
+    // ===== DONALD TRUMP =====
+    const trumpGroup = new THREE.Group();
+    scene.add(trumpGroup);
+
+    // Trump hair (signature style)
+    const hairGeometry = new THREE.BoxGeometry(3, 2, 2);
+    const hairMaterial = new THREE.MeshStandardMaterial({ color: 0xfff500 });
+    const trumpHair = new THREE.Mesh(hairGeometry, hairMaterial);
+    trumpHair.position.y = 4;
+    trumpHair.rotation.z = 0.5;
+    trumpGroup.add(trumpHair);
+
+    // Trump body
+    const trumpBodyGeometry = new THREE.BoxGeometry(2, 4, 1);
+    const trumpBody = new THREE.Mesh(trumpBodyGeometry, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    trumpBody.position.y = 2;
+    trumpGroup.add(trumpBody);
+
+    // Trump left arm
+    const armGeo2 = new THREE.BoxGeometry(0.5, 2, 0.5);
+    const trumpLeftArm = new THREE.Mesh(armGeo2, new THREE.MeshStandardMaterial({ color: 0xffd700 }));
+    trumpLeftArm.position.set(-1, 2, 0);
+    trumpGroup.add(trumpLeftArm);
+
+    // Trump right arm
+    const trumpRightArm = new THREE.Mesh(armGeo2, new THREE.MeshStandardMaterial({ color: 0xffd700 }));
+    trumpRightArm.position.set(1, 2, 0);
+    trumpGroup.add(trumpRightArm);
+
+    // Trump left leg
+    const legGeo2 = new THREE.BoxGeometry(0.5, 2, 0.5);
+    const trumpLeftLeg = new THREE.Mesh(legGeo2, new THREE.MeshStandardMaterial({ color: 0xffd700 }));
+    trumpLeftLeg.position.set(-0.5, 0.5, 0);
+    trumpGroup.add(trumpLeftLeg);
+
+    // Trump right leg
+    const trumpRightLeg = new THREE.Mesh(legGeo2, new THREE.MeshStandardMaterial({ color: 0xffd700 }));
+    trumpRightLeg.position.set(0.5, 0.5, 0);
+    trumpGroup.add(trumpRightLeg);
+
+    // Trump dance animation
+    let trumpDancePhase = 0;
+    let trumpDanceTimer = 0;
+
+    function updateTrumpDance() {
+      trumpDanceTimer++;
+      if (trumpDanceTimer > 45) {
+        trumpDanceTimer = 0;
+        trumpDancePhase = (trumpDancePhase + 1) % 4;
+      }
+
+      switch (trumpDancePhase) {
+        case 0:
+          trumpLeftArm.rotation.z = 0.3;
+          trumpRightArm.rotation.z = -0.3;
+          trumpLeftLeg.rotation.z = 0.2;
+          trumpRightLeg.rotation.z = -0.2;
+          break;
+        case 1:
+          trumpLeftArm.rotation.z = -0.3;
+          trumpRightArm.rotation.z = 0.3;
+          trumpLeftLeg.rotation.z = -0.2;
+          trumpRightLeg.rotation.z = 0.2;
+          break;
+        case 2:
+          trumpLeftArm.rotation.z = 0;
+          trumpRightArm.rotation.z = 0;
+          trumpLeftLeg.rotation.z = 0;
+          trumpRightLeg.rotation.z = 0;
+          break;
+        case 3:
+          trumpLeftArm.rotation.z = Math.sin(trumpDanceTimer * 0.3) * 0.3;
+          trumpRightArm.rotation.z = Math.sin(trumpDanceTimer * 0.3) * -0.3;
+          break;
+      }
+    }
+
+    // ===== ELON MUSK =====
+    const muskGroup = new THREE.Group();
+    scene.add(muskGroup);
+
+    // Musk's head/face
+    const muskHeadGeometry = new THREE.BoxGeometry(2, 3, 1);
+    const muskHead = new THREE.Mesh(muskHeadGeometry, new THREE.MeshStandardMaterial({ color: 0xf5f5f5 }));
+    muskHead.position.y = 2.5;
+    muskGroup.add(muskHead);
+
+    // Musk's left eye
+    const eyeGeo2 = new THREE.SphereGeometry(0.3, 16, 16);
+    const eyeMat2 = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+    const muskLeftEye = new THREE.Mesh(eyeGeo2, eyeMat2);
+    muskLeftEye.position.set(-0.5, 0.8, 1.2);
+    muskGroup.add(muskLeftEye);
+
+    // Musk's right eye
+    const muskRightEye = new THREE.Mesh(eyeGeo2, eyeMat2);
+    muskRightEye.position.set(0.5, 0.8, 1.2);
+    muskGroup.add(muskRightEye);
+
+    // Musk's mouth
+    const mouthShape = new THREE.Shape();
+    mouthShape.arc(0, 0, 0.4, 0, Math.PI);
+    const mouthGeom = new THREE.ShapeGeometry(mouthShape);
+    const mouthMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const muskMouth = new THREE.Mesh(mouthGeom, mouthMat);
+    muskMouth.position.set(0, -0.2, 1.1);
+    muskGroup.add(muskMouth);
+
+    // Rocket (Elon's thing)
+    const rocketGeometry = new THREE.ConeGeometry(0.5, 2, 32);
+    const rocketMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const rocket = new THREE.Mesh(rocketGeometry, rocketMaterial);
+    rocket.position.set(0, 4, 0);
+    rocket.rotation.z = Math.PI / 2;
+    muskGroup.add(rocket);
+
+    // Rocket boost effect
+    let rocketBoost = 0;
+
+    function updateMuskDance() {
+      // Rocket boost pulses
+      rocketBoost = Math.sin(frame * 0.3) * 0.5;
+      rocket.scale.y = 1 + rocketBoost;
+
+      // Eyes blink
+      muskLeftEye.scale.y = 0.5 + Math.sin(frame * 0.1) * 0.2;
+      muskRightEye.scale.y = 0.5 + Math.sin(frame * 0.1) * 0.2;
+
+      // Head tilt
+      muskGroup.rotation.z = Math.sin(frame * 0.1) * 0.1;
+    }
+
+    // ===== CELEBRATION PARTICLES =====
+    const particles = [];
+    const particleCount = 200;
+
+    for (let i = 0; i < particleCount; i++) {
+      const particle = {
+        position: new THREE.Vector3(
+          (Math.random() - 0.5) * 50,
+          (Math.random() - 0.5) * 50,
+          (Math.random() - 0.5) * 50
+        ),
+        velocity: new THREE.Vector3(
+          (Math.random() - 0.5) * 0.5,
+          (Math.random() - 0.5) * 0.5,
+          (Math.random() - 0.5) * 0.5
+        ),
+        color: new THREE.Color().setHSL(Math.random(), 0.5, 0.5),
+        size: Math.random() * 5 + 1
+      };
+      particles.push(particle);
+    }
+
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+    const particleSizes = new Float32Array(particleCount);
+
+    for (let i = 0; i < particleCount; i++) {
+      particlePositions[i * 3] = particles[i].position.x;
+      particlePositions[i * 3 + 1] = particles[i].position.y;
+      particlePositions[i * 3 + 2] = particles[i].position.z;
+
+      const color = particles[i].color;
+      particleColors[i * 3] = color.r;
+      particleColors[i * 3 + 1] = color.g;
+      particleColors[i * 3 + 2] = color.b;
+
+      particleSizes[i] = particles[i].size;
+    }
+
+    const particleGeometry = new THREE.BufferGeometry();
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+    particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+
+    const particleMaterial = new THREE.ShaderMaterial({
+      uniforms: {},
+      vertexShader: `
+        attribute float size;
+        varying vec3 vColor;
+        void main() {
+          vColor = color;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = size * (80.0 / -position.z);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        void main() {
+          gl_FragColor = vec4(vColor, 1.0);
+        }
+      `,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const particleMesh = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particleMesh);
+
+    // Animation loop
+    let frame = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      updateMjDance();
+      updatePepeDance();
+      updateTrumpDance();
+      updateMuskDance();
+
+      // Rotate all characters
+      mjGroup.rotation.y += 0.01;
+      pepeGroup.rotation.y += 0.01;
+      trumpGroup.rotation.y += 0.01;
+      muskGroup.rotation.y += 0.01;
+
+      // Pulse spotlight
+      spotlight.position.y = 5 + Math.sin(frame * 0.1) * 2;
+
+      // Update particles
+      particleMesh.rotation.y += 0.001;
+
+      controls.update();
+      renderer.render(scene, camera);
+      frame++;
+    }
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>

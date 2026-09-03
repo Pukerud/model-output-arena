@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Plants vs Zombies Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background: #87CEEB; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    .game-container { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; }
+    h1 { margin-bottom: 20px; color: #2c3e50; }
+    .canvas-container { background: #2c3e50; border-radius: 10; width: 800; height: 600; margin: 20px 0; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+    .ui-panel { background: white; padding: 15px; border-radius: 8; width: 100%; max-width: 800; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .score { float: left; margin-right: 20px; font-size: 24px; color: #2c3e50; }
+    .timer { float: right; font-size: 24px; color: #e74c3c; }
+    .btn { padding: 10 20px; font-size: 18px; margin: 5px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 4; }
+    .btn:hover { background: #2980b9; }
+    #startBtn, #replayBtn { margin-top: 20px; }
+    .leaderboard { width: 100%; max-width: 800; margin-top: 20px; border: 1px solid #ddd; border-radius: 8; overflow: hidden; }
+    .leaderboard-row { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .leaderboard-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Plants vs Zombies</h1>
+    <div class="ui-panel">
+      <div class="score">Score: <span id="score">0</span></div>
+      <div class="timer">Time: <span id="time">60</span></div>
+    </div>
+    <div class="canvas-container">
+      <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+    <div>
+      <button id="startBtn" class="btn">Start Game</button>
+    </div>
+    <div class="leaderboard" id="leaderboard">
+      <div class="leaderboard-row"> <span>Rank</span> <span>Score</span> </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let gameRunning = false;
+    let score = 0;
+    let timeLeft = 60;
+    let gameTime = 0;
+    let plants = [];
+    let zombies = [];
+    let projectiles = [];
+    let frames = 0;
+
+    // Plant class
+    class Plant {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 60;
+        this.height = 60;
+        this.health = 100;
+        this.recharge = 0;
+      }
+
+      update() {
+        if (this.recharge > 0) this.recharge--;
+        // Simple AI: shoot projectile every few frames
+        if (this.recharge === 0 && frames % 30 === 0) {
+          projectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2, 1));
+          this.recharge = 60;
+        }
+      }
+
+      draw() {
+        ctx.fillStyle = #27ae60;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillStyle = #2c3e50;
+        ctx.fillRect(this.x + 10, this.y + 10, this.width - 20, this.height - 20);
+        ctx.fillStyle = #f1c40f;
+        ctx.fillRect(this.x + 20, this.y + 10, 20, 20);
+      }
+    }
+
+    // Zombie class
+    class Zombie {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 50;
+        this.height = 80;
+        this.health = 50;
+        this.speed = 2;
+      }
+
+      update() {
+        this.x -= this.speed;
+      }
+
+      draw() {
+        ctx.fillStyle = #e74c3c;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillStyle = #34495e;
+        ctx.fillRect(this.x + 10, this.y + 10, this.width - 20, this.height - 20);
+        // Eyes
+        ctx.fillStyle = #f1c40f;
+        ctx.beginPath();
+        ctx.arc(this.x + 15, this.y + 30, 5, 0, Math.PI * 2);
+        ctx.arc(this.x + 35, this.y + 30, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Projectile class
+    class Projectile {
+      constructor(x, y, speed) {
+        this.x = x;
+        this.y = y;
+        this.width = 10;
+        this.height = 20;
+        this.speed = speed;
+      }
+
+      update() {
+        this.x += this.speed;
+      }
+
+      draw() {
+        ctx.fillStyle = #e67e22;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+      }
+    }
+
+    // Initialize game
+    function initGame() {
+      plants = [];
+      zombies = [];
+      projectiles = [];
+      score = 0;
+      timeLeft = 60;
+      frames = 0;
+
+      // Create starting plants
+      for (let i = 0; i < 10; i++) {
+        plants.push(new Plant(100 + i * 70, canvas.height - 120));
+      }
+
+      // Create starting zombies
+      for (let i = 0; i < 5; i++) {
+        zombies.push(new Zombie(canvas.width + i * 150, canvas.height - 120));
+      }
+    }
+
+    // Game loop
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw projectiles
+      projectiles.forEach((p, pi) => {
+        p.update();
+        p.draw();
+        // Remove if off-screen
+        if (p.x > canvas.width) {
+          projectiles.splice(pi, 1);
+        }
+      });
+
+      // Update and draw plants
+      plants.forEach(plant => {
+        plant.update();
+        plant.draw();
+      });
+
+      // Update and draw zombies
+      zombies.forEach((z, zi) => {
+        z.update();
+        z.draw();
+
+        // Check collision with projectiles
+        projectiles.forEach((p, pi) => {
+          if (p.x > z.x && p.x < z.x + z.width && p.y > z.y && p.y < z.y + z.height) {
+            z.health -= 10;
+            projectiles.splice(pi, 1);
+            if (z.health <= 0) {
+              zombies.splice(zi, 1);
+              score += 100;
+              document.getElementById('score').innerText = score;
+            }
+          }
+        });
+
+        // Check if zombie reached the end
+        if (z.x + z.width < 0) {
+          zombies.splice(zi, 1);
+          score -= 50;
+          document.getElementById('score').innerText = Math.max(score, 0);
+        }
+      });
+
+      // Spawn new zombies
+      if (frames % 60 === 0 && zombies.length < 10) {
+        zombies.push(new Zombie(canvas.width, canvas.height - 120));
+      }
+
+      // Update timer
+      gameTime++;
+      timeLeft = Math.max(0, 60 - Math.floor(gameTime / 60));
+      document.getElementById('time').innerText = timeLeft;
+
+      if (timeLeft <= 0) {
+        gameRunning = false;
+        alert('Game Over! Final Score: ' + score);
+        document.getElementById('replayBtn').style.display = 'block';
+      }
+
+      frames++;
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Event listeners
+    document.getElementById('startBtn').addEventListener('click', () => {
+      gameRunning = true;
+      initGame();
+      gameLoop();
+      document.getElementById('startBtn').style.display = 'none';
+    });
+
+    // Initial render
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  </script>
+</body>
+</html>

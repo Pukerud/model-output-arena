@@ -1,0 +1,13 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "nemotron-3.5-lightning-free",
+  "model_display": "Nemotron 3.5 Lightning Free",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-03T22:05:30Z",
+  "runner": "Nemotron 3.5 Lightning Free via pi agent",
+  "notes": "Single HTML file Plants vs Zombies game with plant placement, zombie waves, shooting projectiles, score system, timer, and simple leaderboard UI.",
+  "hosting": "local",
+  "weights": "open"
+}
