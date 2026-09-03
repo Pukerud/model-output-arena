@@ -75,6 +75,7 @@ Two independent axes are labelled:
 | Anthropic | Claude Sonnet 4.6 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/anthropic/claude-sonnet-4-6`](./providers/anthropic/claude-sonnet-4-6) |
 | DeepSeek | DeepSeek V4 Pro | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-pro`](./providers/deepseek/deepseek-v4-pro) |
 | DeepSeek | DeepSeek V4 Flash 0721 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-flash-0721`](./providers/deepseek/deepseek-v4-flash-0721) |
+| DeepSeek | DeepSeek V4 Flash | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-v4-flash`](./providers/deepseek/deepseek-v4-flash) |
 | Google | Gemma 4 26B A4B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-26b-a4b-qat`](./providers/google/gemma-4-26b-a4b-qat) |
 | Google | Gemma 4 31B QAT | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/google/gemma-4-31b-qat`](./providers/google/gemma-4-31b-qat) |
 | Google | Gemini 3.1 Pro (Native Harness) | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-3.1-pro`](./providers/google/gemini-3.1-pro) |
