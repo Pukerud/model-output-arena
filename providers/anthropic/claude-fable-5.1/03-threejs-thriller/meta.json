@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "provider_display": "Anthropic",
+  "model": "claude-fable-5.1",
+  "model_display": "Claude Fable 5.1",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-03T13:47:35Z",
+  "runner": "Claude Fable 5.1 via pi agent",
+  "notes": "Three.js ES-module scene with procedural primitive rigs for Michael Jackson, Pepe the Frog, Donald Trump, Elon Musk, and backup zombies; eight-phrase choreography, ten cinematic shots, graveyard environment, fog, bloom, lightning, synthesized music, and free-camera controls. Live WebGL was unavailable in the test sandbox, so a Node harness exercised scene construction, all phrases and shots, event handlers, and 2,400 frames; all checks passed.",
+  "hosting": "api",
+  "weights": "closed"
+}
