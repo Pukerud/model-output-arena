@@ -118,6 +118,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Qwen3.8 Flash Next Uncensored IQ4XS_NGQ4 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4`](./providers/local/qwen3.8-flash-next-uncensored-iq4xs-ngq4) |
 | Meta | Muse Spark 1.3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/meta/muse-spark-1.3`](./providers/meta/muse-spark-1.3) |
 | Local (llama.cpp) | Nemotron 3.5 Lightning Free | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/nemotron-3.5-lightning-free`](./providers/local/nemotron-3.5-lightning-free) |
+| Local (llama.cpp) | Qwen3.8-27B Uncensored HauhauCS Aggressive Q8_K_P | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p`](./providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p) |
 
 ## How outputs were generated
 

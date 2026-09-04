@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THRILLER — a Three.js dance scene</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;
+    font-family:Georgia,'Times New Roman',serif;}
+  #c{display:block;width:100vw;height:100vh;}
+  /* cinematic letterbox */
+  .bar{position:fixed;left:0;right:0;height:8vh;background:#000;z-index:5;}
+  .bar.t{top:0}.bar.b{bottom:0}
+  /* vignette + grade */
+  #vignette{position:fixed;inset:0;z-index:4;pointer-events:none;
+    background:radial-gradient(ellipse at center,
+      rgba(0,0,0,0) 42%, rgba(0,0,0,.55) 100%);}
+  #grade{position:fixed;inset:0;z-index:3;pointer-events:none;
+    background:linear-gradient(180deg, rgba(20,10,40,.28), rgba(0,0,0,0) 40%, rgba(60,0,10,.18));
+    mix-blend-mode:soft-light;}
+  #grain{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.06;
+    image-rendering:pixelated;}
+  /* title */
+  #title{position:fixed;left:0;right:0;top:12vh;z-index:7;text-align:center;
+    pointer-events:none;opacity:0;transition:opacity 2.2s ease;}
+  #title h1{margin:0;font-size:9vh;letter-spacing:1.6vh;font-weight:700;
+    color:#e8e4d8;text-shadow:0 0 24px rgba(150,40,40,.8),0 4px 18px rgba(0,0,0,.9);}
+  #title p{margin:1vh 0 0;font-size:2.4vh;letter-spacing:.9vh;color:#b9b2a4;
+    text-transform:uppercase;}
+  #hud{position:fixed;right:1.4vw;bottom:9.5vh;z-index:8;display:flex;gap:.6vw;
+    font-family:Verdana,sans-serif;}
+  #hud button{cursor:pointer;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);
+    color:#ddd;border-radius:8px;padding:.5vh 1.2vw;font-size:2.6vh;}
+  #hud button:hover{background:rgba(40,20,20,.6);border-color:rgba(255,120,80,.6);}
+  #hint{position:fixed;left:1.4vw;bottom:9.5vh;z-index:8;color:rgba(255,255,255,.4);
+    font-family:Verdana,sans-serif;font-size:2.2vh;pointer-events:none;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar t"></div><div class="bar b"></div>
+<div id="grade"></div>
+<div id="vignette"></div>
+<canvas id="grain"></canvas>
+<div id="title"><h1>THRILLER</h1><p>MJ &middot; Pepe &middot; Trump &middot; Musk &nbsp;perform&nbsp; the classic</p></div>
+<div id="hint">click to start sound</div>
+<div id="hud">
+  <button id="bSound" title="toggle sound">&#128263;</button>
+  <button id="bCam" title="toggle camera">&#128249;</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+if (typeof THREE === 'undefined'){
+  document.body.innerHTML = '<p style="color:#fff;padding:2em;font-family:sans-serif">Three.js failed to load from CDN.</p>';
+  return;
+}
+
+/* ============================================================
+   THRILLER — a cinematic Three.js dance scene.
+   Four procedurally-built characters perform a hand-authored
+   "Thriller" routine under a full moon.
+   ============================================================ */
+
+const canvas = document.getElementById('c');
+let W = innerWidth, H = innerHeight;
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05060e);
+scene.fog = new THREE.FogExp2(0x0a0c18, 0.045);
+
+const camera = new THREE.PerspectiveCamera(42, W/H, 0.1, 200);
+
+/* ---------- helpers ---------- */
+const std = (c, o={}) => new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:.75, metalness:.05}, o));
+function limb(rTop, rBot, len, mat){
+  const g = new THREE.Group();
+  const geo = new THREE.CylinderGeometry(rTop, rBot, len, 14);
+  geo.translate(0, -len/2, 0);           // joint at origin, limb hangs down -Y
+  const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true;
+  g.add(m);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(Math.max(rBot,rTop), 14, 14), mat);
+  cap.position.y = -len; cap.castShadow = true;
+  g.add(cap);
+  return g;
+}
+function sphere(r, mat, sx=1, sy=1, sz=1){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 20), mat);
+  m.scale.set(sx, sy, sz); m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function box(w, h, d, mat){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+/* ============================================================
+   CHARACTER RIG
+   ============================================================ */
+function buildRig(P){
+  const root = new THREE.Group();
+  const body = new THREE.Group();            // sway / crouch
+  root.add(body);
+
+  const skin = std(P.skin, {roughness:.6});
+  const suit = std(P.suit, {roughness:.6, metalness:.12});
+  const suit2 = std(P.suit2 || P.suit, {roughness:.7});
+  const glove = std(P.glove || P.skin, {roughness:.5});
+  const shoe  = std(P.shoe || 0x111111, {roughness:.5});
+
+  const s = P.scale || 1;
+
+  // ----- legs (hip 1.68s, thigh .8s, shin .78s, foot .1s) -----
+  const legY = 1.68*s;
+  function makeLeg(side){
+    const hip = new THREE.Group(); hip.position.set(0.2*s*side, legY, 0);
+    const thigh = limb(0.16*s, 0.13*s, 0.8*s, suit2); hip.add(thigh);
+    const knee = new THREE.Group(); knee.position.y = -0.8*s;
+    const shin = limb(0.12*s, 0.1*s, 0.78*s, suit2); knee.add(shin);
+    const ankle = new THREE.Group(); ankle.position.y = -0.78*s;
+    const foot = box(0.22*s, 0.12*s, 0.44*s, shoe);
+    foot.position.set(0, -0.06*s, 0.1*s);
+    ankle.add(foot);
+    knee.add(ankle);
+    hip.add(knee);
+    body.add(hip);
+    return {hip, knee, ankle, foot};
+  }
+  const legL = makeLeg(-1), legR = makeLeg(1);
+
+  // ----- torso (cylinder + chest/hip masses) -----
+  const torso = new THREE.Group();
+  torso.position.y = 2.1*s;
+  const tCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.34*s, 0.4*s, 0.82*s, 20), suit);
+  tCyl.castShadow = true; tCyl.receiveShadow = true;
+  torso.add(tCyl);
+  const chest = sphere(0.38*s, suit, 1.05, 0.85, 0.8);
+  chest.position.y = 0.22*s; torso.add(chest);
+  const hips = sphere(0.4*s, suit2, 1.05, 0.7, 0.8);
+  hips.position.y = -0.34*s; torso.add(hips);
+  body.add(torso);
+  // belt
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.42*s,0.43*s,0.14*s,20), std(0x0a0a0a,{roughness:.4,metalness:.5}));
+  belt.position.y = 1.72*s; body.add(belt);
+
+  // shirt + tie (front of torso)
+  if (P.tie){
+    const shirt = sphere(0.3*s, std(P.shirt||0xf5f5f5,{roughness:.8}), 1, 1.0, 0.55);
+    shirt.position.set(0, 2.28*s, 0.3*s); body.add(shirt);
+    const tie = box(0.11*s, 0.46*s, 0.04*s, std(P.tie,{roughness:.6}));
+    tie.position.set(0, 2.18*s, 0.45*s); body.add(tie);
+  }
+  if (P.pecs){ // Pepe bare pecs
+    const pl = sphere(0.17*s, skin, 1,0.7,0.9); pl.position.set(-0.17*s,2.3*s,0.34*s); body.add(pl);
+    const pr = sphere(0.17*s, skin, 1,0.7,0.9); pr.position.set( 0.17*s,2.3*s,0.34*s); body.add(pr);
+  }
+
+  // ----- arms (shoulder 2.35s, upper .5s, fore .45s) -----
+  function makeArm(side){
+    const shoulder = new THREE.Group(); shoulder.position.set(0.46*s*side, 2.35*s, 0);
+    const delt = sphere(0.17*s, suit); shoulder.add(delt);
+    const upper = limb(0.13*s, 0.11*s, 0.5*s, suit); shoulder.add(upper);
+    const elbow = new THREE.Group(); elbow.position.y = -0.5*s;
+    const fore = limb(0.1*s, 0.09*s, 0.45*s, suit); elbow.add(fore);
+    const hand = sphere(0.13*s, glove); hand.position.y = -0.5*s; elbow.add(hand);
+    shoulder.add(elbow);
+    body.add(shoulder);
+    return {shoulder, elbow, hand};
+  }
+  const armL = makeArm(-1), armR = makeArm(1);
+
+  // ----- head -----
+  const headGrp = new THREE.Group(); headGrp.position.set(0, 2.82*s, 0);
+  body.add(headGrp);
+  const headR = (P.headR || 0.3)*s;
+  const head = sphere(headR, skin, P.headSX||1, P.headSY||1, P.headSZ||1);
+  headGrp.add(head);
+
+  // face (defaults)
+  const eyeW = std(0xffffff,{roughness:.3});
+  const eyeD = std(0x111111,{roughness:.3});
+  function eye(off, y, r){
+    const w = sphere(r, eyeW); w.position.set(off, y, headR*0.78); headGrp.add(w);
+    const p = sphere(r*0.45, eyeD); p.position.set(off - 0.01*s, y, headR*0.78 + r*0.6); headGrp.add(p);
+    return w;
+  }
+  if (P.eyes !== 'none'){
+    eye(-0.13*s, 0.05*s, 0.09*s);
+    eye( 0.13*s, 0.05*s, 0.09*s);
+  }
+  if (P.eyebrows){
+    const bl = box(0.16*s,0.04*s,0.03*s, std(P.browColor||0x111111)); bl.position.set(-0.13*s,0.17*s,headR*0.8); headGrp.add(bl);
+    const br = box(0.16*s,0.04*s,0.03*s, std(P.browColor||0x111111)); br.position.set( 0.13*s,0.17*s,headR*0.8); headGrp.add(br);
+  }
+  // mouth
+  const mouth = box((P.mouthW||0.2)*s, (P.mouthH||0.05)*s, 0.04*s, std(P.mouthColor||0x3a1010));
+  mouth.position.set(0, -0.16*s, headR*0.82); headGrp.add(mouth);
+  if (P.grin){ // open grin
+    mouth.scale.set(1.4, 1.6, 1);
+  }
+  if (P.fang){
+    const f1 = box(0.05*s,0.08*s,0.03*s, std(0xffffff)); f1.position.set(-0.06*s,-0.2*s,headR*0.85); headGrp.add(f1);
+    const f2 = box(0.05*s,0.08*s,0.03*s, std(0xffffff)); f2.position.set( 0.06*s,-0.2*s,headR*0.85); headGrp.add(f2);
+  }
+
+  // ----- per-character head dress -----
+  function hairCap(color, opts={}){
+    const h = new THREE.Mesh(new THREE.SphereGeometry(headR*1.04, 24, 18, 0, Math.PI*2, 0, Math.PI*(opts.cap||0.55)), std(color,{roughness:.55}));
+    h.position.y = 0.02*s; headGrp.add(h);
+    return h;
+  }
+  switch(P.face){
+    case 'mj':
+      hairCap(0x0a0a0a, {cap:0.5});
+      // slicked sideburns
+      const sb = box(0.05*s, 0.22*s, 0.06*s, std(0x0a0a0a)); sb.position.set(-0.3*s, 0.0, headR*0.55); headGrp.add(sb);
+      const sb2 = sb.clone(); sb2.position.x = 0.3*s; headGrp.add(sb2);
+      break;
+    case 'pepe':
+      // big eyes
+      if (P.eyes!=='none'){
+        headGrp.children.forEach(()=>{});
+      }
+      // wide cheeks
+      const ch = sphere(0.14*s, std(0x9be07a,{roughness:.8})); ch.position.set(-0.28*s,-0.05*s,headR*0.5); headGrp.add(ch);
+      const ch2 = ch.clone(); ch2.position.x = 0.28*s; headGrp.add(ch2);
+      // nose bumps
+      const n1 = sphere(0.05*s, skin); n1.position.set(-0.08*s, -0.05*s, headR*0.95); headGrp.add(n1);
+      const n2 = sphere(0.05*s, skin); n2.position.set( 0.08*s, -0.05*s, headR*0.95); headGrp.add(n2);
+      break;
+    case 'trump':
+      // blonde swoop
+      const swoop = sphere(headR*1.15, std(0xd8b23a,{roughness:.4,metalness:.15}), 1, 0.7, 1);
+      swoop.position.set(0, 0.12*s, -0.05*s); headGrp.add(swoop);
+      const fringe = sphere(headR*0.7, std(0xd8b23a,{roughness:.4,metalness:.15}), 1, 0.5, 1.1);
+      fringe.position.set(0, 0.05*s, headR*0.7); headGrp.add(fringe);
+      // mustache
+      const mus = box(0.3*s, 0.07*s, 0.05*s, std(0xc9a52f)); mus.position.set(0, -0.07*s, headR*0.88); headGrp.add(mus);
+      break;
+    case 'musk':
+      hairCap(0x3a2a1a, {cap:0.42});
+      break;
+  }
+
+  root.position.y = 0;
+  return {root, body, headGrp, armL, armR, legL, legR, head};
+}
+
+/* ============================================================
+   THE FOUR DANCERS
+   ============================================================ */
+const MJ = buildRig({
+  face:'mj', scale:1.06, skin:0xf0d9c4, suit:0x14161c, suit2:0x1a1d24,
+  glove:0xf5f5f5, shoe:0xf2f2f2, tie:0x8a0f0f, shirt:0xf5f5f5,
+  mouthColor:0x5a2a2a
+});
+const PEPE = buildRig({
+  face:'pepe', scale:0.86, skin:0x59c135, suit:0x59c135, suit2:0x4fae2e,
+  pecs:true, headR:0.5, headSY:1.05, eyes:'none', grin:true, fang:true,
+  mouthW:0.4, mouthH:0.16, mouthColor:0x1e5c1e, shoe:0x4fae2e
+});
+// Pepe needs big round eyes drawn manually
+(function(){
+  const e = PEPE.headGrp, s=0.86;
+  const ew = sphere(0.16*s, std(0xffffff,{roughness:.25})); ew.position.set(-0.2*s, 0.1*s, 0.42*s); e.add(ew);
+  const ew2 = sphere(0.16*s, std(0xffffff,{roughness:.25})); ew2.position.set(0.2*s, 0.1*s, 0.42*s); e.add(ew2);
+  const ep = sphere(0.07*s, std(0x0a2a0a)); ep.position.set(-0.2*s, 0.08*s, 0.56*s); e.add(ep);
+  const ep2 = sphere(0.07*s, std(0x0a2a0a)); ep2.position.set(0.2*s, 0.08*s, 0.56*s); e.add(ep2);
+  // brow ridge
+  const b = box(0.5*s,0.05*s,0.06*s, std(0x3f8f2a)); b.position.set(0,0.28*s,0.45*s); e.add(b);
+})();
+const TRUMP = buildRig({
+  face:'trump', scale:1.0, skin:0xf2c79a, suit:0x1c3a6e, suit2:0x183462,
+  tie:0xb01212, shirt:0xf8f8f8, eyebrows:true, browColor:0xd8b23a,
+  mouthColor:0x7a3a2a
+});
+const MUSK = buildRig({
+  face:'musk', scale:0.98, skin:0xeec3a2, suit:0x151515, suit2:0x24262b,
+  shoe:0x111111, mouthColor:0x6a3a2a
+});
+
+/* placement (a loose V around the origin) */
+function place(rig, x, z, ry){
+  rig.root.position.set(x, 0, z);
+  rig.root.rotation.y = ry;
+  scene.add(rig.root);
+  return rig;
+}
+place(MJ,   0.0, 0.6,  Math.PI);      // leads, faces camera
+place(PEPE,-2.6, -0.8, Math.PI*0.85);
+place(TRUMP,2.6, -0.8, -Math.PI*0.85);
+place(MUSK, 0.0, -2.8,  Math.PI);
+
+const dancers = [
+  {rig: MJ,   ph: 0.00, amp:1.0},
+  {rig: PEPE, ph: 0.12, amp:0.9},
+  {rig: TRUMP,ph: 0.18, amp:0.95},
+  {rig: MUSK, ph: 0.24, amp:0.92}
+];
+
+/* ============================================================
+   CHOREOGRAPHY
+   A 12s seamless loop in 4 movements, driven by layered,
+   eased sine waves. pose() writes joint angles for one rig.
+   ============================================================ */
+const TAU = Math.PI*2;
+function sstep(x){ x = Math.min(1, Math.max(0, x)); return x*x*(3-2*x); }
+// 0..1 bump that is 1 at center of [a,b] and 0 outside, smooth
+function bump(t, a, b){
+  const L = b - a;
+  const x = (t - a) / L;
+  if (x <= 0 || x >= 1) return 0;
+  return sstep(Math.sin(x * Math.PI));
+}
+const LOOP = 12;
+
+function pose(rig, T, d){
+  const t = T;
+  const {body, headGrp, armL, armR, legL, legR, root} = rig;
+
+  // --- global loop phase (0..1) ---
+  const p = ((T % LOOP) + LOOP) % LOOP;
+
+  // movements
+  const mZ  = bump(p, 0.0, 3.0);   // zombie reach + crouch
+  const mS  = bump(p, 3.0, 6.0);   // side sway + wave
+  const mSp = bump(p, 6.0, 9.0);   // spin + arms wide
+  const mF  = bump(p, 9.0, 12.0);  // final pose hold
+
+  // --- crouch (legs + body drop) ---
+  const crouch = 0.28*mZ + 0.12*mS + 0.05*mF;
+  const kneeBend = crouch * 0.9;
+  // squat: bend hip forward, knee back, ankle compensate (feet stay grounded)
+  const sq = crouch;
+  legL.hip.rotation.x  =  0.06 - sq*0.95;
+  legR.hip.rotation.x  =  0.06 - sq*0.95;
+  legL.knee.rotation.x = -0.08 + sq*1.5;
+  legR.knee.rotation.x = -0.08 + sq*1.5;
+  legL.ankle.rotation.x = -0.02 - sq*0.55;
+  legR.ankle.rotation.x = -0.02 - sq*0.55;
+  body.position.y = -sq * 0.16;
+
+  // --- beat pulse (bass) ---
+  const beat = Math.pow(Math.max(0, Math.sin(t * (TAU*120/60))), 3); // 120bpm
+  body.position.y += beat * 0.03;
+
+  // --- body sway / twist ---
+  const sway = Math.sin(t*TAU*0.5) * (0.12*mS + 0.05*mZ + 0.04*mF);
+  const twist = Math.sin(t*TAU*0.25) * (0.18*mS + 0.1*mF);
+  body.rotation.z = sway;
+  body.rotation.y = twist * 0.5;
+  body.rotation.x = Math.sin(t*TAU*1.0) * 0.04;
+
+  // --- zombie arms (reach forward, staggered) ---
+  const reach = 0.85*mZ + 0.25*mF;
+  const stagger = Math.sin(t*TAU*1.0);
+  // shoulder x: negative = arm forward
+  armL.shoulder.rotation.x = -reach*1.15 - 0.15 + stagger*0.25*mZ;
+  armR.shoulder.rotation.x = -reach*1.15 - 0.15 - stagger*0.25*mZ;
+  // slight outward
+  armL.shoulder.rotation.z =  0.25 + 0.2*mS*Math.sin(t*TAU*0.5+1);
+  armR.shoulder.rotation.z = -0.25 - 0.2*mS*Math.sin(t*TAU*0.5+1);
+  // elbows bent
+  armL.elbow.rotation.x = -0.5 - 0.4*mZ + 0.3*Math.sin(t*TAU*1.0+0.5);
+  armR.elbow.rotation.x = -0.5 - 0.4*mZ + 0.3*Math.sin(t*TAU*1.0+2.1);
+
+  // --- wave arms (movement 2) ---
+  const wave = mS;
+  armL.shoulder.rotation.x += -wave*0.6*Math.sin(t*TAU*1.0);
+  armR.shoulder.rotation.x += -wave*0.6*Math.sin(t*TAU*1.0 + Math.PI);
+
+  // --- spin movement: arms wide + full root turn ---
+  const spinPhase = p - 6.0;             // 0..3 during movement 3
+  const spinT = sstep(Math.min(1, Math.max(0, spinPhase/3.0)));
+  const spinAngle = spinT * TAU;         // one full 360
+  armL.shoulder.rotation.z =  armL.shoulder.rotation.z + (1-mZ)* (0.6*mSp);
+  armR.shoulder.rotation.z =  armR.shoulder.rotation.z - (1-mZ)* (0.6*mSp);
+
+  // apply spin to whole root (additive to facing)
+  root.rotation.y = d.baseRY + spinAngle;
+
+  // --- final pose: both hands forward, MJ points ---
+  const fin = mF;
+  armL.shoulder.rotation.x = armL.shoulder.rotation.x * (1-fin) + (-1.5) * fin;
+  armR.shoulder.rotation.x = armR.shoulder.rotation.x * (1-fin) + (-1.5) * fin;
+  armL.elbow.rotation.x = armL.elbow.rotation.x*(1-fin) + (-0.2)*fin;
+  armR.elbow.rotation.x = armR.elbow.rotation.x*(1-fin) + (-0.2)*fin;
+  if (d.isLead){
+    // MJ points up-forward with right hand (only during the final hold)
+    armR.shoulder.rotation.x = armR.shoulder.rotation.x * (1-fin) + (-2.0) * fin;
+    armR.shoulder.rotation.z = armR.shoulder.rotation.z * (1-fin) + (-0.9) * fin;
+  }
+
+  // --- head motion ---
+  headGrp.rotation.y = Math.sin(t*TAU*0.5) * 0.3 + twist*0.4;
+  headGrp.rotation.z = -sway*0.8;
+  headGrp.rotation.x = Math.sin(t*TAU*1.0+1) * 0.08;
+}
+
+// store base facing so spin can be added cleanly
+dancers.forEach(d => { d.baseRY = d.rig.root.rotation.y; d.isLead = (d.rig === MJ); });
+
+/* ============================================================
+   ENVIRONMENT — moonlit graveyard
+   ============================================================ */
+// ground
+(function(){
+  const size = 60, seg = 90;
+  const geo = new THREE.PlaneGeometry(size, size, seg, seg);
+  const pos = geo.attributes.position;
+  for (let i=0;i<pos.count;i++){
+    const x = pos.getX(i), y = pos.getY(i);
+    const r = Math.hypot(x, y);
+    // subtle rolling terrain, flatten center stage
+    const flat = THREE.MathUtils.smoothstep(r, 3, 12);
+    pos.setZ(i, (Math.sin(x*0.35)*Math.cos(y*0.3) * 0.6) * flat);
+  }
+  geo.computeVertexNormals();
+  const ground = new THREE.Mesh(geo, std(0x0a0f0c, {roughness:1, metalness:0}));
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+})();
+
+// moon
+const moon = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 32),
+  new THREE.MeshBasicMaterial({color:0xf2ead6}));
+moon.position.set(-26, 30, -60);
+scene.add(moon);
+// moon glow sprite
+(function(){
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(128,128,10,128,128,128);
+  grd.addColorStop(0, 'rgba(255,246,220,0.95)');
+  grd.addColorStop(0.3,'rgba(220,220,255,0.35)');
+  grd.addColorStop(1, 'rgba(120,120,200,0)');
+  g.fillStyle = grd; g.fillRect(0,0,256,256);
+  const tex = new THREE.CanvasTexture(c);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true}));
+  spr.scale.set(60,60,1);
+  spr.position.copy(moon.position);
+  scene.add(spr);
+})();
+
+// stars
+(function(){
+  const n = 700;
+  const geo = new THREE.BufferGeometry();
+  const arr = new Float32Array(n*3);
+  for (let i=0;i<n;i++){
+    const r = 90;
+    const th = Math.random()*TAU, ph = Math.acos(Math.random()*0.85);
+    arr[i*3]   = r*Math.sin(ph)*Math.cos(th);
+    arr[i*3+1] = Math.abs(r*Math.cos(ph)) + 5;
+    arr[i*3+2] = r*Math.sin(ph)*Math.sin(th) - 20;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(arr,3));
+  const stars = new THREE.Points(geo, new THREE.PointsMaterial({color:0xcfd6ff, size:0.5, sizeAttenuation:true, transparent:true, opacity:0.9}));
+  scene.add(stars);
+})();
+
+// gravestones
+function gravestone(x, z, h, w, ry){
+  const g = new THREE.Group();
+  const mat = std(0x3a4046, {roughness:0.95});
+  const slab = box(w, h, 0.25, mat);
+  slab.position.y = h/2;
+  g.add(slab);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(w/2, w/2, 0.25, 16, 1, false, 0, Math.PI), mat);
+  top.rotation.z = Math.PI/2; top.rotation.y = Math.PI/2;
+  top.position.y = h; g.add(top);
+  g.position.set(x, 0, z); g.rotation.y = ry;
+  g.traverse(o=>{ if(o.isMesh){o.castShadow=true;o.receiveShadow=true;} });
+  scene.add(g);
+}
+const gs = [[-7,-6,2.2,1.4,0.3],[7,-7,2.6,1.6,-0.2],[-9,-2,2.0,1.2,0.5],[9,-3,2.3,1.5,0.1],
+            [-6,-10,2.8,1.8,0.2],[6,-11,2.1,1.3,-0.4],[-11,-8,2.4,1.5,0.6],[11,-9,2.7,1.7,0.0],
+            [-13,-4,2.2,1.4,0.4],[13,-5,2.5,1.6,-0.3],[0,-13,3.0,2.0,0.1],[-3,-12,2.2,1.4,0.3],[3,-12,2.4,1.5,-0.2]];
+gs.forEach(a => gravestone(a[0],a[1],a[2],a[3],a[4]));
+
+// dead trees
+function branch(m, len, r, depth){
+  const g = new THREE.Group();
+  const geo = new THREE.CylinderGeometry(r*0.6, r, len, 6);
+  geo.translate(0, len/2, 0);
+  const msh = new THREE.Mesh(geo, std(0x1a1512,{roughness:1}));
+  msh.castShadow = true;
+  g.add(msh);
+  if (depth > 0){
+    const kids = 2 + (Math.random()<0.5?1:0);
+    for (let i=0;i<kids;i++){
+      const c = branch(m, len*(0.6+Math.random()*0.2), r*0.55, depth-1);
+      c.position.y = len*0.85;
+      c.rotation.set((Math.random()-0.5)*0.9, Math.random()*TAU, (Math.random()-0.5)*0.9);
+      g.add(c);
+    }
+  }
+  return g;
+}
+function tree(x, z, s){
+  const t = branch(null, 4*s, 0.28*s, 3);
+  t.position.set(x, 0, z);
+  t.rotation.y = Math.random()*TAU;
+  scene.add(t);
+}
+[[-16,-14,1.2],[16,-15,1.1],[-19,-6,1.3],[19,-7,1.2],[-14,4,1.0],[14,3,1.0],[-20,-12,1.4],[20,-13,1.3]].forEach(a=>tree(a[0],a[1],a[2]));
+
+// drifting mist (transparent planes)
+const mists = [];
+(function(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const g = c.getContext('2d');
+  for (let i=0;i<18;i++){
+    const x = Math.random()*256, y = 64 + (Math.random()-0.5)*40, r = 20 + Math.random()*40;
+    const grd = g.createRadialGradient(x,y,2,x,y,r);
+    grd.addColorStop(0, 'rgba(180,190,210,0.5)');
+    grd.addColorStop(1, 'rgba(180,190,210,0)');
+    g.fillStyle = grd; g.beginPath(); g.ellipse(x,y,r,r*0.5,0,0,TAU); g.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  for (let i=0;i<6;i++){
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(22, 8),
+      new THREE.MeshBasicMaterial({map:tex, transparent:true, opacity:0.16, depthWrite:false, blending:THREE.AdditiveBlending}));
+    m.position.set((Math.random()-0.5)*30, 1.2 + Math.random()*1.5, (Math.random()-0.5)*20);
+    m.rotation.x = -Math.PI/2;
+    m.userData.sp = 0.3 + Math.random()*0.5;
+    scene.add(m);
+    mists.push(m);
+  }
+})();
+
+/* ============================================================
+   LIGHTING
+   ============================================================ */
+scene.add(new THREE.AmbientLight(0x22304a, 0.5));
+const hemi = new THREE.HemisphereLight(0x3a4a7a, 0x0a0c10, 0.7);
+scene.add(hemi);
+// soft front fill so faces read in the moonlight
+const fill = new THREE.PointLight(0x445577, 0.55, 40, 1.6);
+fill.position.set(0, 5, 9);
+scene.add(fill);
+
+// moonlight
+const moonLight = new THREE.DirectionalLight(0xcdd6ff, 0.9);
+moonLight.position.copy(moon.position).normalize().multiplyScalar(40);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(2048, 2048);
+moonLight.shadow.camera.left = -14; moonLight.shadow.camera.right = 14;
+moonLight.shadow.camera.top = 14; moonLight.shadow.camera.bottom = -14;
+moonLight.shadow.camera.near = 1; moonLight.shadow.camera.far = 120;
+moonLight.shadow.bias = -0.0004;
+scene.add(moonLight);
+
+// moving stage spotlights
+const spotColors = [0xff2a3c, 0x7a2aff, 0x22d3ee];
+const spots = [];
+spotColors.forEach((col, i)=>{
+  const s = new THREE.SpotLight(col, 1.0, 60, Math.PI*0.16, 0.5, 1.2);
+  s.castShadow = (i===0);
+  s.shadow.mapSize.set(1024,1024);
+  s.shadow.bias = -0.0005;
+  const target = new THREE.Object3D();
+  target.position.set(0,1.2,0);
+  scene.add(target);
+  s.target = target;
+  s.userData.a0 = (i/3)*TAU;
+  scene.add(s);
+  spots.push(s);
+});
+
+/* ============================================================
+   AUDIO — procedural Thriller-style bass + drums (WebAudio)
+   ============================================================ */
+const Audio = {
+  ctx:null, on:false, master:null,
+  ensure(){
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.5;
+    this.master.connect(this.ctx.destination);
+  },
+  thump(t, f, dur, vol, type='sine', slide){
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,slide), t+dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+0.02);
+  },
+  noise(t, dur, vol, freq){
+    const n = Math.floor(this.ctx.sampleRate*dur);
+    const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<n;i++) d[i] = (Math.random()*2-1)*(1-i/n);
+    const s = this.ctx.createBufferSource(); s.buffer = buf;
+    const f = this.ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=0.8;
+    const g = this.ctx.createGain(); g.gain.value=vol;
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(t);
+  },
+  // schedule one 4-beat bar of a driving Thriller bassline
+  bar(t0, step){
+    // minor key bass pattern (A1-ish)
+    const seq = [55, 55, 65.4, 55, 73.4, 55, 65.4, 49];
+    for (let i=0;i<8;i++){
+      const t = t0 + i*step;
+      this.thump(t, seq[i], step*0.9, 0.5, 'sawtooth', seq[i]*0.5);
+      // hat
+      this.noise(t + step/2, 0.03, 0.12, 6000);
+      if (i%2===0) this.noise(t, 0.05, 0.2, 1800);       // snare-ish on 2 & 4
+      if (i===0 || i===4) this.noise(t, 0.12, 0.35, 120); // kick
+    }
+  },
+  start(){
+    this.ensure(); if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.on = true;
+    this.scheduler = setInterval(()=>{
+      if (!this.on || !this.ctx) return;
+      const t0 = this.ctx.currentTime + 0.06;
+      const step = (60/120)/2; // 8th notes at 120bpm
+      this.bar(t0, step);
+    }, 2000); // one 8th-note bar at 120bpm = 2s
+  },
+  stop(){ this.on = false; if (this.scheduler) clearInterval(this.scheduler); }
+};
+
+/* ============================================================
+   CAMERA + LOOP
+   ============================================================ */
+let camMode = 0;
+let clock = 0, lastT = performance.now();
+const camTarget = new THREE.Vector3(0, 1.6, 0);
+
+function camUpdate(t){
+  const beat = Math.pow(Math.max(0, Math.sin(t * (TAU*120/60))), 4);
+  if (camMode === 0){
+    // slow orbit dolly
+    const a = t * 0.12;
+    const r = 11 + Math.sin(t*0.1)*2;
+    camera.position.set(Math.sin(a)*r, 3.2 + Math.sin(t*0.23)*0.7 + beat*0.15, Math.cos(a)*r);
+  } else if (camMode === 1){
+    // low creeping shot
+    const a = t*0.05 + 1;
+    camera.position.set(Math.sin(a)*7.5, 1.1 + beat*0.2, Math.cos(a)*7.5);
+  } else {
+    // wide establishing
+    camera.position.set(Math.sin(t*0.03)*18, 6 + Math.sin(t*0.1)*1, Math.cos(t*0.03)*18);
+  }
+  // subtle handheld
+  camera.position.x += Math.sin(t*7)*0.02;
+  camera.position.y += Math.sin(t*9)*0.02;
+  camera.lookAt(camTarget);
+}
+
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt = (now - lastT)/1000; lastT = now;
+  if (dt > 0.05) dt = 0.05;
+  clock += dt;
+
+  // pose dancers
+  for (const d of dancers) pose(d.rig, clock, d);
+
+  // move spotlights in arcs
+  const beat = Math.pow(Math.max(0, Math.sin(clock * (TAU*120/60))), 3);
+  spots.forEach((s, i)=>{
+    const a = s.userData.a0 + clock*0.5;
+    s.position.set(Math.sin(a)*9, 9 + Math.sin(clock*0.7+i)*1.5, Math.cos(a)*9);
+    s.intensity = 0.75 + beat*1.1;
+    // sweep target across the dancers
+    s.target.position.x = Math.sin(clock*0.4 + i*2)*3;
+    s.target.position.z = Math.cos(clock*0.3 + i*2)*2;
+  });
+
+  // moon flicker (very subtle)
+  moonLight.intensity = 1.05 + Math.sin(clock*0.8)*0.08;
+
+  // mist drift
+  for (const m of mists){
+    m.position.x += m.userData.sp * dt * 0.6;
+    if (m.position.x > 25) m.position.x = -25;
+  }
+
+  camUpdate(clock);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(frame);
+
+/* ---------- title reveal ---------- */
+setTimeout(()=>{ document.getElementById('title').style.opacity = 1; }, 800);
+setTimeout(()=>{ document.getElementById('title').style.opacity = 0; }, 9000);
+setTimeout(()=>{ document.getElementById('hint').style.opacity = 0; }, 6000);
+
+/* ---------- grain ---------- */
+(function(){
+  const gc = document.getElementById('grain');
+  const s = 128; gc.width = s; gc.height = s;
+  gc.style.width = '100vw'; gc.style.height = '100vh';
+  const g = gc.getContext('2d');
+  let f = 0;
+  (function loop(){
+    if ((f++) % 2 === 0){
+      const img = g.createImageData(s, s);
+      for (let i=0;i<img.data.length;i+=4){
+        const v = Math.random()*255|0;
+        img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=40;
+      }
+      g.putImageData(img, 0, 0);
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ---------- UI ---------- */
+function onFirstPointer(){
+  if (!Audio.on){ Audio.start(); document.getElementById('bSound').innerHTML = '&#128266;'; document.getElementById('hint').style.opacity = 0; }
+}
+window.addEventListener('pointerdown', onFirstPointer);
+window.addEventListener('keydown', onFirstPointer);
+document.getElementById('bSound').onclick = (e)=>{
+  e.stopPropagation();
+  if (Audio.on){ Audio.stop(); e.target.innerHTML='&#128263;'; }
+  else { onFirstPointer(); }
+};
+document.getElementById('bCam').onclick = (e)=>{
+  e.stopPropagation();
+  camMode = (camMode+1)%3;
+};
+
+window.addEventListener('resize', ()=>{
+  W = innerWidth; H = innerHeight;
+  camera.aspect = W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W, H);
+});
+
+/* debug handle */
+window.__thriller = { renderer, scene, camera, dancers, three: THREE, get clock(){return clock;}, get camMode(){return camMode;} };
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p",
+  "model_display": "Qwen3.8-27B Uncensored HauhauCS Aggressive Q8_K_P",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-04T20:53:47Z",
+  "runner": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P via OpenClaw agent",
+  "notes": "Single-file Three.js (r128 CDN) cinematic scene. Four procedurally-built characters (Michael Jackson, Pepe the Frog, Donald Trump, Elon Musk) on hand-authored joint rigs perform a seamless 12s, four-movement Thriller loop (zombie reach + crouch, side sway, 360 spin, final pose with MJ pointing). Moonlit graveyard with glowing moon, stars, gravestones, dead trees and drifting mist; moonlight plus three moving colored spotlights, ACES tone mapping, soft shadows, dolly camera (3 modes) with handheld shake, letterbox, vignette, color grade, animated grain, title card and procedural WebAudio bass+drums. Verified headless (Chrome CDP + SwiftShader): no console errors, ~84k triangles, pose sampling confirms distinct choreography across the loop.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "Q8_K_P",
+    "variant": "Uncensored HauhauCS Aggressive",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop"
+  }
+}

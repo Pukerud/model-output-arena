@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p",
+  "model_display": "Qwen3.8-27B Uncensored HauhauCS Aggressive Q8_K_P",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-09-04T20:53:47Z",
+  "runner": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P via OpenClaw agent",
+  "notes": "Single-file vanilla canvas 2D, no dependencies. Side-view car driving through layered procedurally-tiled parallax scenery (stars, sun, mountain/hill ridges, treeline, fence, utility poles with sagging wires, road, near + foreground grass) at distinct scroll speeds. Wheels rotate to match distance, body has subtle suspension bob/pitch, exhaust particles, headlight beam + taillight glow, sunset color grade, letterbox, vignette and animated film grain. Verified headless (Chrome CDP): no console errors, per-frame pixel sampling confirms continuous scrolling.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "Q8_K_P",
+    "variant": "Uncensored HauhauCS Aggressive",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop"
+  }
+}

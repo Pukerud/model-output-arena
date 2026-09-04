@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p",
+  "model_display": "Qwen3.8-27B Uncensored HauhauCS Aggressive Q8_K_P",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-04T20:53:47Z",
+  "runner": "Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P via OpenClaw agent",
+  "notes": "Single-file lawn defense, vanilla canvas + WebAudio, no dependencies. Six plant cards (Sunflower, Peashooter, Repeater, Snow Pea, Wall-nut, Cherry Bomb) with cost/cooldown, sun economy (sky + sunflower), five zombie types across ramping waves plus a flag-led FINAL WAVE, per-row lawn mowers as last defense, shovel, pause, win/lose screens, synthesized SFX and bass/drums, and a persistent top-10 leaderboard in localStorage with name entry. Verified headless (Chrome CDP + real UI clicks): full loop from menu through planting, wave spawns, moving zombies, defeat, leaderboard save, replay and pause.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "Q8_K_P",
+    "variant": "Uncensored HauhauCS Aggressive",
+    "engine": "llama.cpp",
+    "gpu": "RTX 3060 Laptop"
+  }
+}
