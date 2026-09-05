@@ -373,6 +373,21 @@ window.ARENA = {
       },
     },
     {
+      provider: "anthropic",
+      provider_display: "Anthropic",
+      model: "claude-fable-5.1",
+      model_display: "Claude Fable 5.1",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/anthropic/claude-fable-5.1",
+      added: "2026-09-03",
+      outputs: {
+        "01-car-parallax":      "providers/anthropic/claude-fable-5.1/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/anthropic/claude-fable-5.1/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/anthropic/claude-fable-5.1/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "local",
       provider_display: "Local (llama.cpp)",
       model: "brian6145-qwen3.6-27b-claude-opus-sonnet-distilledv2-mtp",
