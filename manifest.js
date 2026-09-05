@@ -777,6 +777,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-6",
+      model_display: "GPT-6",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-6",
+      added: "2026-09-05",
+      outputs: {
+        "01-car-parallax": "providers/openai/gpt-6/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-6/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller": "providers/openai/gpt-6/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

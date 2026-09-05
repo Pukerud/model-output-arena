@@ -119,6 +119,7 @@ Two independent axes are labelled:
 | Meta | Muse Spark 1.3 | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/meta/muse-spark-1.3`](./providers/meta/muse-spark-1.3) |
 | Local (llama.cpp) | Nemotron 3.5 Lightning Free | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/nemotron-3.5-lightning-free`](./providers/local/nemotron-3.5-lightning-free) |
 | Local (llama.cpp) | Qwen3.8-27B Uncensored HauhauCS Aggressive Q8_K_P | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p`](./providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p) |
+| OpenAI | GPT-6 | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6`](./providers/openai/gpt-6) |
 
 ## How outputs were generated
 

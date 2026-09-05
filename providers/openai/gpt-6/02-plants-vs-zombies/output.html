@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#173f32">
+<title>Bramble — Last garden standing</title>
+<style>
+  :root{--paper:#f4f0e5;--ink:#193c30;--muted:#748274;--green:#285841;--lime:#d6ee92;--orange:#ed8658;--line:#d9dece;--shadow:0 18px 50px #1a3d3011}
+  *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}button,input{outline-offset:4px}button:focus-visible,input:focus-visible,canvas:focus-visible{outline:3px solid #d57937}button{color:inherit}button:disabled{cursor:not-allowed}button:active:not(:disabled){transform:translateY(1px)}[hidden]{display:none!important}::selection{background:var(--lime);color:var(--ink)}
+  .shell{max-width:1430px;margin:auto;padding:0 42px}.masthead{height:102px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink);border:0;background:none;padding:0}.brand-mark{width:34px;height:34px;background:var(--ink);border-radius:12px 12px 12px 3px;display:grid;place-items:center}.brand-mark svg{width:24px;height:24px}.wordmark{font-size:24px;font-weight:850;letter-spacing:-1px}.brand-note{border-left:1px solid #ccd4c4;margin-left:8px;padding-left:19px;font-size:11px;line-height:1.55;color:var(--muted);letter-spacing:.7px}.topnav{display:flex;align-items:center;gap:10px}.text-button{border:0;background:transparent;padding:11px 15px;font-size:12px;font-weight:650;border-radius:10px}.text-button:hover{background:#e7eadc}.version{font-size:10px;font-weight:750;letter-spacing:1.2px;margin-left:20px;color:#8c9988}.hero{min-height:592px;display:grid;grid-template-columns:1fr 1fr;background:#e8ebdc;border-radius:30px;overflow:hidden;border:1px solid #dce1d0;box-shadow:var(--shadow)}.hero-copy{padding:58px 26px 48px 55px;position:relative;z-index:1}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:800;display:flex;align-items:center;gap:10px}.eyebrow:before{content:"";height:7px;width:7px;background:#df8254;border-radius:50%}.hero h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(52px,5.6vw,79px);line-height:1.02;letter-spacing:-4px;font-weight:400;margin:26px 0 22px}.hero h1 em{font-weight:400;color:#66854b}.hero-description{font-size:14px;line-height:1.8;color:#667763;max-width:335px;margin:0 0 24px}.setup{max-width:359px}.form-row{display:flex;align-items:center;gap:10px;margin:0 0 12px}.name-label{font-size:10px;font-weight:750;letter-spacing:1px;white-space:nowrap}.name-input{border:0;border-bottom:1px solid #b6c1aa;color:var(--ink);background:transparent;padding:8px 0;font-size:13px;width:100%;border-radius:0}.difficulty{display:flex;gap:6px;margin-bottom:17px}.difficulty button{flex:1;border:1px solid #bcc9b0;border-radius:9px;padding:9px 5px;background:transparent;font-size:11px;font-weight:650}.difficulty button[aria-pressed="true"]{background:var(--ink);color:white;border-color:var(--ink)}.primary{width:100%;padding:17px 20px;display:flex;justify-content:space-between;align-items:center;border:0;border-radius:12px;background:var(--ink);color:#f4f3df;font-size:13px;font-weight:700;box-shadow:0 4px 0 #09251b}.primary:hover{background:#27583e}.primary .arrow{font-size:20px;font-weight:400}.setup-note{font-size:10px;color:#83907a;margin:13px 0 0}.hero-art{position:relative;background:#204c39;min-height:560px;overflow:hidden}.hero-art:before{position:absolute;content:"";width:500px;height:500px;border:1px solid #52765c;border-radius:50%;top:15%;left:8%}.hero-art canvas{display:block;width:100%;height:100%;position:absolute;object-fit:contain}.art-label{position:absolute;top:30px;left:30px;color:#becfaa;font-size:9px;letter-spacing:2px;font-weight:650}.art-sticker{position:absolute;right:26px;top:24px;transform:rotate(9deg);width:79px;height:79px;border-radius:50%;background:#d9ec9b;display:flex;align-items:center;justify-content:center;flex-direction:column;border:1px dashed #5d7745;outline:5px solid #d9ec9b;color:#335038;text-align:center;font-size:9px;line-height:1.4;letter-spacing:1px}.art-sticker b{font-family:Georgia,serif;font-size:24px;letter-spacing:0}.art-caption{position:absolute;bottom:28px;left:30px;right:30px;display:flex;justify-content:space-between;align-items:end;color:#d0dfbd}.art-caption span{font-family:Georgia,serif;font-size:23px;line-height:1.2}.art-caption small{font-size:9px;text-align:right;line-height:1.8;letter-spacing:1px}.features{display:grid;grid-template-columns:repeat(3,1fr);margin:28px 0 22px;gap:35px}.feature{display:flex;gap:14px;align-items:start;padding:8px 0}.feature-number{font-family:Georgia,serif;color:#879978;font-size:22px;line-height:1}.feature h3{margin:0 0 6px;font-size:12px}.feature p{font-size:11px;color:#87907f;margin:0;line-height:1.7}.footer{padding:22px 0 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:15px;font-size:10px;color:#8d9787}.footer span:last-child{color:#657e5a}.hud{background:#fffdf5;border:1px solid var(--line);border-radius:17px;display:flex;align-items:center;gap:15px;padding:13px 19px;margin-bottom:15px}.stat{display:flex;align-items:center;gap:12px;min-width:115px}.sun-glyph{width:34px;height:34px;border-radius:50%;background:#f8d777;box-shadow:0 0 0 5px #f9ecc7;display:grid;place-items:center;color:#b57720;font-size:25px}.stat small{font-size:8px;font-weight:800;letter-spacing:1.5px;color:#89907b;display:block}.stat strong{font-size:24px;font-variant-numeric:tabular-nums;font-weight:750;line-height:1.2}.hud-divider{height:32px;width:1px;background:var(--line)}.wave-stat{flex:1;max-width:350px;padding:0 14px}.wave-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:10px;font-weight:750;margin-bottom:8px}.wave-heading span:last-child{color:#819072;font-weight:500}.progress{height:5px;border-radius:5px;background:#e7ebde;overflow:hidden}.progress>div{height:100%;width:0;background:#7ea454;transition:width .3s}.hud-actions{display:flex;gap:8px;margin-left:auto}.icon-button{width:38px;height:38px;background:#edf1e5;border:1px solid #dfe5d5;border-radius:11px;font-size:16px;display:grid;place-items:center}.icon-button:hover{background:#e0e9d4}.icon-button svg{width:17px;height:17px}.score-stat strong{font-size:19px}.game-layout{display:grid;grid-template-columns:164px minmax(0,1fr);gap:15px}.seed-tray{display:flex;flex-direction:column;gap:8px}.tray-heading{font-size:9px;font-weight:800;letter-spacing:1.2px;color:#8b937f;padding:1px 3px 3px;display:flex;justify-content:space-between}.seed{position:relative;display:grid;grid-template-columns:50px 1fr;gap:4px;text-align:left;border:1px solid #d5ddca;border-radius:14px;padding:7px;background:#fffdf4;min-height:76px;overflow:hidden;isolation:isolate;transition:box-shadow .15s,border-color .15s}.seed:hover{border-color:#7f9b63}.seed.selected{border:2px solid var(--green);padding:6px;background:#edf3d9;box-shadow:0 0 0 2px #cadbb466}.seed.unaffordable{filter:saturate(.65);opacity:.7}.seed canvas{width:50px;height:57px;align-self:center}.seed-text{align-self:center;position:relative;z-index:2}.seed h3{font-size:10px;font-weight:800;margin:0 0 3px}.seed .role{font-size:8px;color:#8a927d;margin:0 0 5px;display:block}.seed .cost{font-size:10px;font-weight:750;color:#77774a}.seed .key{position:absolute;right:6px;top:4px;color:#a5ae98;font-size:8px}.seed .cooldown{position:absolute;bottom:0;left:0;right:0;background:#a2b68c45;z-index:-1;pointer-events:none;transition:height .1s}.seed .cool-label{position:absolute;right:6px;bottom:4px;font-size:9px;font-weight:750;color:#365732}.seed.shovel{min-height:50px;display:flex;align-items:center;gap:12px;justify-content:center;background:#e7ebde}.seed.shovel svg{width:23px;height:28px}.seed.shovel .seed-text h3{margin:0}.field-frame{background:#28583e;border:6px solid #fffdf4;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);position:relative;align-self:start}.field-frame canvas{width:100%;height:auto;aspect-ratio:1030/580;display:block;touch-action:none;cursor:crosshair}.field-toolbar{position:absolute;top:14px;left:15px;right:15px;display:flex;justify-content:space-between;pointer-events:none}.field-tag{font-size:8px;letter-spacing:1.2px;background:#18382dc9;padding:8px 11px;border-radius:8px;color:#dbe8ca;border:1px solid #72935f55}.weather-tag{background:#f4efdc;letter-spacing:.5px;color:#51703d}.board-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 5px;font-size:10px;color:#839077}.board-bottom strong{font-weight:600;color:#4c6d44}.collect-button{font-size:10px;border:1px solid #d7deca;background:#eeeede;border-radius:8px;padding:8px 12px}.tipbar{border-top:1px solid var(--line);margin:9px 0 24px;padding:18px 0;display:flex;justify-content:space-between;font-size:10px;color:#88927f;gap:15px}.tipbar kbd{font:9px inherit;border:1px solid #d3dac6;border-radius:4px;padding:2px 4px;color:#658055;background:#eeeede}.toast{position:absolute;left:50%;bottom:18px;max-width:90%;transform:translate(-50%,8px);padding:12px 18px;white-space:nowrap;border-radius:12px;background:#f8f5e8f2;color:#315436;box-shadow:0 4px 20px #17362233;font-size:11px;font-weight:650;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}.toast.visible{opacity:1;transform:translate(-50%,0)}.wave-banner{position:absolute;left:0;right:0;top:40%;pointer-events:none;text-align:center;opacity:0;transform:translateY(5px);transition:all .3s}.wave-banner.visible{opacity:1;transform:translateY(0)}.wave-banner strong{display:block;font-family:Georgia,serif;font-size:clamp(28px,4vw,52px);font-weight:400;letter-spacing:-1px;color:#fff9e1;text-shadow:0 3px 0 #245134,0 2px 20px #122b22}.wave-banner small{display:block;margin-top:8px;font-size:10px;font-weight:750;letter-spacing:3px;color:#e5efb3;text-shadow:0 2px 3px #23472e}.modal-backdrop{position:fixed;inset:0;z-index:30;background:#112b23bb;backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:22px}.modal{width:100%;max-width:510px;max-height:90dvh;overflow:auto;background:#f7f3e8;border:1px solid #ffffff66;border-radius:25px;padding:32px;box-shadow:0 25px 90px #102c2370;position:relative}.modal.wide{max-width:710px}.modal-close{position:absolute;top:16px;right:17px;border:0;background:#e8ecdf;border-radius:50%;width:30px;height:30px;font-size:19px;font-weight:300}.modal .eyebrow{font-size:8px;margin:2px 0 17px}.modal h2{font:400 39px/1.1 Georgia,serif;letter-spacing:-1.3px;margin:0 0 15px}.modal-intro{font-size:12px;line-height:1.8;color:#7f8a74;margin:0 0 23px}.modal-buttons{display:flex;gap:10px;margin-top:23px}.modal-buttons button{flex:1;border:1px solid #cbd6bf;border-radius:11px;padding:13px 12px;background:#e9eedd;font-size:11px;font-weight:700}.modal-buttons button.strong{background:var(--ink);color:#eff3e2;border-color:var(--ink)}.pause-emblem{margin:5px 0 23px;width:58px;height:58px;background:#e3eccf;border-radius:20px;display:grid;place-items:center;font-size:26px}.help-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.help-step{padding:17px;background:#edf0e1;border-radius:13px}.help-step b{font-size:11px;display:block;margin-bottom:8px}.help-step p{font-size:10px;line-height:1.8;color:#7a8770;margin:0}.help-step .step-number{font:18px Georgia,serif;color:#93a47d;display:block;margin-bottom:10px}.controls-note{font-size:10px;line-height:1.9;color:#77876b;border-top:1px solid #d9e1cd;margin:18px 0 0;padding-top:16px}.leaderboard{width:100%;border-collapse:collapse;margin:20px 0 5px;font-size:11px;text-align:left}.leaderboard th{font-size:8px;letter-spacing:1px;color:#98a18c;padding:10px 7px;border-bottom:1px solid #d2ddc4}.leaderboard td{padding:12px 7px;border-bottom:1px solid #e0e5d5}.leaderboard td:first-child{font-family:Georgia,serif;color:#91a277;font-size:16px;width:36px}.leaderboard td:last-child{text-align:right;font-weight:750}.leaderboard th:last-child{text-align:right}.leaderboard small{display:block;color:#94a086;font-size:8px;margin-top:4px}.empty-score{padding:27px 15px;text-align:center;font-size:12px;line-height:1.8;color:#889679;background:#edf0e2;border-radius:13px}.filter-row{display:flex;gap:7px;margin-top:20px}.filter-row button{font-size:9px;border:1px solid #d2dcc6;background:transparent;padding:7px 13px;border-radius:7px}.filter-row button.active{background:var(--ink);color:white;border-color:var(--ink)}.score-note{font-size:9px;color:#8c997f;margin:16px 0 0}.result-emblem{font-size:47px;line-height:1;margin:7px 0 19px;color:#6d9252}.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:25px 0}.result-stats div{padding:17px 7px;border-radius:12px;background:#e9eedc;text-align:center}.result-stats small{display:block;font-size:8px;letter-spacing:1px;color:#8f9c7d;margin-bottom:5px}.result-stats strong{font-size:23px;font-weight:700}.checkbox-row{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-top:1px solid #dce3cf;font-size:12px}.checkbox-row small{display:block;color:#8a987c;font-size:10px;margin-top:5px}.checkbox-row input{width:18px;height:18px;accent-color:var(--green)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+  @media(min-width:1450px){.hero{min-height:650px}.hero-copy{padding-top:74px}.hero h1{font-size:85px}.hero-art{min-height:650px}}
+  @media(max-width:1050px){.shell{padding:0 24px}.hero-copy{padding:43px 24px 38px 35px}.hero h1{font-size:61px}.hero-art{min-height:550px}.game-layout{grid-template-columns:145px minmax(0,1fr)}.seed{grid-template-columns:42px 1fr;min-height:66px}.seed canvas{width:42px;height:48px}.seed h3{font-size:9px}.seed .role{font-size:7px}.hud{gap:10px;padding:12px 15px}.wave-stat{padding:0 5px}.stat{min-width:95px}.score-stat{min-width:72px}}
+  @media(max-width:780px){.shell{padding:0 17px}.masthead{height:80px}.brand-note,.version{display:none}.topnav{gap:0}.text-button{font-size:10px;padding:9px 11px}.hero{grid-template-columns:1fr 1fr;min-height:0}.hero-copy{padding:35px 20px 32px 28px}.hero h1{font-size:45px;letter-spacing:-2.7px;margin-top:22px}.eyebrow{font-size:8px;letter-spacing:1.2px}.hero-description{font-size:12px}.hero-art{min-height:535px}.art-sticker{right:17px;width:65px;height:65px}.art-label{left:20px;font-size:7px}.art-caption{left:20px;right:20px}.art-caption span{font-size:18px}.art-caption small{display:none}.features{gap:20px}.feature{gap:9px}.feature p{font-size:10px}.game-layout{grid-template-columns:1fr;gap:11px}.seed-tray{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.tray-heading{display:none}.seed{grid-template-columns:1fr;gap:0;min-height:106px;text-align:center;padding:5px 2px}.seed.selected{padding:4px 1px}.seed canvas{margin:auto;width:45px;height:45px}.seed h3{font-size:9px}.seed .role{display:none}.seed .cost{font-size:9px}.seed.shovel{display:flex;flex-direction:column;gap:10px}.seed.shovel svg{height:29px}.hud{margin-bottom:11px}.wave-heading{font-size:9px}.stat{min-width:75px;gap:8px}.sun-glyph{width:28px;height:28px;font-size:21px;box-shadow:0 0 0 3px #f9ecc7}.stat strong{font-size:20px}.score-stat strong{font-size:16px}.stat small{font-size:7px}.hud-actions{gap:5px}.icon-button{width:32px;height:34px}.field-frame{border-width:4px;border-radius:16px}.field-tag{font-size:6px;padding:6px 9px}.field-toolbar{top:10px;left:10px;right:10px}.tipbar{font-size:9px}.board-bottom{font-size:9px}.toast{font-size:9px;padding:9px 12px}}
+  @media(max-width:560px){.hero{grid-template-columns:1fr}.hero-copy{padding:35px 28px 30px}.hero h1{font-size:60px}.hero-description{max-width:100%;font-size:13px}.hero-art{min-height:300px;max-height:300px}.hero-art canvas{object-fit:cover}.art-label{top:22px}.art-sticker{top:20px}.art-caption{bottom:20px}.art-caption small{display:block;font-size:7px}.features{grid-template-columns:1fr;gap:4px;margin-top:20px}.feature{padding:8px 5px;gap:16px}.feature-number{min-width:28px}.feature p{font-size:11px}.footer{font-size:8px}.wordmark{font-size:22px}.brand-mark{width:30px;height:30px}.topnav .text-button{padding:9px 8px}.hero h1 br{display:none}.hero h1 em{display:block}.setup{max-width:100%}.hud{flex-wrap:wrap;gap:10px;padding:11px 12px}.wave-stat{order:5;flex-basis:100%;max-width:none;padding:3px 0 1px}.hud-divider{height:27px}.hud-actions{margin-left:auto}.game-layout{gap:9px}.seed-tray{gap:4px}.seed{min-height:90px;border-radius:10px}.seed canvas{width:36px;height:40px}.seed h3{font-size:8px;letter-spacing:-.2px}.seed .key{display:none}.seed .cost{font-size:8px}.seed.shovel{gap:7px}.seed.shovel .seed-text h3{font-size:8px}.field-toolbar{top:6px;left:6px;right:6px}.field-tag{font-size:5px;padding:4px 6px;letter-spacing:.5px}.board-bottom{padding:10px 0;font-size:8px}.collect-button{font-size:8px;padding:6px 8px}.tipbar{display:block;line-height:2;margin-top:0;padding-top:10px}.tipbar span{display:block}.toast{bottom:10px;padding:8px 10px;max-width:96%;white-space:normal;text-align:center;font-size:8px}.modal{padding:28px 23px;border-radius:21px}.modal h2{font-size:34px}.help-grid{gap:9px}.help-step{padding:13px}.help-step p{font-size:9px}.modal-buttons{gap:7px}.modal-buttons button{padding:12px 9px;font-size:10px}.score-note{line-height:1.7}.leaderboard{font-size:10px}.result-stats strong{font-size:20px}}
+  @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<!--
+PLAN
+1. Build a welcoming garden-club menu, illustrated entirely with local canvas art.
+2. Implement a five-lane, nine-column defense game: plant selection, sunlight,
+   ranged attacks, blockers, slowing projectiles, a lane-clearing pepper, and mowers.
+3. Run six increasingly difficult waves with three selectable difficulty settings.
+4. Add pause/resume, instructions, sound/motion settings, results, and a persistent
+   local top-ten leaderboard. Support pointer, touch, and keyboard play.
+5. Keep the complete responsive experience in this file, without downloads or libraries.
+The implementation below follows that sequence.
+-->
+<div class="shell">
+  <header class="masthead">
+    <button class="brand" id="brandButton" aria-label="Bramble home">
+      <span class="brand-mark"><svg viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="M9 23C7 11 12 7 24 6c0 12-4 16-13 14" fill="#d4eaa1"/><path d="M7 25 20 11" stroke="#d4eaa1" stroke-width="2.5"/><path d="m12 20 3-8m-1 5 7-1" stroke="#284d36" stroke-width="1.2"/></svg></span>
+      <span class="wordmark">bramble.</span><span class="brand-note">LAST GARDEN<br>STANDING</span>
+    </button>
+    <nav class="topnav" aria-label="Main navigation"><button class="text-button" id="helpButton">Field guide</button><button class="text-button" id="scoresButton">Scoreboard ↗</button><span class="version">EST. THIS MORNING</span></nav>
+  </header>
+  <main>
+    <section id="homeScreen" aria-label="Main menu">
+      <div class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">THE BACKYARD DEFENSE CLUB</div>
+          <h1>Good plants.<br><em>Bad company.</em></h1>
+          <p class="hero-description">The neighbors are a little… undead. Grow a tiny army, soak up the sun, and keep your corner of the world green.</p>
+          <div class="setup">
+            <div class="form-row"><label class="name-label" for="playerName">GARDENER</label><input class="name-input" id="playerName" maxlength="18" placeholder="Your name" value="Garden guest" autocomplete="nickname" aria-label="Gardener name for the scoreboard"></div>
+            <div class="difficulty" role="group" aria-label="Game difficulty"><button data-difficulty="easy" aria-pressed="false" title="More sunlight, gentler zombies">Sunlit</button><button data-difficulty="normal" aria-pressed="true" title="The original garden challenge">Overgrown</button><button data-difficulty="hard" aria-pressed="false" title="Faster, tougher, and a few more zombies">Wild</button></div>
+            <button class="primary" id="startButton"><span>Let's get growing</span><span class="arrow" aria-hidden="true">↗</span></button>
+            <p class="setup-note">Six waves. Five good plants. One very important lawn.</p>
+          </div>
+        </div>
+        <div class="hero-art" aria-label="An illustrated patch of brave plants facing a very confused zombie" role="img"><canvas id="heroCanvas" width="650" height="650" aria-hidden="true"></canvas><span class="art-label">A SMALL GAME ABOUT STANDING YOUR GROUND</span><div class="art-sticker">100%<b>home</b>GROWN</div><div class="art-caption"><span>Rooting for you.<br>Quite literally.</span><small>FRESH SEEDS<br>QUESTIONABLE NEIGHBORS</small></div></div>
+      </div>
+      <div class="features"><article class="feature"><span class="feature-number">01</span><div><h3>Catch a little sunshine</h3><p>Collect sun. Plant friends. Build your defense.</p></div></article><article class="feature"><span class="feature-number">02</span><div><h3>Make every square count</h3><p>Mix five plants to hold off six unruly waves.</p></div></article><article class="feature"><span class="feature-number">03</span><div><h3>Grow your reputation</h3><p>Chase a personal best on the local scoreboard.</p></div></article></div>
+    </section>
+    <section id="playScreen" hidden aria-label="Garden defense game">
+      <div class="hud"><div class="stat"><span class="sun-glyph" aria-hidden="true">☀</span><div><small>SUNLIGHT</small><strong id="sunValue">250</strong></div></div><div class="hud-divider"></div><div class="stat score-stat"><div><small>GARDEN SCORE</small><strong id="scoreValue">0</strong></div></div><div class="wave-stat"><div class="wave-heading"><span id="waveLabel">GET GROWING</span><span id="waveDetail">First guests in 12s</span></div><div class="progress" aria-hidden="true"><div id="waveProgress"></div></div></div><div class="hud-actions"><button class="icon-button" id="soundButton" title="Turn sound on" aria-label="Turn sound on" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m11 5-6 5H2v4h3l6 5V5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path id="soundWaves" d="m16 9 6 6m0-6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><button class="icon-button" id="pauseButton" title="Pause (P)" aria-label="Pause game"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg></button></div></div>
+      <div class="game-layout"><aside class="seed-tray" aria-label="Seed packets"><div class="tray-heading"><span>THE GOOD GUYS</span><span>1 — 5</span></div>
+        <button class="seed selected" data-plant="sunflower" aria-pressed="true" aria-label="Select Sunflower, costs 50 sunlight, produces sunlight"><canvas width="100" height="114" aria-hidden="true"></canvas><span class="seed-text"><h3>Sunflower</h3><span class="role">Your little earner</span><span class="cost">☀ 50</span></span><span class="key">1</span><span class="cooldown"></span><span class="cool-label"></span></button>
+        <button class="seed" data-plant="peashooter" aria-pressed="false" aria-label="Select Peashooter, costs 100 sunlight, fires down its lane"><canvas width="100" height="114" aria-hidden="true"></canvas><span class="seed-text"><h3>Peashooter</h3><span class="role">A straight shooter</span><span class="cost">☀ 100</span></span><span class="key">2</span><span class="cooldown"></span><span class="cool-label"></span></button>
+        <button class="seed" data-plant="frostpea" aria-pressed="false" aria-label="Select Frostpea, costs 150 sunlight, slows zombies"><canvas width="100" height="114" aria-hidden="true"></canvas><span class="seed-text"><h3>Frostpea</h3><span class="role">Chill out, neighbors</span><span class="cost">☀ 150</span></span><span class="key">3</span><span class="cooldown"></span><span class="cool-label"></span></button>
+        <button class="seed" data-plant="wallnut" aria-pressed="false" aria-label="Select Wallnut, costs 75 sunlight, blocks and absorbs damage"><canvas width="100" height="114" aria-hidden="true"></canvas><span class="seed-text"><h3>Wallnut</h3><span class="role">Stubborn by nature</span><span class="cost">☀ 75</span></span><span class="key">4</span><span class="cooldown"></span><span class="cool-label"></span></button>
+        <button class="seed" data-plant="pepper" aria-pressed="false" aria-label="Select Hot Pepper, costs 125 sunlight, burns every zombie in its lane once"><canvas width="100" height="114" aria-hidden="true"></canvas><span class="seed-text"><h3>Hot Pepper</h3><span class="role">One fiery farewell</span><span class="cost">☀ 125</span></span><span class="key">5</span><span class="cooldown"></span><span class="cool-label"></span></button>
+        <button class="seed shovel" data-plant="shovel" aria-pressed="false" aria-label="Select shovel, remove a plant and recover one quarter of its cost"><svg viewBox="0 0 30 35" fill="none" aria-hidden="true"><path d="m15 15 7-10" stroke="#88634a" stroke-width="5"/><path d="M19 6 24 2l4 3-4 6Z" stroke="#4f6653" stroke-width="3" stroke-linejoin="round"/><path d="M10 13 21 22c-4 7-10 11-18 9 0-8 2-13 7-18Z" fill="#a5b5a0" stroke="#4f6653" stroke-width="2"/><path d="m6 28 8-9" stroke="#dbe4cc" stroke-width="2"/></svg><span class="seed-text"><h3>Shovel</h3><span class="role">25% sun refund</span></span><span class="key">X</span></button>
+      </aside><div><div class="field-frame"><canvas id="gameCanvas" width="1030" height="580" tabindex="0" role="application" aria-label="Garden grid, five rows and nine columns. Select seeds with one through five, move with arrow keys, plant with Enter, collect sunlight with C, shovel with X, pause with P."></canvas><div class="field-toolbar"><span class="field-tag">YOUR LITTLE CORNER OF THE WORLD</span><span class="field-tag weather-tag" id="weatherTag">OVERGROWN · DAY 01</span></div><div class="wave-banner" id="waveBanner"><strong id="bannerTitle"></strong><small id="bannerSubtitle"></small></div><div class="toast" id="toast" role="status"></div></div><div class="board-bottom"><span id="selectionHint"><strong>Sunflower selected.</strong> Tap an empty patch to plant.</span><button class="collect-button" id="collectButton">Collect all sun · C</button></div></div></div>
+      <div class="tipbar"><span><kbd>1</kbd>–<kbd>5</kbd> select seed &nbsp; <kbd>X</kbd> shovel &nbsp; <kbd>↑ ↓ ← →</kbd> choose patch &nbsp; <kbd>Enter</kbd> plant</span><span><kbd>C</kbd> collect sun &nbsp; <kbd>P</kbd> pause &nbsp; Your lawnmowers are the last line of defense.</span></div>
+    </section>
+  </main>
+  <footer class="footer"><span>BRAMBLE GARDEN CLUB · ALL ROOTS WELCOME</span><span>No downloads. Just dirt under your nails.</span></footer>
+</div>
+<div class="modal-backdrop" id="modalBackdrop" hidden><section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><button class="modal-close" id="modalClose" aria-label="Close dialog">×</button><div id="modalContent"></div></section></div>
+<div class="sr-only" id="announcer" aria-live="polite" aria-atomic="true"></div>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const canvas = $('gameCanvas'), ctx = canvas.getContext('2d');
+  const heroCanvas = $('heroCanvas'), heroCtx = heroCanvas.getContext('2d');
+  const GRID = {x:146,y:100,w:84,h:80,rows:5,cols:9};
+  const PLANTS = {
+    sunflower:{name:'Sunflower',cost:50,hp:140,cooldown:2.5,period:13},
+    peashooter:{name:'Peashooter',cost:100,hp:180,cooldown:3,period:1.55,damage:25},
+    frostpea:{name:'Frostpea',cost:150,hp:170,cooldown:4,period:2.05,damage:19},
+    wallnut:{name:'Wallnut',cost:75,hp:800,cooldown:7},
+    pepper:{name:'Hot Pepper',cost:125,hp:999,cooldown:12}
+  };
+  const DIFFICULTY = {
+    easy:{name:'Sunlit',hp:.8,speed:.83,sun:350,sky:5.4,extra:0,score:.8},
+    normal:{name:'Overgrown',hp:1,speed:1,sun:250,sky:6.6,extra:0,score:1},
+    hard:{name:'Wild',hp:1.2,speed:1.15,sun:200,sky:7.3,extra:2,score:1.35}
+  };
+  let prefs = {name:'Garden guest',difficulty:'normal',sound:false,motion:true}, records=[], storageOK=true;
+  try {
+    const saved=JSON.parse(localStorage.getItem('bramble.settings.v1')||'null');
+    if(saved && typeof saved==='object') prefs={...prefs,...saved};
+    const scores=JSON.parse(localStorage.getItem('bramble.scores.v1')||'[]');
+    if(Array.isArray(scores)) records=scores.filter(r=>r && Number.isFinite(r.score) && typeof r.name==='string' && DIFFICULTY[r.difficulty]).slice(0,50);
+  } catch (_) {storageOK=false;}
+  if(!DIFFICULTY[prefs.difficulty]) prefs.difficulty='normal';
+  prefs.name=String(prefs.name||'Garden guest').slice(0,18);
+  let reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let state='home',game=null,selected='sunflower',keyboardCell={row:2,col:1},hoverCell=null,keyboardMode=false;
+  let modalKind='',modalPausedGame=false,previousFocus=null,scoreFilter='all',audioContext=null;
+  let toastRemaining=0,bannerRemaining=0,lastFrame=performance.now(),visualTime=0,uiElapsed=0;
+  const seedButtons=[...document.querySelectorAll('[data-plant]')];
+  function savePrefs(){try{localStorage.setItem('bramble.settings.v1',JSON.stringify(prefs));}catch(_){storageOK=false;}}
+  function announce(message){$('announcer').textContent=message;}
+  function motion(){return prefs.motion&&!reducedMotion;}
+  function random(a,b){return a+Math.random()*(b-a);}
+  function point(row,col){return{x:GRID.x+(col+.5)*GRID.w,y:GRID.y+(row+.5)*GRID.h};}
+  function rounded(c,x,y,w,h,r,fill,stroke,line=2){c.beginPath();c.roundRect(x,y,w,h,r);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=line;c.stroke();}}
+  function ellipse(c,x,y,rx,ry,fill,stroke,line=2){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=line;c.stroke();}}
+  function path(c,points,fill,stroke,line=2){c.beginPath();points(c);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=line;c.stroke();}}
+  function line(c,x1,y1,x2,y2,color,width){c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.strokeStyle=color;c.lineWidth=width;c.lineCap='round';c.stroke();}
+  function leaf(c,x,y,angle,size,color='#74a648'){
+    c.save();c.translate(x,y);c.rotate(angle);path(c,p=>{p.moveTo(0,0);p.bezierCurveTo(size*.1,-size*.85,size*.9,-size*.65,size,0);p.bezierCurveTo(size*.8,size*.4,size*.25,size*.3,0,0);},color,'#345c35',1.5);line(c,1,0,size*.75,-size*.05,'#93bd61',1.3);c.restore();
+  }
+  function drawPlant(c,type,x,y,time=0,scale=1,health=1,age=2){
+    const bob=motion()?Math.sin(time*2.4+x*.1)*1.8:0;
+    c.save();c.translate(x,y);c.scale(scale,scale);c.lineJoin='round';c.lineCap='round';
+    ellipse(c,0,30,27,9,'#264d3636');
+    if(type==='wallnut'){
+      leaf(c,0,28,3.3,22);leaf(c,0,29,-.25,24);
+      c.save();c.rotate(motion()?Math.sin(time*1.7+x)*.025:0);
+      path(c,p=>{p.moveTo(-24,22);p.bezierCurveTo(-34,0,-27,-34,-4,-36);p.bezierCurveTo(18,-43,34,-14,27,15);p.bezierCurveTo(23,35,-13,39,-24,22);},'#b78851','#654c32',2.7);
+      path(c,p=>{p.moveTo(-10,-28);p.bezierCurveTo(-21,-14,-22,8,-15,22);},null,'#d7ae72',4);
+      path(c,p=>{p.moveTo(7,-30);p.bezierCurveTo(2,-14,14,-4,7,15);p.lineTo(11,28);},null,'#936637',1.4);
+      if(health<.65){path(c,p=>{p.moveTo(-5,-36);p.lineTo(-8,-25);p.lineTo(-1,-20);p.lineTo(-5,-11);},null,'#614b34',2);}
+      if(health<.3){path(c,p=>{p.moveTo(27,9);p.lineTo(18,8);p.lineTo(15,16);p.lineTo(9,13);},null,'#614b34',2);}
+      ellipse(c,-10,-5,5,7,'#fff5d8');ellipse(c,12,-5,5,7,'#fff5d8');ellipse(c,-8,-4,2,3,'#382e25');ellipse(c,14,-4,2,3,'#382e25');
+      path(c,p=>{p.moveTo(-5,12);p.quadraticCurveTo(2,health>.3?18:8,9,12);},null,'#65452c',2);c.restore();
+    }else if(type==='pepper'){
+      leaf(c,-4,27,3.2,19);leaf(c,0,27,-.2,20);c.translate(0,bob);
+      path(c,p=>{p.moveTo(7,-24);p.bezierCurveTo(38,-28,29,3,9,17);p.bezierCurveTo(-3,26,-17,31,-25,20);p.bezierCurveTo(-3,20,-15,4,-12,-8);p.bezierCurveTo(-11,-20,-2,-23,7,-24);},'#e67543','#8f442f',2.6);
+      path(c,p=>{p.moveTo(3,-21);p.quadraticCurveTo(5,-32,16,-36);},null,'#366b3c',5);leaf(c,5,-22,3.65,14,'#679948');
+      path(c,p=>{p.moveTo(-6,-13);p.quadraticCurveTo(-2,-19,5,-18);},null,'#ffb180',4);
+      line(c,-5,-3,1,0,'#4d3327',2);line(c,11,0,17,-4,'#4d3327',2);ellipse(c,0,2,1.8,2.3,'#3b332b');ellipse(c,13,1,1.8,2.3,'#3b332b');
+      path(c,p=>{p.moveTo(1,10);p.quadraticCurveTo(7,13,12,8);},null,'#613827',2);
+    }else{
+      line(c,-1,25,0,-7,'#3f713a',8);line(c,-2,21,-1,-4,'#729f4b',3);
+      leaf(c,-2,24,3.45,26);leaf(c,1,23,-.4,27);leaf(c,0,11,3.8,18);
+      c.translate(0,bob);
+      if(type==='sunflower'){
+        for(let i=0;i<10;i++){c.save();c.translate(0,-15);c.rotate(i*Math.PI/5+Math.sin(time+x)*.025);ellipse(c,0,-23,10,15,'#efc25c','#a78338',1.6);c.restore();}
+        ellipse(c,0,-15,22,22,'#a67a43','#775536',2.3);ellipse(c,-4,-19,17,16,'#ba9456');
+        for(let i=0;i<13;i++){const a=i*2.4;ellipse(c,Math.cos(a)*16,-15+Math.sin(a)*16,1,1,'#96703e');}
+        ellipse(c,-8,-16,2.5,3.4,'#3b3829');ellipse(c,8,-16,2.5,3.4,'#3b3829');ellipse(c,-12,-8,3.5,2,'#da9560');ellipse(c,12,-8,3.5,2,'#da9560');
+        path(c,p=>{p.moveTo(-5,-7);p.quadraticCurveTo(0,-1,5,-7);},null,'#60452d',2);
+      }else{
+        const cold=type==='frostpea',base=cold?'#97c7c9':'#85ba55',edge=cold?'#4c878a':'#3f713a',light=cold?'#c3e6dc':'#b5d878';
+        leaf(c,-13,-13,3.4,23,cold?'#8bbba9':'#6b9c42');
+        ellipse(c,-2,-14,24,23,base,edge,2.7);ellipse(c,-8,-21,13,9,light);
+        path(c,p=>{p.moveTo(10,-24);p.lineTo(28,-23);p.quadraticCurveTo(34,-13,28,-5);p.lineTo(12,-4);},base,edge,2.5);
+        ellipse(c,28,-14,7,10,edge);ellipse(c,29,-15,3.2,6,cold?'#356565':'#294d2d');
+        ellipse(c,-7,-18,3.1,4.2,'#234131');ellipse(c,-6,-19.5,1,1.3,'#e6f1ca');ellipse(c,-12,-10,4,2,cold?'#aad8d0':'#a7cf65');
+        if(cold){for(let i=0;i<3;i++){c.save();c.translate(-6+i*8,-36);c.rotate((i-1)*.3);path(c,p=>{p.moveTo(-4,7);p.lineTo(0,-3);p.lineTo(4,7);},'#d8f3e4','#6ca4a0',1);c.restore();}}
+      }
+    }
+    if(age<.35){c.globalAlpha=(.35-age)*1.5;ellipse(c,0,30,29+age*30,8,'#e9e5b7');}
+    if(health<1 && type!=='pepper'){rounded(c,-22,42,44,4,2,'#23482e55');rounded(c,-22,42,Math.max(0,44*health),4,2,health>.35?'#d5e792':'#e99965');}
+    c.restore();
+  }
+  function drawZombie(c,z,time,scale=1){
+    const walk=motion()?Math.sin(time*(z.eating?10:5)+z.seed):0,bob=Math.abs(walk)*2;
+    c.save();c.translate(z.x,z.y);c.scale(scale*(z.kind==='tank'?1.13:1),scale*(z.kind==='tank'?1.13:1));c.lineCap='round';c.lineJoin='round';
+    ellipse(c,0,30,23,7,'#173c313a');
+    const skin=z.slow>0?'#99bdbc':'#8d9f77',edge='#425343',coat=z.kind==='runner'?'#9c6658':z.kind==='tank'?'#666d60':'#6f7d69';
+    line(c,-7,11,-12+walk*5,27,'#4b5850',9);line(c,8,12,12-walk*5,28,'#48564b',9);
+    rounded(c,-22+walk*5,24,19,8,3,'#3c4940');rounded(c,5-walk*5,26,20,8,3,'#3c4940');
+    c.translate(0,-bob);
+    path(c,p=>{p.moveTo(-15,-20);p.lineTo(9,-21);p.lineTo(18,13);p.lineTo(2,18);p.lineTo(-5,10);p.lineTo(-17,14);p.closePath();},coat,edge,2.5);
+    path(c,p=>{p.moveTo(-6,-18);p.lineTo(1,-20);p.lineTo(6,8);p.lineTo(-1,6);},'#d4ceb0',edge,1);path(c,p=>{p.moveTo(-2,-15);p.lineTo(3,-12);p.lineTo(0,-5);p.lineTo(5,5);p.lineTo(1,8);p.lineTo(-4,-4);},'#bb7450');
+    line(c,-10,-14,-27,-2+walk*1.4,coat,10);line(c,-25,-2+walk*1.4,-37,-8+walk*1.4,skin,7);line(c,11,-12,-8,-4-walk*1.5,coat,9);line(c,-8,-4-walk*1.5,-22,-10-walk*1.5,skin,7);
+    line(c,-38,-9+walk*1.4,-44,-8+walk*1.4,skin,3);line(c,-37,-7+walk*1.4,-42,-3+walk*1.4,skin,3);
+    rounded(c,-18,-57,37,38,12,skin,edge,2.7);ellipse(c,-21,-37,5,7,skin,edge,2);ellipse(c,18,-37,4,6,skin,edge,2);
+    path(c,p=>{p.moveTo(-9,-55);p.lineTo(-6,-61);p.moveTo(1,-57);p.lineTo(4,-63);p.moveTo(11,-55);p.lineTo(14,-59);},null,edge,2);
+    ellipse(c,-11,-42,8,8,'#e9e7cc',edge,1.2);ellipse(c,8,-43,7,7,'#e9e7cc',edge,1.2);ellipse(c,-14,-41,2.5,3,'#354335');ellipse(c,5,-42,2.5,3,'#354335');
+    path(c,p=>{p.moveTo(-3,-37);p.lineTo(-6,-32);p.lineTo(0,-31);},null,'#667759',1.5);
+    rounded(c,-11,-27,24,z.eating?8+Math.abs(walk)*4:7,3,'#4c5944');rounded(c,-5,-27,5,5,1,'#e5dec3');rounded(c,4,-27,5,4,1,'#e5dec3');
+    if(z.kind==='cone'){
+      path(c,p=>{p.moveTo(-23,-55);p.lineTo(-7,-91);p.lineTo(9,-88);p.lineTo(24,-55);p.closePath();},'#d68d52','#865936',2.5);path(c,p=>{p.moveTo(-16,-70);p.lineTo(17,-70);p.lineTo(13,-79);p.lineTo(-12,-79);},'#ecd9ab');rounded(c,-26,-57,54,6,2,'#c27a42','#865936',1.7);
+    }else if(z.kind==='tank'){
+      path(c,p=>{p.moveTo(-24,-51);p.lineTo(-20,-77);p.lineTo(20,-77);p.lineTo(24,-51);p.closePath();},'#a6afa2','#5d7165',2.5);rounded(c,-27,-54,55,6,2,'#87998b','#5d7165',1.5);line(c,-12,-71,-12,-57,'#d4dcc9',4);path(c,p=>{p.moveTo(20,-66);p.quadraticCurveTo(39,-52,22,-45);},null,'#5d7165',2.5);
+    }else if(z.kind==='runner'){rounded(c,-22,-53,45,7,2,'#b45f43');path(c,p=>{p.moveTo(18,-50);p.lineTo(32,-46);p.lineTo(28,-39);},'#b45f43');}
+    if(z.flash>0){c.globalAlpha=Math.min(.65,z.flash*4);ellipse(c,-2,-37,23,27,'#fff7d3');c.globalAlpha=1;}
+    c.restore();
+    if(z.hp<z.maxHp){const width=z.kind==='tank'?45:38;rounded(c,z.x-width/2,z.y-102*scale,width,4,2,'#24492c66');rounded(c,z.x-width/2,z.y-102*scale,width*Math.max(0,z.hp/z.maxHp),4,2,z.slow>0?'#bde8df':'#e6b97c');}
+  }
+  function drawSun(c,s,time,scale=1){
+    c.save();c.translate(s.x,s.y);c.scale(scale,scale);c.rotate(motion()?time*.2:0);
+    const glow=c.createRadialGradient(0,0,4,0,0,33);glow.addColorStop(0,'#f8db7c66');glow.addColorStop(1,'#f8db7c00');ellipse(c,0,0,33,33,glow);
+    for(let i=0;i<8;i++){c.save();c.rotate(i*Math.PI/4);path(c,p=>{p.moveTo(-4,-17);p.lineTo(0,-26);p.lineTo(4,-17);},'#f8d77d','#b98d34',.9);c.restore();}
+    ellipse(c,0,0,17,17,'#f8da7f','#bb923e',1.8);ellipse(c,-4,-5,10,8,'#ffe9a3');
+    c.rotate(motion()?-time*.2:0);ellipse(c,-5,0,1.5,2,'#b38c35');ellipse(c,5,0,1.5,2,'#b38c35');path(c,p=>{p.moveTo(-3,6);p.quadraticCurveTo(0,9,3,6);},null,'#b38c35',1.2);c.restore();
+  }
+  function drawMower(c,x,y,active=false){
+    c.save();c.translate(x,y);ellipse(c,0,26,22,6,'#20432d44');line(c,-9,11,-19,-13,'#435747',3);line(c,-19,-13,-30,-13,'#435747',4);rounded(c,-22,7,43,16,5,active?'#f1ac61':'#d78d56','#805b3c',2);rounded(c,-12,-1,24,14,3,'#dfe2c5','#71866b',2);rounded(c,-8,-5,12,5,2,'#7c8b71');ellipse(c,-13,25,7,7,'#344b39');ellipse(c,14,25,7,7,'#344b39');ellipse(c,-13,25,2.5,2.5,'#a9b394');ellipse(c,14,25,2.5,2.5,'#a9b394');c.restore();
+  }
+  const grass=[];for(let i=0;i<225;i++)grass.push({x:GRID.x+random(6,750),y:GRID.y+random(4,396),s:random(2,4),c:Math.random()>.7});
+  function drawField(c,time){
+    c.fillStyle='#47764a';c.fillRect(0,0,1030,580);
+    c.fillStyle='#385e3e';c.fillRect(0,0,1030,89);
+    for(let x=-20;x<1070;x+=65){ellipse(c,x,23,54,36,'#416d41');ellipse(c,x+10,30,35,26,'#4a7846');ellipse(c,x+10,5,24,18,'#54824a');}
+    c.fillStyle='#718961';c.fillRect(0,69,1030,8);c.fillStyle='#779065';c.fillRect(0,89,1030,7);
+    for(let x=20;x<1040;x+=37){path(c,p=>{p.moveTo(x,66);p.lineTo(x+8,57);p.lineTo(x+16,66);p.lineTo(x+16,100);p.lineTo(x,100);p.closePath();},'#94a67d','#5a784f',1);line(c,x+5,69,x+5,93,'#aec095',1.4);}
+    c.fillStyle='#d0cbae';c.fillRect(0,101,134,425);c.fillStyle='#c2bfa1';c.fillRect(905,96,125,432);
+    for(let row=0;row<5;row++){
+      for(let col=0;col<9;col++){
+        c.fillStyle=(row+col)%2===0?'#87a865':'#7fa35e';c.fillRect(GRID.x+col*GRID.w,GRID.y+row*GRID.h,GRID.w,GRID.h);
+        line(c,GRID.x+col*GRID.w,GRID.y+row*GRID.h+GRID.h-1,GRID.x+(col+1)*GRID.w,GRID.y+row*GRID.h+GRID.h-1,'#71965055',1);
+      }
+      rounded(c,16,112+row*80,65,66,5,'#e2dbc1','#b9b99a',1.5);line(c,48,113+row*80,47,176+row*80,'#c5c4a7',1);line(c,17,145+row*80,80,144+row*80,'#c5c4a7',1);
+      c.fillStyle='#738860';c.font='9px ui-sans-serif,system-ui';c.textAlign='center';c.fillText(String(row+1).padStart(2,'0'),129,144+row*80);
+      for(let j=0;j<2;j++)rounded(c,922+j*47+(row%2?4:0),112+row*80,42,65,5,'#c9c5a8','#b3b598',1);
+    }
+    for(const g of grass){c.strokeStyle=g.c?'#a7bf7866':'#628d4d66';c.lineWidth=1;c.beginPath();c.moveTo(g.x-2,g.y);c.lineTo(g.x-3,g.y-g.s);c.moveTo(g.x,g.y);c.lineTo(g.x+2,g.y-g.s);c.stroke();}
+    c.fillStyle='#5b894e';c.fillRect(140,100,6,404);c.fillRect(899,100,6,405);
+    c.fillStyle='#638c50';c.fillRect(137,500,771,10);c.fillStyle='#42683d';c.fillRect(137,510,771,9);
+    c.fillStyle='#d3ccb0';c.fillRect(0,523,1030,57);
+    for(let x=-20;x<1060;x+=87)rounded(c,x,532,81,40,6,'#ddd6ba','#bdbd9e',1.3);
+    for(let x=150;x<900;x+=41){leaf(c,x,511,3.5,13,'#6e9b4f');leaf(c,x+2,512,-.4,11,'#7ba558');}
+    const flowers=[[29,78],[102,491],[1010,495],[945,70],[492,70],[696,517],[302,518]];
+    for(const [x,y]of flowers){for(let a=0;a<5;a++)ellipse(c,x+Math.cos(a*1.257)*4,y+Math.sin(a*1.257)*4,3,3,'#e6dc9e');ellipse(c,x,y,2.5,2.5,'#b49543');}
+    const cell=keyboardMode?keyboardCell:hoverCell;
+    if(game&&state==='playing'&&cell){const x=GRID.x+cell.col*GRID.w,y=GRID.y+cell.row*GRID.h;rounded(c,x+3,y+3,GRID.w-6,GRID.h-6,10,selected==='shovel'?'#f7b17d36':'#e9f5b635',selected==='shovel'?'#e7ac72':'#e4ecab',2);if(selected!=='shovel'&&!game.plants.some(p=>p.row===cell.row&&p.col===cell.col)){c.globalAlpha=.38;drawPlant(c,selected,x+GRID.w/2,y+GRID.h/2+8,time,.87);c.globalAlpha=1;}}
+  }
+  function drawHero(time){
+    const c=heroCtx;c.clearRect(0,0,650,650);c.fillStyle='#204c39';c.fillRect(0,0,650,650);
+    for(let i=0;i<8;i++){c.strokeStyle='#8ba57312';c.lineWidth=1;c.beginPath();c.arc(330,315,90+i*42,0,Math.PI*2);c.stroke();}
+    c.save();c.translate(320,330);c.rotate(-.08);
+    rounded(c,-246,-160,492,316,20,'#163728');rounded(c,-246,-174,492,316,20,'#5d8049','#103b2c',3);
+    for(let r=0;r<4;r++)for(let col=0;col<6;col++){rounded(c,-231+col*77,-160+r*71,74,68,4,(r+col)%2?'#83a35e':'#91ad6a');}
+    for(let i=0;i<32;i++){const x=-216+(i*139%439),y=-146+(i*53%258);line(c,x,y,x-2,y-4,'#638d4c',1);line(c,x+2,y,x+4,y-5,'#638d4c',1);}
+    for(let i=0;i<9;i++){const x=-251+i*61;line(c,x,-171,x,-210,'#91a877',11);path(c,p=>{p.moveTo(x-6,-210);p.lineTo(x,-219);p.lineTo(x+6,-210);},'#91a877');}line(c,-254,-190,252,-190,'#829e69',7);
+    drawPlant(c,'sunflower',-189,-100,time,.91);drawPlant(c,'peashooter',-108,-92,time,.94);drawPlant(c,'wallnut',51,-89,time,.97);
+    drawPlant(c,'sunflower',-184,-22,time,.9);drawPlant(c,'frostpea',-28,-14,time,.96);
+    drawPlant(c,'peashooter',-109,64,time,1);drawPlant(c,'pepper',52,65,time,.95);
+    drawZombie(c,{x:177,y:0,kind:'normal',seed:1,hp:1,maxHp:1,slow:0},time,1.05);drawZombie(c,{x:217,y:97,kind:'cone',seed:3,hp:1,maxHp:1,slow:0},time,.92);
+    ellipse(c,75,-15,8,8,'#c2e989','#446b3c',1.5);ellipse(c,88,-14,4,3,'#d4e9ac44');
+    c.restore();drawSun(c,{x:168,y:180},time,1.23);drawSun(c,{x:474,y:170},time,.77);
+    c.save();c.translate(34,450);c.rotate(-.6);leaf(c,0,0,-.9,90,'#416b3e');leaf(c,0,0,.2,73,'#517c48');leaf(c,0,0,2.1,90,'#375f3a');line(c,0,70,0,-45,'#85a65e',4);c.restore();
+    c.save();c.translate(628,360);c.rotate(.3);leaf(c,0,0,3.5,82,'#49723f');leaf(c,0,2,4.4,87,'#547f46');leaf(c,0,0,2.7,70,'#385e38');line(c,0,70,0,-25,'#739651',3);c.restore();
+    c.fillStyle='#b5c994';c.font='italic 13px Georgia';c.save();c.translate(398,472);c.rotate(-.07);c.fillText('uninvited, as usual.',0,0);path(c,p=>{p.moveTo(62,-15);p.quadraticCurveTo(96,-25,99,-47);p.moveTo(92,-41);p.lineTo(99,-48);p.lineTo(102,-37);},null,'#9eb783',1);c.restore();
+  }
+  function tone(kind){
+    if(!prefs.sound)return;
+    try{
+      if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)();
+      if(audioContext.state==='suspended')audioContext.resume();
+      const now=audioContext.currentTime,o=audioContext.createOscillator(),gain=audioContext.createGain();
+      const spec={plant:[420,620,.09],sun:[720,1100,.13],shoot:[230,150,.055],hit:[110,72,.065],wave:[310,480,.3],boom:[90,25,.4],click:[490,580,.055],win:[520,1040,.7]}[kind]||[420,520,.07];
+      o.type=kind==='boom'?'sawtooth':'sine';o.frequency.setValueAtTime(spec[0],now);o.frequency.exponentialRampToValueAtTime(spec[1],now+spec[2]);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(kind==='shoot'?.018:.055,now+.01);gain.gain.exponentialRampToValueAtTime(.0001,now+spec[2]);o.connect(gain);gain.connect(audioContext.destination);o.start(now);o.stop(now+spec[2]+.02);
+    }catch(_){}
+  }
+  function showToast(text,duration=2.5){$('toast').textContent=text;$('toast').classList.add('visible');toastRemaining=duration;announce(text);}
+  function banner(title,subtitle,duration=3){$('bannerTitle').textContent=title;$('bannerSubtitle').textContent=subtitle;$('waveBanner').classList.add('visible');bannerRemaining=duration;announce(title+'. '+subtitle);}
+  function burst(x,y,color,count=9,force=50){for(let i=0;i<count;i++)game.particles.push({x,y,vx:random(-force,force),vy:random(-force,force*.3),life:random(.3,.8),max:.8,size:random(2,5),color});}
+  function floating(x,y,text,color='#fff8ce'){game.floaters.push({x,y,text,color,life:1.3});}
+  function setDifficulty(value){prefs.difficulty=value;document.querySelectorAll('[data-difficulty]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.difficulty===value)));savePrefs();}
+  function selectPlant(type){
+    selected=type;seedButtons.forEach(b=>{const on=b.dataset.plant===type;b.classList.toggle('selected',on);b.setAttribute('aria-pressed',String(on));});
+    $('selectionHint').innerHTML=type==='shovel'?'<strong>Shovel selected.</strong> Remove a plant for a 25% sun refund.':'<strong>'+PLANTS[type].name+' selected.</strong> Tap an empty patch to plant.';
+  }
+  function newGame(){
+    prefs.name=$('playerName').value.trim().slice(0,18)||'Garden guest';$('playerName').value=prefs.name;savePrefs();
+    const d=DIFFICULTY[prefs.difficulty];
+    game={name:prefs.name,difficulty:prefs.difficulty,d,sun:d.sun,score:0,kills:0,elapsed:0,wave:0,totalWaves:6,waveSpawn:0,waveTotal:0,spawnTimer:0,waiting:12,skyTimer:4,plants:[],zombies:[],peas:[],suns:[],particles:[],floaters:[],flames:[],cooldowns:{},mowers:Array.from({length:5},(_,row)=>({row,x:108,active:false,used:false})),saved:false,lastLane:-1};
+    for(const type in PLANTS)game.cooldowns[type]=0;
+    state='playing';$('homeScreen').hidden=true;$('playScreen').hidden=false;$('weatherTag').textContent=d.name.toUpperCase()+' · DAY 01';
+    hideModal(false);selectPlant('sunflower');hoverCell=null;keyboardMode=false;toastRemaining=0;bannerRemaining=0;$('waveBanner').classList.remove('visible');
+    showToast('Start with sunflowers. Plant peashooters before the guests arrive.',5);updateUI();tone('plant');canvas.focus({preventScroll:true});
+  }
+  function addSun(x,y,sky=false){game.suns.push({x,y,startY:y,targetY:sky?random(150,460):y-34,vx:sky?0:random(-8,8),age:0,life:14,sky,value:25});}
+  function collectSun(index){const s=game.suns[index];if(!s)return;game.sun+=s.value;game.score+=Math.round(5*game.d.score);floating(s.x,s.y,'+25','#fff4aa');burst(s.x,s.y,'#f4d575',7,55);game.suns.splice(index,1);tone('sun');updateUI();}
+  function collectAll(){if(state!=='playing')return;if(!game.suns.length){showToast('More sunlight is on its way.',1.2);return;}const count=game.suns.length;for(let i=game.suns.length-1;i>=0;i--)collectSun(i);announce('Collected '+count*25+' sunlight. Total '+game.sun+'.');}
+  function plantAt(row,col){
+    if(state!=='playing')return;
+    const existing=game.plants.find(p=>p.row===row&&p.col===col),p=point(row,col);
+    if(selected==='shovel'){
+      if(!existing){showToast('Choose a planted patch to dig up.');return;}
+      const refund=Math.floor(PLANTS[existing.type].cost*.25);game.sun+=refund;game.plants=game.plants.filter(p=>p!==existing);burst(existing.x,existing.y+17,'#b9b889',12);floating(existing.x,existing.y,'+'+refund+' sun');tone('plant');updateUI();return;
+    }
+    if(existing){showToast('That patch is taken. Use the shovel to make room.');return;}
+    const def=PLANTS[selected];
+    if(game.sun<def.cost){showToast('Need '+(def.cost-game.sun)+' more sun for '+def.name+'.');return;}
+    if(game.cooldowns[selected]>0){showToast(def.name+' seeds are ready in '+Math.ceil(game.cooldowns[selected])+'s.');return;}
+    game.sun-=def.cost;game.cooldowns[selected]=def.cooldown;
+    game.plants.push({type:selected,row,col,x:p.x,y:p.y+8,hp:def.hp,maxHp:def.hp,timer:selected==='sunflower'?7:random(.2,.6),age:0});
+    burst(p.x,p.y+30,'#d4ddb0',10,45);tone('plant');updateUI();announce(def.name+' planted in row '+(row+1)+', column '+(col+1)+'. '+game.sun+' sunlight remains.');
+  }
+  function beginWave(){
+    game.wave++;game.waveTotal=5+game.wave*2+game.d.extra;game.waveSpawn=game.waveTotal;game.spawnTimer=.8;game.waiting=-1;
+    banner(game.wave===6?'One last stand.':'Here comes wave '+game.wave+'.',game.wave===6?'THE FINAL WAVE · MAKE YOUR GARDEN PROUD':'WAVE '+game.wave+' OF 6 · KEEP THOSE ROOTS DOWN');tone('wave');
+  }
+  function spawnZombie(){
+    let row=Math.floor(Math.random()*5);if(row===game.lastLane)row=(row+1+Math.floor(Math.random()*4))%5;game.lastLane=row;
+    const roll=Math.random();let kind='normal';if(game.wave>=4&&roll<.2)kind='tank';else if(game.wave>=3&&roll<.35)kind='runner';else if(game.wave>=2&&roll<.58)kind='cone';
+    const stats={normal:[115,13],cone:[220,11],runner:[90,23],tank:[360,9]}[kind];
+    const hp=stats[0]*game.d.hp*(1+(game.wave-1)*.025);
+    game.zombies.push({x:986+random(0,20),y:point(row,0).y+14,row,kind,hp,maxHp:hp,speed:stats[1]*game.d.speed,slow:0,flash:0,seed:random(0,10),eating:false,dead:false});
+    game.waveSpawn--;game.spawnTimer=Math.max(.95,2.4-game.wave*.16)+random(0,.65);
+  }
+  function damageZombie(z,amount,cold=false){if(z.dead)return;z.hp-=amount;z.flash=.13;if(cold)z.slow=3.3;if(z.hp<=0){z.dead=true;game.kills++;const points=Math.round(({normal:100,cone:160,runner:140,tank:230}[z.kind])*game.d.score);game.score+=points;burst(z.x,z.y-25,z.slow>0?'#c2e5d1':'#b7c38e',12,75);floating(z.x,z.y-52,'+'+points);}}
+  function update(dt){
+    if(state!=='playing'||!game)return;
+    game.elapsed+=dt;game.skyTimer-=dt;
+    if(game.skyTimer<=0){addSun(random(195,865),83,true);game.skyTimer=game.d.sky;}
+    for(const t in game.cooldowns)game.cooldowns[t]=Math.max(0,game.cooldowns[t]-dt);
+    if(game.waiting>=0){game.waiting-=dt;if(game.waiting<=0)beginWave();}
+    else if(game.waveSpawn>0){game.spawnTimer-=dt;if(game.spawnTimer<=0)spawnZombie();}
+    else if(game.zombies.every(z=>z.dead)){
+      game.score+=Math.round(250*game.d.score);
+      if(game.wave>=game.totalWaves){finish(true);return;}
+      game.waiting=6;game.sun+=50;floating(515,250,'WAVE CLEAR · +50 SUN','#fff2b2');showToast('Wave cleared! +50 sunlight. A moment to replant.',3);
+    }
+    for(const p of game.plants){
+      p.age+=dt;p.timer-=dt;
+      if(p.type==='sunflower'&&p.timer<=0){addSun(p.x+random(-13,13),p.y-10);p.timer=PLANTS[p.type].period;}
+      else if((p.type==='peashooter'||p.type==='frostpea')&&p.timer<=0){
+        if(game.zombies.some(z=>!z.dead&&z.row===p.row&&z.x>p.x-10&&z.x<1050)){
+          game.peas.push({x:p.x+29,y:p.y-14,row:p.row,cold:p.type==='frostpea',damage:PLANTS[p.type].damage});p.timer=PLANTS[p.type].period;tone('shoot');
+        }
+      }else if(p.type==='pepper'&&p.age>1.05){
+        for(const z of game.zombies)if(z.row===p.row)damageZombie(z,600);
+        game.flames.push({row:p.row,life:.9});burst(p.x,p.y,'#ffbb6c',28,150);p.hp=0;tone('boom');
+      }
+    }
+    for(const pea of game.peas){
+      const before=pea.x;pea.x+=dt*(pea.cold?255:290);
+      const targets=game.zombies.filter(z=>!z.dead&&z.row===pea.row&&z.x-23<=pea.x&&z.x+23>=before).sort((a,b)=>a.x-b.x);
+      if(targets.length){const z=targets[0];damageZombie(z,pea.damage,pea.cold);burst(z.x-16,pea.y,pea.cold?'#c4ede4':'#cee995',4,35);pea.dead=true;tone('hit');}
+    }
+    game.peas=game.peas.filter(p=>!p.dead&&p.x<1060);
+    for(const z of game.zombies){
+      if(z.dead)continue;z.slow=Math.max(0,z.slow-dt);z.flash=Math.max(0,z.flash-dt);
+      const target=game.plants.filter(p=>p.hp>0&&p.row===z.row&&z.x-p.x<45&&z.x-p.x>-30).sort((a,b)=>b.x-a.x)[0];
+      z.eating=!!target;if(target){target.hp-=dt*(z.kind==='tank'?44:32)*(z.slow>0?.6:1);if(target.hp<=0)burst(target.x,target.y,'#90b16a',8);}
+      else z.x-=z.speed*dt*(z.slow>0?.48:1);
+      const mower=game.mowers[z.row];
+      if(z.x<GRID.x-15&&!mower.used){mower.used=true;mower.active=true;tone('boom');showToast('Emergency mower in row '+(z.row+1)+'! That lane is on its own now.',3);}
+      if(z.x<58&&!mower.active){finish(false);return;}
+    }
+    for(const m of game.mowers)if(m.active){const before=m.x;m.x+=dt*485;for(const z of game.zombies)if(!z.dead&&z.row===m.row&&z.x< m.x+32&&z.x>before-45)damageZombie(z,10000);if(m.x>1110)m.active=false;}
+    game.zombies=game.zombies.filter(z=>!z.dead);game.plants=game.plants.filter(p=>p.hp>0);
+    for(const s of game.suns){s.age+=dt;s.life-=dt;if(s.sky)s.y=Math.min(s.targetY,s.y+45*dt);else{s.x+=s.vx*dt;s.y=s.targetY+34*Math.exp(-s.age*3)+Math.sin(s.age*3)*3*Math.exp(-s.age);}}
+    game.suns=game.suns.filter(s=>s.life>0);
+    for(const p of game.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=90*dt;}game.particles=game.particles.filter(p=>p.life>0).slice(-350);
+    for(const f of game.floaters){f.life-=dt;f.y-=dt*25;}game.floaters=game.floaters.filter(f=>f.life>0);
+    for(const f of game.flames)f.life-=dt;game.flames=game.flames.filter(f=>f.life>0);
+    if(toastRemaining>0){toastRemaining-=dt;if(toastRemaining<=0)$('toast').classList.remove('visible');}
+    if(bannerRemaining>0){bannerRemaining-=dt;if(bannerRemaining<=0)$('waveBanner').classList.remove('visible');}
+    uiElapsed+=dt;if(uiElapsed>.1){updateUI();uiElapsed=0;}
+  }
+  function drawGame(time){
+    drawField(ctx,time);if(!game)return;
+    for(let row=0;row<5;row++){
+      const m=game.mowers[row];if(!m.used||m.active)drawMower(ctx,m.x,point(row,0).y+5,m.active);
+      const rowItems=[...game.plants.filter(p=>p.row===row).map(p=>({kind:'plant',item:p})),...game.zombies.filter(z=>z.row===row).map(z=>({kind:'zombie',item:z}))];
+      rowItems.sort((a,b)=>a.item.y-b.item.y);
+      for(const obj of rowItems){const p=obj.item;if(obj.kind==='plant')drawPlant(ctx,p.type,p.x,p.y,time,.89,p.hp/p.maxHp,p.age);else drawZombie(ctx,p,time,.87);}
+      for(const p of game.peas.filter(p=>p.row===row)){ellipse(ctx,p.x-7,p.y,12,4,p.cold?'#caefdf44':'#d5ebae33');ellipse(ctx,p.x,p.y,p.cold?7:6,p.cold?7:6,p.cold?'#c6f1e7':'#c5e987',p.cold?'#6aafac':'#608e45',1.8);ellipse(ctx,p.x-2,p.y-2,2,2,'#fffce0');}
+    }
+    for(const f of game.flames){const y=point(f.row,0).y;ctx.save();ctx.globalAlpha=Math.min(1,f.life*2);for(let x=145;x<1030;x+=23){const h=25+Math.sin(x*.7+time*20)*18;path(ctx,c=>{c.moveTo(x-18,y+30);c.quadraticCurveTo(x-28,y,x-4,y-h);c.quadraticCurveTo(x+3,y-10,x+13,y-30-h);c.quadraticCurveTo(x+39,y+21,x+18,y+32);},'#ef9855');path(ctx,c=>{c.moveTo(x-8,y+29);c.quadraticCurveTo(x-14,y+4,x+8,y-12);c.quadraticCurveTo(x+23,y+15,x+12,y+29);},'#f7d37f');}ctx.restore();}
+    for(const s of game.suns){ctx.save();if(s.life<3)ctx.globalAlpha=.45+Math.abs(Math.sin(time*6))*.55;drawSun(ctx,s,time,.9);ctx.restore();}
+    for(const p of game.particles){ctx.globalAlpha=Math.min(1,p.life*2);ellipse(ctx,p.x,p.y,p.size,p.size*.7,p.color);}ctx.globalAlpha=1;
+    ctx.textAlign='center';ctx.font='bold 13px ui-sans-serif,system-ui';
+    for(const f of game.floaters){ctx.globalAlpha=Math.min(1,f.life*2);ctx.lineWidth=3;ctx.strokeStyle='#34593799';ctx.strokeText(f.text,f.x,f.y);ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);}ctx.globalAlpha=1;
+  }
+  function updateUI(){
+    if(!game)return;$('sunValue').textContent=game.sun;$('scoreValue').textContent=game.score.toLocaleString();
+    $('waveLabel').textContent=game.wave?'WAVE '+game.wave+' / 6':'GET GROWING';
+    $('waveDetail').textContent=game.waiting>=0?(game.wave?'Next wave in ':'First guests in ')+Math.ceil(game.waiting)+'s':game.waveSpawn>0?game.waveSpawn+' on their way':game.zombies.length+' guests remaining';
+    $('waveProgress').style.width=(game.wave?((game.wave-1)+(1-game.waveSpawn/game.waveTotal))/6*100:0)+'%';
+    seedButtons.forEach(b=>{const type=b.dataset.plant;if(type==='shovel')return;const cooldown=game.cooldowns[type];b.classList.toggle('unaffordable',game.sun<PLANTS[type].cost);b.querySelector('.cooldown').style.height=(cooldown/PLANTS[type].cooldown*100)+'%';b.querySelector('.cool-label').textContent=cooldown>0?Math.ceil(cooldown)+'s':'';});
+    $('collectButton').textContent='Collect all sun'+(game.suns.length?' ('+game.suns.length+')':'')+' · C';
+  }
+  function escapeHTML(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function formatTime(t){const minutes=Math.floor(t/60);return minutes+':'+String(Math.floor(t%60)).padStart(2,'0');}
+  function showModal(kind,content,wide=false){
+    if(!modalKind){previousFocus=document.activeElement;modalPausedGame=state==='playing';if(modalPausedGame)state='paused';}
+    modalKind=kind;$('modalContent').innerHTML=content;$('modal').classList.toggle('wide',wide);$('modalBackdrop').hidden=false;$('modalClose').hidden=kind==='result';$('modal').focus({preventScroll:true});
+  }
+  function hideModal(resume=true){
+    $('modalBackdrop').hidden=true;modalKind='';if(resume&&modalPausedGame&&state==='paused')state='playing';modalPausedGame=false;
+    if(previousFocus&&document.contains(previousFocus))previousFocus.focus({preventScroll:true});previousFocus=null;
+  }
+  function help(){
+    showModal('help','<div class="eyebrow">YOUR POCKET FIELD GUIDE</div><h2 id="modalTitle">A little growing advice.</h2><p class="modal-intro">Keep the undead from reaching the left edge. Survive all six waves and the lawn is yours.</p><div class="help-grid"><div class="help-step"><span class="step-number">01 / SUNSHINE</span><b>Catch it. Spend it. Grow it.</b><p>Click floating suns for 25 sunlight, or press C to collect them all. Sunflowers make more every 13 seconds. Uncollected suns disappear after 14 seconds.</p></div><div class="help-step"><span class="step-number">02 / PLANTING</span><b>A friend for every problem.</b><p>Select a seed, then an empty patch. Peashooters fire right along their lane; Frostpeas also slow the guests. Seeds need a short rest between plantings.</p></div><div class="help-step"><span class="step-number">03 / DEFENSE</span><b>Put your roots into it.</b><p>Plant Wallnuts ahead of your shooters to soak up bites. Hot Peppers burn their whole lane once. The shovel returns 25% of a removed plant’s cost.</p></div><div class="help-step"><span class="step-number">04 / SURVIVAL</span><b>There is a backup plan. Once.</b><p>Each lane has one emergency mower. After it is used, another zombie reaching the left edge ends the game. Wave clears award 50 sunlight.</p></div></div><p class="controls-note"><b>Keyboard:</b> 1–5 select plants · X selects shovel · Arrow keys choose a patch · Enter plants · C collects sun · P or Escape pauses.<br><b>Scoring:</b> defeat guests and clear waves. A full victory adds 1,500 points plus twice your remaining sunlight, scaled by difficulty. Your best ten runs per filter stay on this browser.</p><div class="modal-buttons"><button class="strong" data-action="close">Ready to grow ↗</button></div>',true);
+  }
+  function showScores(){
+    const filtered=records.filter(r=>scoreFilter==='all'||r.difficulty===scoreFilter).sort((a,b)=>b.score-a.score).slice(0,10);
+    const rows=filtered.map((r,i)=>'<tr><td>'+String(i+1).padStart(2,'0')+'</td><td>'+escapeHTML(r.name)+'<small>'+escapeHTML(DIFFICULTY[r.difficulty].name)+' · '+(r.won?'GARDEN SAVED':'WAVE '+r.wave)+'</small></td><td>'+formatTime(r.duration||0)+'</td><td>'+r.score.toLocaleString()+'</td></tr>').join('');
+    const filters=['all','easy','normal','hard'].map(f=>'<button data-filter="'+f+'" class="'+(f===scoreFilter?'active':'')+'" aria-pressed="'+(f===scoreFilter)+'">'+(f==='all'?'All gardens':DIFFICULTY[f].name)+'</button>').join('');
+    showModal('scores','<div class="eyebrow">THE GARDEN CLUB HONOR ROLL</div><h2 id="modalTitle">A growing reputation.</h2><p class="modal-intro">Small gardens. Big achievements. Your best runs, right here.</p><div class="filter-row" role="group" aria-label="Filter scoreboard by difficulty">'+filters+'</div>'+(rows?'<table class="leaderboard"><thead><tr><th>#</th><th>GARDENER</th><th>TIME</th><th>SCORE</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty-score" style="margin-top:20px">Fresh soil, a clean slate.<br>Finish a game to plant your name here.</div>')+'<p class="score-note">'+(storageOK?'Saved on this browser. Sunlit scores ×0.8 · Overgrown ×1 · Wild ×1.35.':'Browser storage is unavailable. Scores last for this visit only.')+'</p><div class="modal-buttons"><button class="strong" data-action="close">Back to the garden</button></div>',true);
+  }
+  function pause(){if(!game||state!=='playing')return;showModal('pause','<div class="pause-emblem" aria-hidden="true">Ⅱ</div><div class="eyebrow">EVEN GARDENERS NEED A BREAK</div><h2 id="modalTitle">Let it rest a minute.</h2><p class="modal-intro">Your plants are taking five. So are the neighbors.<br>Wave '+game.wave+' of 6 · '+formatTime(game.elapsed)+' in the garden</p><label class="checkbox-row"><span>Garden sounds<small>A few little pops, pings, and peashots.</small></span><input type="checkbox" id="modalSound" '+(prefs.sound?'checked':'')+'></label><label class="checkbox-row"><span>Gentle animation<small>Idle swaying and decorative movement.</small></span><input type="checkbox" id="modalMotion" '+(prefs.motion?'checked':'')+'></label><div class="modal-buttons"><button data-action="quit">Leave garden</button><button class="strong" data-action="close">Keep growing ↗</button></div>');}
+  function confirmQuit(){showModal('quit','<div class="eyebrow">HANG UP YOUR GLOVES?</div><h2 id="modalTitle">Leave this garden?</h2><p class="modal-intro">This run is still growing. Leaving ends it without adding a score to the board.</p><div class="modal-buttons"><button data-action="home">Leave garden</button><button class="strong" data-action="close">Stay and grow</button></div>');}
+  function goHome(){state='home';hideModal(false);game=null;$('playScreen').hidden=true;$('homeScreen').hidden=false;$('startButton').focus({preventScroll:true});}
+  function finish(won){
+    state='ended';if(won)game.score+=Math.round((1500+game.sun*2)*game.d.score);updateUI();
+    if(!game.saved){records.push({name:game.name,difficulty:game.difficulty,score:game.score,wave:game.wave,won,duration:Math.floor(game.elapsed),date:new Date().toISOString()});records.sort((a,b)=>b.score-a.score);records=records.slice(0,50);game.saved=true;try{localStorage.setItem('bramble.scores.v1',JSON.stringify(records));}catch(_){storageOK=false;}}
+    const rank=records.filter(r=>r.difficulty===game.difficulty).findIndex(r=>r.name===game.name&&r.score===game.score)+1;tone(won?'win':'boom');
+    showModal('result','<div class="result-emblem" aria-hidden="true">'+(won?'❀':'⌁')+'</div><div class="eyebrow">'+(won?'THE GARDEN IS STILL GREEN':'THERE IS ALWAYS NEXT SEASON')+'</div><h2 id="modalTitle">'+(won?'You held your ground.':'A little overgrown.')+'</h2><p class="modal-intro">'+(won?'Six waves, a whole lot of courage, and one beautifully defended lawn. Nice growing, ':'The neighbors got through, but good gardeners always try again. More sunflowers early, a shooter in every lane, and Wallnuts out front. Keep at it, ')+escapeHTML(game.name)+'.</p><div class="result-stats"><div><small>YOUR SCORE</small><strong>'+game.score.toLocaleString()+'</strong></div><div><small>GUESTS SENT HOME</small><strong>'+game.kills+'</strong></div><div><small>GARDEN TIME</small><strong>'+formatTime(game.elapsed)+'</strong></div></div><p class="score-note">'+(storageOK?'Score saved':'Score kept for this visit')+' · '+DIFFICULTY[game.difficulty].name+' garden'+(rank>0?' · #'+rank+' in this difficulty':'')+'</p><div class="modal-buttons"><button data-action="home">Main menu</button><button class="strong" data-action="again">Grow again ↗</button></div>');announce(won?'Victory! Garden saved. Final score '+game.score:'Game over. Final score '+game.score);
+  }
+  function syncSound(){const label=prefs.sound?'Turn sound off':'Turn sound on';$('soundButton').setAttribute('aria-label',label);$('soundButton').title=label;$('soundButton').setAttribute('aria-pressed',String(prefs.sound));$('soundWaves').setAttribute('d',prefs.sound?'M16 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14':'m16 9 6 6m0-6-6 6');}
+  function pointerPosition(event){const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*1030/rect.width,y:(event.clientY-rect.top)*580/rect.height};}
+  function cellAt(p){const col=Math.floor((p.x-GRID.x)/GRID.w),row=Math.floor((p.y-GRID.y)/GRID.h);return row>=0&&row<5&&col>=0&&col<9?{row,col}:null;}
+  canvas.addEventListener('pointermove',e=>{hoverCell=cellAt(pointerPosition(e));keyboardMode=false;});canvas.addEventListener('pointerleave',()=>hoverCell=null);
+  canvas.addEventListener('pointerdown',e=>{if(state!=='playing')return;e.preventDefault();canvas.focus({preventScroll:true});keyboardMode=false;const p=pointerPosition(e);for(let i=game.suns.length-1;i>=0;i--){if(Math.hypot(p.x-game.suns[i].x,p.y-game.suns[i].y)<33){collectSun(i);return;}}const cell=cellAt(p);if(cell){keyboardCell={...cell};hoverCell=cell;plantAt(cell.row,cell.col);}});
+  seedButtons.forEach(b=>b.addEventListener('click',()=>{if(state!=='playing')return;selectPlant(b.dataset.plant);tone('click');canvas.focus({preventScroll:true});}));
+  document.querySelectorAll('[data-difficulty]').forEach(b=>b.addEventListener('click',()=>setDifficulty(b.dataset.difficulty)));
+  $('playerName').value=prefs.name;setDifficulty(prefs.difficulty);syncSound();
+  $('startButton').addEventListener('click',newGame);$('helpButton').addEventListener('click',help);$('scoresButton').addEventListener('click',()=>{scoreFilter='all';showScores();});$('pauseButton').addEventListener('click',pause);$('collectButton').addEventListener('click',collectAll);
+  $('brandButton').addEventListener('click',()=>{if(state==='playing'||state==='paused')confirmQuit();else goHome();});
+  $('soundButton').addEventListener('click',()=>{prefs.sound=!prefs.sound;syncSound();savePrefs();tone('sun');});
+  $('modalClose').addEventListener('click',()=>hideModal());
+  $('modalBackdrop').addEventListener('pointerdown',e=>{if(e.target===$('modalBackdrop')&&modalKind!=='result')hideModal();});
+  $('modalContent').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.filter){scoreFilter=b.dataset.filter;showScores();return;}switch(b.dataset.action){case'close':hideModal();break;case'home':goHome();break;case'quit':confirmQuit();break;case'again':newGame();break;}});
+  $('modalContent').addEventListener('change',e=>{if(e.target.id==='modalSound'){prefs.sound=e.target.checked;syncSound();tone('sun');savePrefs();}if(e.target.id==='modalMotion'){prefs.motion=e.target.checked;savePrefs();}});
+  document.addEventListener('keydown',e=>{
+    if(modalKind){
+      if(e.key==='Escape'&&modalKind!=='result'){e.preventDefault();hideModal();return;}
+      if(e.key==='Tab'){const focusable=[...$('modal').querySelectorAll('button:not([hidden]),input')].filter(el=>!el.disabled);const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===$('modal'))){e.preventDefault();last?.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===$('modal'))){e.preventDefault();first?.focus();}}return;
+    }
+    if(e.target instanceof HTMLInputElement)return;
+    if(state!=='playing')return;
+    const key=e.key.toLowerCase();
+    if(['1','2','3','4','5'].includes(key)){e.preventDefault();selectPlant(Object.keys(PLANTS)[Number(key)-1]);canvas.focus({preventScroll:true});}
+    else if(key==='x'||key==='6'){e.preventDefault();selectPlant('shovel');canvas.focus({preventScroll:true});}
+    else if(key==='c'){e.preventDefault();collectAll();}
+    else if(key==='p'||key==='escape'){e.preventDefault();pause();}
+    else if(['arrowup','arrowdown','arrowleft','arrowright'].includes(key)){e.preventDefault();keyboardMode=true;hoverCell=null;if(key==='arrowup')keyboardCell.row=Math.max(0,keyboardCell.row-1);if(key==='arrowdown')keyboardCell.row=Math.min(4,keyboardCell.row+1);if(key==='arrowleft')keyboardCell.col=Math.max(0,keyboardCell.col-1);if(key==='arrowright')keyboardCell.col=Math.min(8,keyboardCell.col+1);canvas.focus({preventScroll:true});announce('Row '+(keyboardCell.row+1)+', column '+(keyboardCell.col+1)+'. '+(game.plants.find(p=>p.row===keyboardCell.row&&p.col===keyboardCell.col)?.type||'Empty patch')+'.');}
+    else if((key==='enter'||key===' ')&&document.activeElement===canvas){e.preventDefault();keyboardMode=true;plantAt(keyboardCell.row,keyboardCell.col);}
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause();lastFrame=performance.now();});
+  for(const b of seedButtons){if(b.dataset.plant==='shovel')continue;const c=b.querySelector('canvas').getContext('2d');c.scale(2,2);drawPlant(c,b.dataset.plant,25,31,0,.62);}
+  function frame(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;if(!document.hidden){if(state!=='paused'&&state!=='ended')visualTime+=dt;update(dt);if(state==='home')drawHero(visualTime);else drawGame(visualTime);}requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
