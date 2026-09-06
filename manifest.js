@@ -807,6 +807,22 @@ window.ARENA = {
         "03-threejs-thriller": "providers/openai/gpt-6/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemini-3.8-flash-high",
+      model_display: "Gemini 3.8 Flash High (Antigravity Harness)",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/google/gemini-3.8-flash-high",
+      added: "2026-09-06",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemini-3.8-flash-high/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemini-3.8-flash-high/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemini-3.8-flash-high/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
+
 

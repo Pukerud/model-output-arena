@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller Cemetery Dance · Three.js Cinematic Scene</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #05070e;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  #webgl-canvas {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+  }
+  #cinematic-ui {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(10, 14, 28, 0.7);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    padding: 8px 18px;
+    color: #f1f3f9;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff3838;
+    box-shadow: 0 0 10px #ff3838;
+    animation: pulse 1.8s infinite ease-in-out;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+  #controls-bar {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(10, 14, 28, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 8px 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    z-index: 10;
+  }
+  .ctrl-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 8px 16px;
+    color: #e2e8f0;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .ctrl-btn.active {
+    background: #e74c3c;
+    border-color: #ff7675;
+    color: #fff;
+    box-shadow: 0 0 14px rgba(231, 76, 60, 0.6);
+  }
+  #groove-label {
+    color: #ffd32a;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0 8px;
+    letter-spacing: 0.06em;
+  }
+</style>
+
+<!-- Three.js CDN and OrbitControls -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<canvas id="webgl-canvas"></canvas>
+
+<div id="cinematic-ui">
+  <div class="badge">
+    <div class="pulse-dot"></div>
+    <span>THRILLER 1982 · CEMETERY CHOREOGRAPHY</span>
+  </div>
+</div>
+
+<div id="controls-bar">
+  <span id="groove-label">DIRECTOR CAM</span>
+  <button class="ctrl-btn active" id="cam-cinematic">CINEMATIC SWEEP</button>
+  <button class="ctrl-btn" id="cam-low">LOW HERO</button>
+  <button class="ctrl-btn" id="cam-orbit">FREE ORBIT</button>
+  <button class="ctrl-btn" id="audio-toggle">🔊 THRILLER GROOVE: OFF</button>
+</div>
+
+<script>
+(() => {
+  // -------------------------------------------------------------
+  // THREE.JS INITIALIZATION
+  // -------------------------------------------------------------
+  const canvas = document.getElementById('webgl-canvas');
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: "high-performance"
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x060812);
+  scene.fog = new THREE.FogExp2(0x0a0d1a, 0.022);
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 3.5, 12.5);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxPolarAngle = Math.PI / 2 - 0.02;
+  controls.minDistance = 3;
+  controls.maxDistance = 35;
+  controls.target.set(0, 1.8, 0);
+  controls.enabled = false;
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // -------------------------------------------------------------
+  // LIGHTING & ATMOSPHERE
+  // -------------------------------------------------------------
+  const ambientLight = new THREE.AmbientLight(0x1a2138, 0.65);
+  scene.add(ambientLight);
+
+  // Pale Blue Moonlight (Key Light)
+  const moonLight = new THREE.DirectionalLight(0x74b9ff, 1.8);
+  moonLight.position.set(-14, 24, -18);
+  moonLight.castShadow = true;
+  moonLight.shadow.mapSize.width = 2048;
+  moonLight.shadow.mapSize.height = 2048;
+  moonLight.shadow.camera.near = 0.5;
+  moonLight.shadow.camera.far = 60;
+  moonLight.shadow.camera.left = -15;
+  moonLight.shadow.camera.right = 15;
+  moonLight.shadow.camera.top = 15;
+  moonLight.shadow.camera.bottom = -15;
+  moonLight.shadow.bias = -0.0005;
+  scene.add(moonLight);
+
+  // Cyan Back Rim Light
+  const rimLight = new THREE.DirectionalLight(0x00d2d3, 1.2);
+  rimLight.position.set(12, 16, -14);
+  scene.add(rimLight);
+
+  // Warm Red/Amber stage uplights for 80s horror vibe
+  const redStageLight = new THREE.PointLight(0xff3838, 1.4, 18);
+  redStageLight.position.set(-5, 0.4, 4);
+  scene.add(redStageLight);
+
+  const cyanStageLight = new THREE.PointLight(0x0984e3, 1.4, 18);
+  cyanStageLight.position.set(5, 0.4, 4);
+  scene.add(cyanStageLight);
+
+  // Full Moon Sphere in Sky
+  const moonGeo = new THREE.SphereGeometry(4.5, 32, 32);
+  const moonMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+  moonMesh.position.set(-18, 30, -32);
+  scene.add(moonMesh);
+
+  // Moon volumetric halo sprite
+  const canvasMoon = document.createElement('canvas');
+  canvasMoon.width = 256;
+  canvasMoon.height = 256;
+  const mctx = canvasMoon.getContext('2d');
+  const mgrad = mctx.createRadialGradient(128, 128, 20, 128, 128, 128);
+  mgrad.addColorStop(0, 'rgba(230, 245, 255, 0.85)');
+  mgrad.addColorStop(0.3, 'rgba(116, 185, 255, 0.3)');
+  mgrad.addColorStop(1, 'rgba(10, 15, 30, 0)');
+  mctx.fillStyle = mgrad;
+  mctx.fillRect(0, 0, 256, 256);
+  const moonTex = new THREE.CanvasTexture(canvasMoon);
+  const moonSpriteMat = new THREE.SpriteMaterial({ map: moonTex, transparent: true, blending: THREE.AdditiveBlending });
+  const moonSprite = new THREE.Sprite(moonSpriteMat);
+  moonSprite.scale.set(22, 22, 1);
+  moonSprite.position.copy(moonMesh.position);
+  scene.add(moonSprite);
+
+  // -------------------------------------------------------------
+  // CEMETERY ENVIRONMENT
+  // -------------------------------------------------------------
+  // Uneven Muddy Cemetery Ground
+  const groundGeo = new THREE.PlaneGeometry(60, 60, 48, 48);
+  groundGeo.rotateX(-Math.PI / 2);
+  const posAttr = groundGeo.attributes.position;
+  for (let i = 0; i < posAttr.count; i++) {
+    const vx = posAttr.getX(i);
+    const vz = posAttr.getZ(i);
+    const vy = Math.sin(vx * 0.3) * Math.cos(vz * 0.3) * 0.35 + (Math.sin(vx * 0.8) * 0.1);
+    posAttr.setY(i, vy);
+  }
+  groundGeo.computeVertexNormals();
+
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x181e18,
+    roughness: 0.92,
+    metalness: 0.08
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Gravestones & Tombstones
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: 0x3d434d,
+    roughness: 0.88,
+    metalness: 0.12
+  });
+
+  function createTombstone(x, z, rotY, scale = 1) {
+    const group = new THREE.Group();
+    // Base slab
+    const baseGeo = new THREE.BoxGeometry(1.2 * scale, 0.25 * scale, 0.7 * scale);
+    const base = new THREE.Mesh(baseGeo, stoneMat);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // Arch headstone
+    const bodyGeo = new THREE.BoxGeometry(0.9 * scale, 1.4 * scale, 0.25 * scale);
+    bodyGeo.translate(0, 0.7 * scale, 0);
+    const body = new THREE.Mesh(bodyGeo, stoneMat);
+    body.castShadow = true;
+    body.receiveShadow = true;
+    group.add(body);
+
+    // Top crest
+    const archGeo = new THREE.CylinderGeometry(0.45 * scale, 0.45 * scale, 0.25 * scale, 16);
+    archGeo.rotateZ(Math.PI / 2);
+    archGeo.translate(0, 1.4 * scale, 0);
+    const arch = new THREE.Mesh(archGeo, stoneMat);
+    arch.castShadow = true;
+    group.add(arch);
+
+    group.position.set(x, 0.1, z);
+    group.rotation.y = rotY;
+    group.rotation.z = (Math.random() - 0.5) * 0.15; // weathered tilt
+    scene.add(group);
+  }
+
+  // Scatter tombstones in background & periphery
+  const tombstonePositions = [
+    [-6, -4, 0.2], [-3, -6, -0.4], [3.5, -5.5, 0.3], [7, -4.5, -0.1],
+    [-8, -8, 0.6], [-4.5, -10, -0.2], [1, -9, 0.1], [6, -9, 0.4],
+    [-9, 2, 1.2], [-8, 5, 1.4], [8, 3, -1.3], [9, 6, -1.1]
+  ];
+  tombstonePositions.forEach(([x, z, r]) => createTombstone(x, z, r, 0.9 + Math.random() * 0.3));
+
+  // Barren Dead Gnarled Trees
+  function createDeadTree(x, z, scale = 1) {
+    const treeGroup = new THREE.Group();
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x141216, roughness: 0.95 });
+
+    // Trunk
+    const trunkGeo = new THREE.CylinderGeometry(0.35 * scale, 0.7 * scale, 5 * scale, 8);
+    trunkGeo.translate(0, 2.5 * scale, 0);
+    const trunk = new THREE.Mesh(trunkGeo, woodMat);
+    trunk.castShadow = true;
+    treeGroup.add(trunk);
+
+    // Twisted branches
+    for (let i = 0; i < 5; i++) {
+      const branchGeo = new THREE.CylinderGeometry(0.12 * scale, 0.25 * scale, 3 * scale, 6);
+      branchGeo.translate(0, 1.5 * scale, 0);
+      const branch = new THREE.Mesh(branchGeo, woodMat);
+      branch.position.y = (2.5 + i * 0.4) * scale;
+      branch.rotation.z = (0.5 + (i % 2) * 0.5) * (i % 2 === 0 ? 1 : -1);
+      branch.rotation.y = (i * Math.PI) / 2.5;
+      branch.castShadow = true;
+      treeGroup.add(branch);
+    }
+
+    treeGroup.position.set(x, 0, z);
+    scene.add(treeGroup);
+  }
+
+  createDeadTree(-12, -12, 1.4);
+  createDeadTree(13, -11, 1.3);
+  createDeadTree(-14, 4, 1.1);
+  createDeadTree(14, 5, 1.2);
+
+  // Glowing Carved Jack-O'-Lanterns
+  function createPumpkin(x, z, rotY) {
+    const pumpGroup = new THREE.Group();
+    const orangeMat = new THREE.MeshStandardMaterial({ color: 0xd35400, roughness: 0.7 });
+    const pMesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), orangeMat);
+    pMesh.scale.set(1.2, 0.9, 1.1);
+    pMesh.position.y = 0.35;
+    pMesh.castShadow = true;
+    pumpGroup.add(pMesh);
+
+    // Glowing face cutout emission
+    const faceLight = new THREE.PointLight(0xffa502, 1.2, 3);
+    faceLight.position.set(0, 0.35, 0.3);
+    pumpGroup.add(faceLight);
+
+    pumpGroup.position.set(x, 0, z);
+    pumpGroup.rotation.y = rotY;
+    scene.add(pumpGroup);
+  }
+
+  createPumpkin(-4.5, 2.5, 0.4);
+  createPumpkin(4.8, 2.2, -0.6);
+
+  // Ground Fog Particles
+  const fogParticleCount = 120;
+  const fogGeo = new THREE.BufferGeometry();
+  const fogPositions = new Float32Array(fogParticleCount * 3);
+  for (let i = 0; i < fogParticleCount; i++) {
+    fogPositions[i * 3] = (Math.random() - 0.5) * 35;
+    fogPositions[i * 3 + 1] = 0.1 + Math.random() * 1.8;
+    fogPositions[i * 3 + 2] = (Math.random() - 0.5) * 35;
+  }
+  fogGeo.setAttribute('position', new THREE.BufferAttribute(fogPositions, 3));
+
+  const canvasFog = document.createElement('canvas');
+  canvasFog.width = 128;
+  canvasFog.height = 128;
+  const fctx = canvasFog.getContext('2d');
+  const fgrad = fctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+  fgrad.addColorStop(0, 'rgba(120, 160, 220, 0.35)');
+  fgrad.addColorStop(0.5, 'rgba(80, 110, 180, 0.12)');
+  fgrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  fctx.fillStyle = fgrad;
+  fctx.fillRect(0, 0, 128, 128);
+  const fogTex = new THREE.CanvasTexture(canvasFog);
+
+  const fogMat = new THREE.PointsMaterial({
+    size: 4.5,
+    map: fogTex,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const fogPoints = new THREE.Points(fogGeo, fogMat);
+  scene.add(fogPoints);
+
+  // -------------------------------------------------------------
+  // 3D ARTICULATED CHARACTER RIG GENERATOR
+  // -------------------------------------------------------------
+  function buildCharacterRig(options) {
+    const char = new THREE.Group();
+
+    const skinMat = new THREE.MeshStandardMaterial({
+      color: options.skinColor,
+      roughness: 0.65,
+      metalness: 0.1
+    });
+
+    const clothesMat = new THREE.MeshStandardMaterial({
+      color: options.jacketColor,
+      roughness: 0.5,
+      metalness: options.jacketMetallic || 0.1
+    });
+
+    const pantsMat = new THREE.MeshStandardMaterial({
+      color: options.pantsColor,
+      roughness: 0.7,
+      metalness: 0.1
+    });
+
+    const shoeMat = new THREE.MeshStandardMaterial({
+      color: options.shoeColor || 0x111111,
+      roughness: 0.4,
+      metalness: 0.3
+    });
+
+    // Root Hips
+    const hips = new THREE.Group();
+    hips.position.y = 1.05;
+    char.add(hips);
+
+    const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.25, 12), pantsMat);
+    pelvisMesh.castShadow = true;
+    hips.add(pelvisMesh);
+
+    // Spine & Chest
+    const spine = new THREE.Group();
+    spine.position.y = 0.15;
+    hips.add(spine);
+
+    const chestMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.26, 0.55, 12), clothesMat);
+    chestMesh.position.y = 0.28;
+    chestMesh.castShadow = true;
+    spine.add(chestMesh);
+
+    // Custom jacket accents (e.g. MJ black V-stripes, Trump red tie, etc.)
+    if (options.tieColor) {
+      const tieMat = new THREE.MeshStandardMaterial({ color: options.tieColor, roughness: 0.3 });
+      const tieGeo = new THREE.BoxGeometry(0.08, 0.45, 0.05);
+      tieGeo.translate(0, 0.22, 0.18);
+      const tieMesh = new THREE.Mesh(tieGeo, tieMat);
+      spine.add(tieMesh);
+    }
+    if (options.vStripe) {
+      const vMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+      const vGeo = new THREE.BoxGeometry(0.26, 0.06, 0.35);
+      vGeo.position.y = 0.38;
+      const vMesh = new THREE.Mesh(vGeo, vMat);
+      spine.add(vMesh);
+    }
+
+    // Neck & Head
+    const neck = new THREE.Group();
+    neck.position.y = 0.58;
+    spine.add(neck);
+
+    let headMesh;
+    if (options.isPepe) {
+      // Pepe Frog distinctive head
+      const headGroup = new THREE.Group();
+      const frogHeadGeo = new THREE.SphereGeometry(0.36, 16, 16);
+      frogHeadGeo.scale(1.3, 0.9, 1.1);
+      const fHead = new THREE.Mesh(frogHeadGeo, skinMat);
+      fHead.castShadow = true;
+      headGroup.add(fHead);
+
+      // Bulging frog eyes
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+      [-0.24, 0.24].forEach(ex => {
+        const eyeSphere = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), eyeMat);
+        eyeSphere.position.set(ex, 0.22, 0.22);
+        headGroup.add(eyeSphere);
+        const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.04), pupilMat);
+        pupil.position.set(ex, 0.22, 0.32);
+        headGroup.add(pupil);
+      });
+
+      // Red lips
+      const lipMat = new THREE.MeshStandardMaterial({ color: 0xd63031, roughness: 0.5 });
+      const lips = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.04, 8, 16, Math.PI), lipMat);
+      lips.rotation.x = Math.PI / 2;
+      lips.position.set(0, -0.12, 0.32);
+      headGroup.add(lips);
+
+      headMesh = headGroup;
+      headMesh.position.y = 0.22;
+    } else {
+      // Human stylized head
+      const headGroup = new THREE.Group();
+      const hGeo = new THREE.SphereGeometry(0.24, 16, 16);
+      hGeo.scale(0.9, 1.1, 0.95);
+      const hMesh = new THREE.Mesh(hGeo, skinMat);
+      hMesh.castShadow = true;
+      headGroup.add(hMesh);
+
+      // Hair
+      if (options.hairColor) {
+        const hairMat = new THREE.MeshStandardMaterial({
+          color: options.hairColor,
+          roughness: 0.8
+        });
+        const hairGeo = new THREE.SphereGeometry(0.26, 16, 16);
+        if (options.hairTrump) {
+          hairGeo.scale(1.1, 0.6, 1.25);
+          const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+          hairMesh.position.set(0, 0.16, -0.02);
+          hairMesh.rotation.x = -0.15;
+          headGroup.add(hairMesh);
+        } else {
+          // Jheri curls / dark hair
+          hairGeo.scale(1.05, 1.05, 1.08);
+          const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+          hairMesh.position.set(0, 0.08, -0.04);
+          headGroup.add(hairMesh);
+        }
+      }
+
+      headMesh = headGroup;
+      headMesh.position.y = 0.22;
+    }
+    neck.add(headMesh);
+
+    // Left Arm Hierarchy
+    const leftShoulder = new THREE.Group();
+    leftShoulder.position.set(0.38, 0.45, 0);
+    spine.add(leftShoulder);
+
+    const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.38, 8), clothesMat);
+    lUpperArm.position.y = -0.19;
+    lUpperArm.castShadow = true;
+    leftShoulder.add(lUpperArm);
+
+    const lElbow = new THREE.Group();
+    lElbow.position.y = -0.38;
+    leftShoulder.add(lElbow);
+
+    const lForeArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.35, 8), skinMat);
+    lForeArm.position.y = -0.175;
+    lForeArm.castShadow = true;
+    lElbow.add(lForeArm);
+
+    const lWrist = new THREE.Group();
+    lWrist.position.y = -0.35;
+    lElbow.add(lWrist);
+
+    const lHand = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.12), skinMat);
+    lHand.position.y = -0.07;
+    lWrist.add(lHand);
+
+    // Right Arm Hierarchy (Supports MJ Single Sequin Glove)
+    const rightShoulder = new THREE.Group();
+    rightShoulder.position.set(-0.38, 0.45, 0);
+    spine.add(rightShoulder);
+
+    const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.38, 8), clothesMat);
+    rUpperArm.position.y = -0.19;
+    rUpperArm.castShadow = true;
+    rightShoulder.add(rUpperArm);
+
+    const rElbow = new THREE.Group();
+    rElbow.position.y = -0.38;
+    rightShoulder.add(rElbow);
+
+    const rForeArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.35, 8), skinMat);
+    rForeArm.position.y = -0.175;
+    rForeArm.castShadow = true;
+    rElbow.add(rForeArm);
+
+    const rWrist = new THREE.Group();
+    rWrist.position.y = -0.35;
+    rElbow.add(rWrist);
+
+    const rHandMat = options.silverGlove ?
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.85 }) :
+      skinMat;
+
+    const rHand = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.14, 0.12), rHandMat);
+    rHand.position.y = -0.07;
+    rWrist.add(rHand);
+
+    // Left Leg Hierarchy
+    const leftHipJoint = new THREE.Group();
+    leftHipJoint.position.set(0.18, -0.12, 0);
+    hips.add(leftHipJoint);
+
+    const lThigh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.48, 8), pantsMat);
+    lThigh.position.y = -0.24;
+    lThigh.castShadow = true;
+    leftHipJoint.add(lThigh);
+
+    const lKnee = new THREE.Group();
+    lKnee.position.y = -0.48;
+    leftHipJoint.add(lKnee);
+
+    const lShin = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.46, 8), pantsMat);
+    lShin.position.y = -0.23;
+    lShin.castShadow = true;
+    lKnee.add(lShin);
+
+    const lFoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.28), shoeMat);
+    lFoot.position.set(0, -0.46, 0.06);
+    lFoot.castShadow = true;
+    lKnee.add(lFoot);
+
+    // Right Leg Hierarchy
+    const rightHipJoint = new THREE.Group();
+    rightHipJoint.position.set(-0.18, -0.12, 0);
+    hips.add(rightHipJoint);
+
+    const rThigh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.48, 8), pantsMat);
+    rThigh.position.y = -0.24;
+    rThigh.castShadow = true;
+    rightHipJoint.add(rThigh);
+
+    const rKnee = new THREE.Group();
+    rKnee.position.y = -0.48;
+    rightHipJoint.add(rKnee);
+
+    const rShin = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.46, 8), pantsMat);
+    rShin.position.y = -0.23;
+    rShin.castShadow = true;
+    rKnee.add(rShin);
+
+    const rFoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.28), shoeMat);
+    rFoot.position.set(0, -0.46, 0.06);
+    rFoot.castShadow = true;
+    rKnee.add(rFoot);
+
+    char.bones = {
+      hips,
+      spine,
+      neck,
+      leftShoulder,
+      rightShoulder,
+      lElbow,
+      rElbow,
+      lWrist,
+      rWrist,
+      leftHipJoint,
+      rightHipJoint,
+      lKnee,
+      rKnee
+    };
+
+    return char;
+  }
+
+  // Instantiate the 4 Stars
+  // 1. Michael Jackson (Center Leader)
+  const mj = buildCharacterRig({
+    skinColor: 0xe0a98b,
+    jacketColor: 0xd63031, // Iconic red leather
+    vStripe: true,
+    pantsColor: 0x111111,  // Black cropped pants
+    hairColor: 0x090a0f,
+    silverGlove: true
+  });
+  mj.position.set(0, 0, 1.2);
+  scene.add(mj);
+
+  // 2. Pepe the Frog (Stage Left)
+  const pepe = buildCharacterRig({
+    isPepe: true,
+    skinColor: 0x44bd32,
+    jacketColor: 0x0984e3, // Classic blue polo
+    pantsColor: 0x2f3640,
+    shoeColor: 0x44bd32
+  });
+  pepe.position.set(-2.8, 0, 0);
+  scene.add(pepe);
+
+  // 3. Donald Trump (Stage Right)
+  const trump = buildCharacterRig({
+    skinColor: 0xfbc531,
+    jacketColor: 0x192a56, // Navy blue business suit
+    pantsColor: 0x192a56,
+    tieColor: 0xe84118,    // Signature long red tie
+    hairColor: 0xf6e58d,
+    hairTrump: true
+  });
+  trump.position.set(2.8, 0, 0);
+  scene.add(trump);
+
+  // 4. Elon Musk (Back Center)
+  const elon = buildCharacterRig({
+    skinColor: 0xedbb99,
+    jacketColor: 0x2d3436, // SpaceX cyber leather jacket
+    jacketMetallic: 0.4,
+    pantsColor: 0x1e272e,
+    hairColor: 0x535c68
+  });
+  elon.position.set(0, 0, -2.2);
+  scene.add(elon);
+
+  const dancers = [mj, pepe, trump, elon];
+
+  // -------------------------------------------------------------
+  // THRILLER CHOREOGRAPHY ANIMATION STATE MACHINE
+  // -------------------------------------------------------------
+  function animateThrillerChoreography(time) {
+    // 120 BPM = 2 beats per second -> 1 beat = 0.5s
+    const beatTime = time * 2.1;
+    const cycle = (beatTime % 16); // 16-beat dance routine cycle
+
+    dancers.forEach((d, idx) => {
+      const b = d.bones;
+      const isLead = (d === mj);
+      const personalOffset = isLead ? 0 : 0.04 * (idx % 2 === 0 ? 1 : -1);
+      const t = beatTime + personalOffset;
+
+      // Reset base tilts
+      b.hips.rotation.set(0, 0, 0);
+      b.spine.rotation.set(0, 0, 0);
+      b.leftShoulder.rotation.set(0, 0, 0);
+      b.rightShoulder.rotation.set(0, 0, 0);
+      b.lElbow.rotation.set(0, 0, 0);
+      b.rElbow.rotation.set(0, 0, 0);
+      b.lWrist.rotation.set(0, 0, 0);
+      b.rWrist.rotation.set(0, 0, 0);
+
+      // Phase A (Beats 0 - 4): The Signature Zombie Head Snap & Lurch
+      if (cycle < 4) {
+        const snap = Math.sin(t * Math.PI);
+        b.neck.rotation.z = (Math.sin(t * 2) > 0 ? 0.35 : -0.35);
+        b.neck.rotation.x = 0.25;
+
+        // Hunched zombie spine
+        b.spine.rotation.x = 0.28;
+        b.hips.position.y = 1.05 + Math.sin(t * Math.PI) * 0.06;
+
+        // Limp zombie dangling arms
+        b.leftShoulder.rotation.x = 0.4;
+        b.leftShoulder.rotation.z = 0.2;
+        b.rightShoulder.rotation.x = 0.4;
+        b.rightShoulder.rotation.z = -0.2;
+
+        // Foot lurch steps
+        b.leftHipJoint.rotation.x = Math.sin(t * Math.PI) * 0.3;
+        b.rightHipJoint.rotation.x = -Math.sin(t * Math.PI) * 0.3;
+      }
+      // Phase B (Beats 4 - 8): The Iconic Double Zombie Claw Swipes (Left & Right)
+      else if (cycle < 8) {
+        const subPhase = cycle - 4;
+        const sideDir = (subPhase < 2) ? 1 : -1; // Swipe Right then Swipe Left
+
+        // Raised zombie claws
+        b.leftShoulder.rotation.x = -1.25;
+        b.leftShoulder.rotation.y = 0.6 * sideDir;
+        b.leftShoulder.rotation.z = 0.4 * sideDir;
+
+        b.rightShoulder.rotation.x = -1.25;
+        b.rightShoulder.rotation.y = 0.6 * sideDir;
+        b.rightShoulder.rotation.z = 0.4 * sideDir;
+
+        // Bent claw elbows & wrists
+        b.lElbow.rotation.x = 0.9;
+        b.rElbow.rotation.x = 0.9;
+        b.lWrist.rotation.x = -0.8;
+        b.rWrist.rotation.x = -0.8;
+
+        // Dynamic zombie head tilt pointing with claw
+        b.neck.rotation.z = -0.4 * sideDir;
+        b.neck.rotation.y = -0.3 * sideDir;
+
+        // Side-step shuffle
+        b.hips.position.x = Math.sin(t * Math.PI * 2) * 0.15 * sideDir;
+        b.hips.rotation.z = -0.12 * sideDir;
+        b.hips.position.y = 1.05 + Math.abs(Math.sin(t * Math.PI * 2)) * 0.08;
+      }
+      // Phase C (Beats 8 - 12): The Shoulder Pop & Hip Roll
+      else if (cycle < 12) {
+        const pop = Math.sin(t * Math.PI * 2);
+
+        // Alternating shoulder pops
+        b.leftShoulder.rotation.z = pop * 0.4;
+        b.rightShoulder.rotation.z = -pop * 0.4;
+        b.leftShoulder.rotation.x = -0.6 + pop * 0.2;
+        b.rightShoulder.rotation.x = -0.6 - pop * 0.2;
+
+        b.lElbow.rotation.x = 1.1;
+        b.rElbow.rotation.x = 1.1;
+
+        // Rhythmic hip sway & pelvic groove
+        b.hips.rotation.y = Math.sin(t * Math.PI) * 0.35;
+        b.hips.rotation.z = Math.cos(t * Math.PI) * 0.15;
+        b.spine.rotation.x = -0.15; // Proud back posture
+        b.neck.rotation.x = -0.1;
+      }
+      // Phase D (Beats 12 - 16): The Climax Thriller Zombie Roar Pose
+      else {
+        const roarPulse = Math.sin(t * Math.PI * 4);
+
+        // Arms stretched wide in terrifying pose
+        b.leftShoulder.rotation.z = 1.3;
+        b.leftShoulder.rotation.x = -0.8;
+        b.rightShoulder.rotation.z = -1.3;
+        b.rightShoulder.rotation.x = -0.8;
+
+        b.lElbow.rotation.z = 0.6;
+        b.rElbow.rotation.z = -0.6;
+        b.lWrist.rotation.y = 0.5 * roarPulse;
+        b.rWrist.rotation.y = -0.5 * roarPulse;
+
+        // Head thrown back roaring at the moon
+        b.neck.rotation.x = -0.45;
+        b.neck.rotation.y = Math.sin(t * 2) * 0.15;
+
+        // Wide stomping dance stance
+        b.leftHipJoint.rotation.z = 0.35;
+        b.rightHipJoint.rotation.z = -0.35;
+        b.hips.position.y = 0.96 + Math.abs(roarPulse) * 0.08;
+      }
+
+      // Michael Jackson extra lead gestures
+      if (isLead) {
+        // Subtle fedora touch / glove emphasis
+        b.rightShoulder.rotation.y += 0.15;
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // PROCEDURAL WEB AUDIO THRILLER BASS & SYNTH GROOVE
+  // -------------------------------------------------------------
+  let audioCtx = null;
+  let isPlayingAudio = false;
+  let audioTimer = null;
+
+  function initThrillerAudio() {
+    if (audioCtx) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+
+    // Bass notes for Thriller groove: F# -> G# -> A -> G#
+    const basslineFreqs = [185.0, 185.0, 207.65, 220.0, 207.65, 185.0, 164.81, 185.0];
+    let step = 0;
+
+    function playNote() {
+      if (!isPlayingAudio) return;
+      const t = audioCtx.currentTime;
+
+      // 1. Synth Bass (Punchy FM/Sawtooth)
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      const freq = basslineFreqs[step % basslineFreqs.length] * 0.5; // Deep sub-bass octave
+      osc.frequency.setValueAtTime(freq, t);
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(650, t);
+      filter.frequency.exponentialRampToValueAtTime(140, t + 0.2);
+
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.24);
+
+      osc.connect(filter).connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.25);
+
+      // 2. 80s Drum Beat: Kick on 0, 4; Snare on 2, 6
+      if (step % 4 === 0) {
+        // Kick
+        const kick = audioCtx.createOscillator();
+        const kgain = audioCtx.createGain();
+        kick.frequency.setValueAtTime(130, t);
+        kick.frequency.exponentialRampToValueAtTime(35, t + 0.12);
+        kgain.gain.setValueAtTime(0.5, t);
+        kgain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+        kick.connect(kgain).connect(audioCtx.destination);
+        kick.start(t);
+        kick.stop(t + 0.15);
+      } else if (step % 4 === 2) {
+        // Snare / clap noise
+        const bSize = audioCtx.sampleRate * 0.1;
+        const bBuf = audioCtx.createBuffer(1, bSize, audioCtx.sampleRate);
+        const data = bBuf.getChannelData(0);
+        for (let i = 0; i < bSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bSize * 0.3));
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = bBuf;
+        const ngain = audioCtx.createGain();
+        ngain.gain.setValueAtTime(0.35, t);
+        ngain.gain.linearRampToValueAtTime(0.01, t + 0.12);
+        noise.connect(ngain).connect(audioCtx.destination);
+        noise.start(t);
+      }
+
+      step++;
+      audioTimer = setTimeout(playNote, 240); // ~125 BPM
+    }
+
+    playNote();
+  }
+
+  const audioToggleBtn = document.getElementById('audio-toggle');
+  audioToggleBtn.addEventListener('click', () => {
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    isPlayingAudio = !isPlayingAudio;
+    if (isPlayingAudio) {
+      initThrillerAudio();
+      audioToggleBtn.textContent = '🔊 THRILLER GROOVE: ON';
+      audioToggleBtn.classList.add('active');
+    } else {
+      audioToggleBtn.textContent = '🔊 THRILLER GROOVE: OFF';
+      audioToggleBtn.classList.remove('active');
+      clearTimeout(audioTimer);
+    }
+  });
+
+  // -------------------------------------------------------------
+  // CAMERA DIRECTING MODES
+  // -------------------------------------------------------------
+  let cameraMode = 'cinematic'; // 'cinematic', 'low', 'orbit'
+
+  const btnCinematic = document.getElementById('cam-cinematic');
+  const btnLow = document.getElementById('cam-low');
+  const btnOrbit = document.getElementById('cam-orbit');
+  const camBtns = [btnCinematic, btnLow, btnOrbit];
+
+  function setCamMode(mode) {
+    cameraMode = mode;
+    camBtns.forEach(b => b.classList.remove('active'));
+    controls.enabled = (mode === 'orbit');
+
+    if (mode === 'cinematic') {
+      btnCinematic.classList.add('active');
+    } else if (mode === 'low') {
+      btnLow.classList.add('active');
+    } else if (mode === 'orbit') {
+      btnOrbit.classList.add('active');
+    }
+  }
+
+  btnCinematic.addEventListener('click', () => setCamMode('cinematic'));
+  btnLow.addEventListener('click', () => setCamMode('low'));
+  btnOrbit.addEventListener('click', () => setCamMode('orbit'));
+
+  // -------------------------------------------------------------
+  // MAIN ANIMATION RENDER LOOP
+  // -------------------------------------------------------------
+  let clock = new THREE.Clock();
+
+  function renderLoop() {
+    requestAnimationFrame(renderLoop);
+
+    const time = clock.getElapsedTime();
+
+    // 1. Run Choreography Animation
+    animateThrillerChoreography(time);
+
+    // 2. Camera Choreography Modes
+    if (cameraMode === 'cinematic') {
+      // Sweeping dramatic cinematic crane orbit
+      const radius = 11.5 + Math.sin(time * 0.3) * 2.0;
+      const angle = time * 0.25;
+      camera.position.x = Math.sin(angle) * radius;
+      camera.position.z = Math.cos(angle) * radius;
+      camera.position.y = 2.8 + Math.sin(time * 0.4) * 1.2;
+      camera.lookAt(0, 1.4, 0);
+    } else if (cameraMode === 'low') {
+      // Dramatic Low-Angle Hero Shot looking up at MJ and moon
+      camera.position.set(Math.sin(time * 0.15) * 2.5, 0.7, 7.5);
+      camera.lookAt(0, 1.8, 0);
+    } else if (cameraMode === 'orbit') {
+      controls.update();
+    }
+
+    // 3. Fog particle drift
+    const positions = fogGeo.attributes.position.array;
+    for (let i = 0; i < fogParticleCount; i++) {
+      positions[i * 3] += Math.sin(time + i) * 0.008;
+      positions[i * 3 + 2] += Math.cos(time + i) * 0.008;
+    }
+    fogGeo.attributes.position.needsUpdate = true;
+
+    // 4. Subtle pumpkin candle flickers
+    redStageLight.intensity = 1.3 + Math.sin(time * 12) * 0.3;
+    cyanStageLight.intensity = 1.3 + Math.cos(time * 9) * 0.25;
+
+    renderer.render(scene, camera);
+  }
+
+  renderLoop();
+})();
+</script>
+</body>
+</html>

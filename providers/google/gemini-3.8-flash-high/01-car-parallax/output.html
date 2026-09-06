@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Tourer Twilight Cruise · Parallax Canvas Simulation</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #08070d;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+  }
+  #ui-overlay {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .hud-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(18, 20, 32, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    padding: 8px 16px;
+    color: #f1f3f9;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+  .hud-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff7b39;
+    box-shadow: 0 0 10px #ff7b39;
+    animation: pulse 2s infinite ease-in-out;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+  #controls {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+  }
+  .ctrl-btn {
+    background: rgba(18, 20, 32, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 10px 18px;
+    color: #e5e9f0;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+  .ctrl-btn:hover {
+    background: rgba(40, 45, 65, 0.85);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    color: #fff;
+  }
+  .ctrl-btn:active {
+    transform: translateY(0);
+  }
+  .speed-indicator {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    padding: 0 8px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stage"></canvas>
+
+<div id="ui-overlay">
+  <div class="hud-badge">
+    <div class="hud-dot"></div>
+    <span>GOLDEN DUSK COASTAL RUNWAY · 60 FPS</span>
+  </div>
+</div>
+
+<div id="controls">
+  <span class="speed-indicator" id="speedText">112 KM/H</span>
+  <button class="ctrl-btn" id="soundBtn">🔊 AUDIO: OFF</button>
+  <button class="ctrl-btn" id="lightBtn">💡 HEADLIGHTS: HIGH</button>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  const speedText = document.getElementById('speedText');
+  const soundBtn = document.getElementById('soundBtn');
+  const lightBtn = document.getElementById('lightBtn');
+
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Audio synthesis engine (zero dependency Web Audio API)
+  let audioCtx = null;
+  let isMuted = true;
+  let engineGain = null;
+  let engineOsc1 = null;
+  let engineOsc2 = null;
+  let noiseNode = null;
+
+  function initAudio() {
+    if (audioCtx) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+
+    // Low engine rumble
+    engineOsc1 = audioCtx.createOscillator();
+    engineOsc1.type = 'sawtooth';
+    engineOsc1.frequency.setValueAtTime(58, audioCtx.currentTime);
+
+    const filter1 = audioCtx.createBiquadFilter();
+    filter1.type = 'lowpass';
+    filter1.frequency.setValueAtTime(160, audioCtx.currentTime);
+
+    // Deep sub harmonics
+    engineOsc2 = audioCtx.createOscillator();
+    engineOsc2.type = 'triangle';
+    engineOsc2.frequency.setValueAtTime(29, audioCtx.currentTime);
+
+    // Tire road hiss (pink/white noise)
+    const bufferSize = audioCtx.sampleRate * 2;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.04;
+      b6 = white * 0.115926;
+    }
+    noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = noiseBuffer;
+    noiseNode.loop = true;
+
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(450, audioCtx.currentTime);
+    noiseFilter.Q.setValueAtTime(1.2, audioCtx.currentTime);
+
+    engineGain = audioCtx.createGain();
+    engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+    engineOsc1.connect(filter1).connect(engineGain);
+    engineOsc2.connect(engineGain);
+    noiseNode.connect(noiseFilter).connect(engineGain);
+    engineGain.connect(audioCtx.destination);
+
+    engineOsc1.start();
+    engineOsc2.start();
+    noiseNode.start();
+  }
+
+  soundBtn.addEventListener('click', () => {
+    initAudio();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    isMuted = !isMuted;
+    if (isMuted) {
+      engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+      soundBtn.textContent = '🔊 AUDIO: OFF';
+    } else {
+      engineGain.gain.setTargetAtTime(0.28, audioCtx.currentTime, 0.15);
+      soundBtn.textContent = '🔊 AUDIO: ON';
+    }
+  });
+
+  let highBeams = true;
+  lightBtn.addEventListener('click', () => {
+    highBeams = !highBeams;
+    lightBtn.textContent = highBeams ? '💡 HEADLIGHTS: HIGH' : '💡 HEADLIGHTS: LOW';
+  });
+
+  // Physics and Simulation state
+  const sim = {
+    speed: 780, // pixels per second on the foreground road
+    wheelRotation: 0,
+    wheelRadius: 36,
+    suspensionOffset: 0,
+    suspensionVelocity: 0,
+    pitch: 0,
+    pitchVelocity: 0,
+    time: 0,
+    carXRatio: 0.38, // horizontal placement of car
+  };
+
+  // Road baseline definition
+  function getRoadY() {
+    return height * 0.74;
+  }
+
+  // Layer Offsets
+  let distMountainsX = 0;
+  let midMountainsX = 0;
+  let farTreesX = 0;
+  let midTreesX = 0;
+  let polesX = 0;
+  let roadMarkersX = 0;
+  let roadTextureX = 0;
+  let fgGrassX = 0;
+
+  // Particle systems
+  const exhaustParticles = [];
+  const roadDustParticles = [];
+
+  // Procedural landscape peaks generator
+  function generateRidge(count, minY, maxY, seed) {
+    const pts = [];
+    let prevY = (minY + maxY) * 0.5;
+    for (let i = 0; i <= count; i++) {
+      const freq1 = Math.sin(i * 0.18 + seed);
+      const freq2 = Math.cos(i * 0.43 + seed * 2);
+      const targetY = minY + (maxY - minY) * (0.5 + 0.35 * freq1 + 0.15 * freq2);
+      prevY += (targetY - prevY) * 0.5;
+      pts.push(prevY);
+    }
+    return pts;
+  }
+
+  const farMountainRidge = generateRidge(120, -90, 80, 1.4);
+  const midMountainRidge = generateRidge(100, -50, 45, 3.8);
+
+  // Birds flock simulation
+  const birds = Array.from({ length: 9 }, (_, i) => ({
+    x: 200 + i * 45 + (Math.random() * 20),
+    y: 110 + (i % 3) * 18 + (Math.random() * 15),
+    speedX: 28 + Math.random() * 8,
+    flapSpeed: 4.5 + Math.random() * 1.5,
+    size: 5.5 + Math.random() * 2.5,
+    phase: Math.random() * Math.PI * 2
+  }));
+
+  // Clouds data
+  const clouds = [
+    { x: 80, y: 0.12, w: 260, h: 42, speed: 12, alpha: 0.38 },
+    { x: 420, y: 0.18, w: 340, h: 56, speed: 16, alpha: 0.45 },
+    { x: 820, y: 0.08, w: 220, h: 36, speed: 9, alpha: 0.3 },
+    { x: 1200, y: 0.22, w: 400, h: 62, speed: 18, alpha: 0.4 },
+    { x: 1680, y: 0.15, w: 300, h: 48, speed: 14, alpha: 0.35 }
+  ];
+
+  // Wind turbines on distant ridges
+  const turbines = [
+    { x: 320, baseRidgeIndex: 22, height: 75, angle: 0, speed: 1.8 },
+    { x: 780, baseRidgeIndex: 48, height: 85, angle: 1.2, speed: 2.1 },
+    { x: 1250, baseRidgeIndex: 78, height: 70, angle: 2.4, speed: 1.6 },
+    { x: 1680, baseRidgeIndex: 104, height: 80, angle: 0.8, speed: 1.9 }
+  ];
+
+  // Utility poles
+  const POLE_SPACING = 380;
+  const NUM_POLES = 8;
+
+  // Roadside reflectors / guard rails
+  const GUARD_SPACING = 48;
+
+  // -------------------------------------------------------------
+  // RENDERING FUNCTIONS
+  // -------------------------------------------------------------
+
+  function drawSky(dt) {
+    const roadY = getRoadY();
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, roadY);
+    skyGrad.addColorStop(0.0, '#0c1024'); // Deep dusk zenith
+    skyGrad.addColorStop(0.28, '#1b1d3d');
+    skyGrad.addColorStop(0.55, '#4a2542'); // Twilight plum
+    skyGrad.addColorStop(0.76, '#b44b36'); // Rich burnt orange
+    skyGrad.addColorStop(0.92, '#ea8638'); // Golden sunset horizon
+    skyGrad.addColorStop(1.0, '#ffc46b');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, width, roadY);
+
+    // Setting sun / horizon corona
+    const sunX = width * 0.72;
+    const sunY = roadY * 0.82;
+    const sunRadius = 68;
+
+    // Volumetric sun glow
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 340);
+    sunGlow.addColorStop(0.0, 'rgba(255, 238, 175, 0.85)');
+    sunGlow.addColorStop(0.18, 'rgba(255, 140, 60, 0.45)');
+    sunGlow.addColorStop(0.48, 'rgba(200, 60, 80, 0.18)');
+    sunGlow.addColorStop(1.0, 'rgba(12, 16, 36, 0)');
+    ctx.fillStyle = sunGlow;
+    ctx.fillRect(0, 0, width, roadY);
+
+    // Sun disc
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff4d6';
+    ctx.shadowColor = '#ffaa44';
+    ctx.shadowBlur = 35;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Atmospheric cloud layers
+    clouds.forEach(c => {
+      c.x -= c.speed * dt;
+      if (c.x + c.w < 0) c.x = width + Math.random() * 200;
+
+      const cy = height * c.y;
+      const grad = ctx.createLinearGradient(c.x, cy, c.x, cy + c.h);
+      grad.addColorStop(0, `rgba(255, 160, 110, ${c.alpha})`);
+      grad.addColorStop(0.5, `rgba(180, 70, 90, ${c.alpha * 0.8})`);
+      grad.addColorStop(1, `rgba(60, 30, 60, 0)`);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(c.x + c.w * 0.5, cy + c.h * 0.5, c.w * 0.5, c.h * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Smaller puff
+      ctx.beginPath();
+      ctx.ellipse(c.x + c.w * 0.3, cy + c.h * 0.4, c.w * 0.35, c.h * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Birds flock
+    ctx.strokeStyle = 'rgba(40, 20, 35, 0.8)';
+    ctx.lineWidth = 1.6;
+    birds.forEach(b => {
+      b.x -= (b.speedX + sim.speed * 0.03) * dt;
+      if (b.x < -60) {
+        b.x = width + 50 + Math.random() * 80;
+        b.y = 80 + Math.random() * (roadY * 0.45);
+      }
+      const wingY = Math.sin(sim.time * b.flapSpeed + b.phase) * (b.size * 0.8);
+      ctx.beginPath();
+      ctx.moveTo(b.x - b.size, b.y + wingY);
+      ctx.quadraticCurveTo(b.x - b.size * 0.4, b.y - b.size * 0.2, b.x, b.y);
+      ctx.quadraticCurveTo(b.x + b.size * 0.4, b.y - b.size * 0.2, b.x + b.size, b.y + wingY);
+      ctx.stroke();
+    });
+  }
+
+  function drawDistantMountains() {
+    const roadY = getRoadY();
+    const baseY = roadY - 130;
+    const step = 45;
+    const totalW = farMountainRidge.length * step;
+    const scroll = distMountainsX % totalW;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, roadY);
+
+    for (let screenX = -step; screenX <= width + step * 2; screenX += step) {
+      const worldX = (screenX - scroll) % totalW;
+      const positiveX = worldX < 0 ? worldX + totalW : worldX;
+      const idx = Math.floor(positiveX / step) % farMountainRidge.length;
+      const nextIdx = (idx + 1) % farMountainRidge.length;
+      const fract = (positiveX % step) / step;
+      const elevation = farMountainRidge[idx] * (1 - fract) + farMountainRidge[nextIdx] * fract;
+      const py = baseY + elevation;
+      ctx.lineTo(screenX, py);
+    }
+    ctx.lineTo(width, roadY);
+    ctx.closePath();
+
+    const mtnGrad = ctx.createLinearGradient(0, baseY - 90, 0, roadY);
+    mtnGrad.addColorStop(0, 'rgba(86, 38, 75, 0.95)');
+    mtnGrad.addColorStop(0.5, 'rgba(145, 62, 75, 0.92)');
+    mtnGrad.addColorStop(1, 'rgba(215, 115, 78, 0.85)');
+    ctx.fillStyle = mtnGrad;
+    ctx.fill();
+
+    // Subtle atmospheric haze over distant mountains
+    const haze = ctx.createLinearGradient(0, baseY - 50, 0, roadY);
+    haze.addColorStop(0, 'rgba(240, 130, 80, 0)');
+    haze.addColorStop(1, 'rgba(255, 175, 110, 0.35)');
+    ctx.fillStyle = haze;
+    ctx.fill();
+
+    // Wind turbines along ridges
+    turbines.forEach(tb => {
+      const tw = (tb.x - distMountainsX * 0.9) % (width * 1.8);
+      const posX = tw < -100 ? tw + width * 1.8 : tw;
+      if (posX < width + 100) {
+        const posY = baseY - 20;
+        ctx.strokeStyle = 'rgba(75, 35, 60, 0.85)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(posX, posY);
+        ctx.lineTo(posX, posY - tb.height);
+        ctx.stroke();
+
+        // Rotor hub and spinning blades
+        ctx.fillStyle = 'rgba(75, 35, 60, 0.95)';
+        ctx.beginPath();
+        ctx.arc(posX, posY - tb.height, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        const curAngle = tb.angle + sim.time * tb.speed;
+        for (let b = 0; b < 3; b++) {
+          const bladeA = curAngle + (b * Math.PI * 2) / 3;
+          const bx = posX + Math.cos(bladeA) * 34;
+          const by = (posY - tb.height) + Math.sin(bladeA) * 34;
+          ctx.beginPath();
+          ctx.moveTo(posX, posY - tb.height);
+          ctx.lineTo(bx, by);
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+        }
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function drawMidMountains() {
+    const roadY = getRoadY();
+    const baseY = roadY - 70;
+    const step = 38;
+    const totalW = midMountainRidge.length * step;
+    const scroll = midMountainsX % totalW;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, roadY);
+
+    for (let screenX = -step; screenX <= width + step * 2; screenX += step) {
+      const worldX = (screenX - scroll) % totalW;
+      const positiveX = worldX < 0 ? worldX + totalW : worldX;
+      const idx = Math.floor(positiveX / step) % midMountainRidge.length;
+      const nextIdx = (idx + 1) % midMountainRidge.length;
+      const fract = (positiveX % step) / step;
+      const elevation = midMountainRidge[idx] * (1 - fract) + midMountainRidge[nextIdx] * fract;
+      const py = baseY + elevation;
+      ctx.lineTo(screenX, py);
+    }
+    ctx.lineTo(width, roadY);
+    ctx.closePath();
+
+    const mtnGrad = ctx.createLinearGradient(0, baseY - 50, 0, roadY);
+    mtnGrad.addColorStop(0, '#2b1b36');
+    mtnGrad.addColorStop(0.65, '#3d243b');
+    mtnGrad.addColorStop(1, '#5a2d3c');
+    ctx.fillStyle = mtnGrad;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawFarTrees() {
+    const roadY = getRoadY();
+    const baseY = roadY - 24;
+    const treeSpacing = 28;
+    const totalTrees = 80;
+    const totalW = totalTrees * treeSpacing;
+    const scroll = farTreesX % totalW;
+
+    ctx.fillStyle = '#1c1524';
+    ctx.beginPath();
+    ctx.moveTo(0, roadY);
+
+    for (let x = -treeSpacing; x <= width + treeSpacing * 2; x += treeSpacing) {
+      const worldIdx = Math.floor(((x - scroll) % totalW + totalW) % totalW / treeSpacing);
+      const th = 26 + (Math.sin(worldIdx * 2.3) * 0.5 + 0.5) * 24;
+      const tx = x;
+      ctx.lineTo(tx - 12, baseY);
+      ctx.lineTo(tx, baseY - th);
+      ctx.lineTo(tx + 12, baseY);
+    }
+    ctx.lineTo(width, roadY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawMidTrees() {
+    const roadY = getRoadY();
+    const baseY = roadY - 6;
+    const spacing = 48;
+    const totalW = spacing * 60;
+    const scroll = midTreesX % totalW;
+
+    for (let x = -spacing; x <= width + spacing * 2; x += spacing) {
+      const worldIdx = Math.floor(((x - scroll) % totalW + totalW) % totalW / spacing);
+      const type = worldIdx % 3;
+      const th = 40 + (Math.sin(worldIdx * 1.7) * 0.5 + 0.5) * 35;
+      const px = x;
+
+      // Tree trunk
+      ctx.fillStyle = '#0e0b14';
+      ctx.fillRect(px - 2, baseY - th * 0.35, 4, th * 0.35 + 8);
+
+      // Pine foliage layers
+      if (type === 0 || type === 1) {
+        ctx.fillStyle = '#16111f';
+        for (let tier = 0; tier < 3; tier++) {
+          const tierY = baseY - th * (0.3 + tier * 0.28);
+          const tierW = (24 - tier * 5);
+          ctx.beginPath();
+          ctx.moveTo(px - tierW, tierY);
+          ctx.lineTo(px, tierY - th * 0.4);
+          ctx.lineTo(px + tierW, tierY);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else {
+        // Round deciduous foliage
+        ctx.fillStyle = '#181223';
+        ctx.beginPath();
+        ctx.arc(px, baseY - th * 0.65, th * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawUtilityPoles() {
+    const roadY = getRoadY();
+    const totalW = NUM_POLES * POLE_SPACING;
+    const scroll = polesX % totalW;
+    const poleY = roadY - 8;
+
+    const visiblePoles = [];
+
+    for (let i = -1; i <= NUM_POLES + 2; i++) {
+      const px = i * POLE_SPACING - scroll;
+      if (px >= -POLE_SPACING && px <= width + POLE_SPACING) {
+        visiblePoles.push(px);
+      }
+    }
+
+    // Sort left to right
+    visiblePoles.sort((a, b) => a - b);
+
+    // Draw catenary wires between poles
+    ctx.strokeStyle = 'rgba(25, 20, 35, 0.85)';
+    ctx.lineWidth = 1.3;
+    for (let i = 0; i < visiblePoles.length - 1; i++) {
+      const p1 = visiblePoles[i];
+      const p2 = visiblePoles[i + 1];
+      const wireY1 = poleY - 152;
+      const wireY2 = poleY - 152;
+      const midX = (p1 + p2) * 0.5;
+      const sag = 28;
+
+      // Top wire
+      ctx.beginPath();
+      ctx.moveTo(p1, wireY1);
+      ctx.quadraticCurveTo(midX, wireY1 + sag, p2, wireY2);
+      ctx.stroke();
+
+      // Lower wire
+      ctx.beginPath();
+      ctx.moveTo(p1, wireY1 + 22);
+      ctx.quadraticCurveTo(midX, wireY1 + 22 + sag * 0.9, p2, wireY2 + 22);
+      ctx.stroke();
+    }
+
+    // Draw pole wooden structures and transformer details
+    visiblePoles.forEach(px => {
+      // Main pole
+      ctx.fillStyle = '#120f18';
+      ctx.fillRect(px - 3.5, poleY - 165, 7, 168);
+
+      // Top crossbar
+      ctx.fillRect(px - 28, poleY - 154, 56, 5);
+      // Lower crossbar
+      ctx.fillRect(px - 22, poleY - 132, 44, 4.5);
+
+      // Insulator caps
+      ctx.fillStyle = '#ff9852';
+      [-24, -8, 8, 24].forEach(off => {
+        ctx.fillRect(px + off - 2, poleY - 159, 4, 5);
+      });
+
+      // Small transformer cylinder on some poles
+      if (Math.abs(Math.floor(px / POLE_SPACING)) % 2 === 0) {
+        ctx.fillStyle = '#1c1925';
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(px + 6, poleY - 145, 14, 26, 3) : ctx.fillRect(px + 6, poleY - 145, 14, 26);
+        ctx.fill();
+      }
+    });
+  }
+
+  function drawGuardrailAndRoadside() {
+    const roadY = getRoadY();
+    const railY = roadY - 4;
+    const totalW = GUARD_SPACING * 40;
+    const scroll = roadMarkersX % totalW;
+
+    // Guardrail steel beam
+    const beamGrad = ctx.createLinearGradient(0, railY - 18, 0, railY - 4);
+    beamGrad.addColorStop(0, '#2d2838');
+    beamGrad.addColorStop(0.4, '#534d63');
+    beamGrad.addColorStop(0.7, '#242030');
+    beamGrad.addColorStop(1, '#161320');
+    ctx.fillStyle = beamGrad;
+    ctx.fillRect(0, railY - 18, width, 14);
+
+    // Guardrail posts & reflector studs
+    for (let x = -GUARD_SPACING; x <= width + GUARD_SPACING; x += GUARD_SPACING) {
+      const px = x - (scroll % GUARD_SPACING);
+
+      // Post
+      ctx.fillStyle = '#120f19';
+      ctx.fillRect(px - 3, railY - 20, 6, 26);
+
+      // Amber/Red reflector stud
+      ctx.fillStyle = '#ff7336';
+      ctx.shadowColor = '#ff601e';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(px - 1.5, railY - 13, 3, 5);
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function drawRoad() {
+    const roadY = getRoadY();
+    const roadH = height - roadY;
+
+    // Asphalt body
+    const asphaltGrad = ctx.createLinearGradient(0, roadY, 0, height);
+    asphaltGrad.addColorStop(0, '#1c1a24');
+    asphaltGrad.addColorStop(0.12, '#14121a');
+    asphaltGrad.addColorStop(0.65, '#0b0a0f');
+    asphaltGrad.addColorStop(1, '#050408');
+    ctx.fillStyle = asphaltGrad;
+    ctx.fillRect(0, roadY, width, roadH);
+
+    // Asphalt noise / aggregate grain
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
+    for (let i = 0; i < 40; i++) {
+      const rx = (i * 97 + roadTextureX * 1.5) % width;
+      const ry = roadY + (i * 19) % (roadH * 0.85);
+      ctx.fillRect(rx, ry, (i % 3) + 1, 1);
+    }
+
+    // Top solid white/amber shoulder line
+    ctx.fillStyle = '#e8be88';
+    ctx.shadowColor = 'rgba(255, 170, 90, 0.4)';
+    ctx.shadowBlur = 6;
+    ctx.fillRect(0, roadY + 8, width, 3.5);
+    ctx.shadowBlur = 0;
+
+    // Center broken dashed highway stripes
+    const dashLength = 70;
+    const gapLength = 60;
+    const cycle = dashLength + gapLength;
+    const stripeY = roadY + roadH * 0.48;
+    const dashScroll = roadTextureX % cycle;
+
+    ctx.fillStyle = '#f2efe9';
+    ctx.shadowColor = 'rgba(240, 240, 255, 0.3)';
+    ctx.shadowBlur = 5;
+    for (let x = -cycle; x <= width + cycle; x += cycle) {
+      const dx = x - dashScroll;
+      ctx.fillRect(dx, stripeY, dashLength, 4.5);
+    }
+    ctx.shadowBlur = 0;
+
+    // Bottom dark curb / shoulder
+    ctx.fillStyle = '#0a0810';
+    ctx.fillRect(0, height - 16, width, 16);
+  }
+
+  // -------------------------------------------------------------
+  // CAR RENDERING (High Fidelity Grand Tourer Coupe)
+  // -------------------------------------------------------------
+
+  function drawWheel(wx, wy, spinAngle, isFront) {
+    const r = sim.wheelRadius;
+
+    ctx.save();
+    ctx.translate(wx, wy);
+
+    // Deep wheel arch ambient occlusion
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 7, Math.PI, 0, false);
+    ctx.fill();
+
+    // Tire rubber outer rim
+    const tireGrad = ctx.createRadialGradient(0, 0, r - 9, 0, 0, r + 2);
+    tireGrad.addColorStop(0, '#1c1d22');
+    tireGrad.addColorStop(0.65, '#121317');
+    tireGrad.addColorStop(0.9, '#22242b');
+    tireGrad.addColorStop(1, '#0c0d10');
+
+    ctx.fillStyle = tireGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tire tread micro-notches
+    ctx.strokeStyle = '#0a0b0d';
+    ctx.lineWidth = 2.5;
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 10) {
+      const cos = Math.cos(a + spinAngle);
+      const sin = Math.sin(a + spinAngle);
+      ctx.beginPath();
+      ctx.moveTo(cos * (r - 4), sin * (r - 4));
+      ctx.lineTo(cos * r, sin * r);
+      ctx.stroke();
+    }
+
+    // Drilled metal brake rotor (stationary relative to wheel spin)
+    const rotorR = r - 11;
+    const rotorGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, rotorR);
+    rotorGrad.addColorStop(0, '#555861');
+    rotorGrad.addColorStop(0.7, '#8e93a0');
+    rotorGrad.addColorStop(1, '#42454d');
+    ctx.fillStyle = rotorGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, rotorR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rotor circular ventilation ring
+    ctx.strokeStyle = 'rgba(30, 32, 40, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, rotorR * 0.72, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Red Brembo-style performance brake caliper
+    ctx.save();
+    const caliperAngle = isFront ? -Math.PI * 0.68 : -Math.PI * 0.32;
+    ctx.rotate(caliperAngle);
+    ctx.fillStyle = '#dc2626';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(rotorR * 0.68, -11, 11, 22, 3) : ctx.fillRect(rotorR * 0.68, -11, 11, 22);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Caliper metallic branding pin
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(rotorR * 0.68 + 2.5, -6, 5, 2.5);
+    ctx.restore();
+
+    // Rotating alloy rim (5 Twin-Spoke sport architecture)
+    ctx.save();
+    ctx.rotate(spinAngle);
+
+    // Rim outer lip
+    ctx.strokeStyle = '#c5c9d6';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, rotorR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Twin spokes
+    const numSpokePairs = 5;
+    for (let i = 0; i < numSpokePairs; i++) {
+      const baseA = (i * Math.PI * 2) / numSpokePairs;
+      [-0.12, 0.12].forEach(offset => {
+        const spokeA = baseA + offset;
+        const spokeGrad = ctx.createLinearGradient(0, 0, Math.cos(spokeA) * rotorR, Math.sin(spokeA) * rotorR);
+        spokeGrad.addColorStop(0, '#ffffff');
+        spokeGrad.addColorStop(0.4, '#9ca3af');
+        spokeGrad.addColorStop(1, '#4b5563');
+
+        ctx.strokeStyle = spokeGrad;
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(spokeA) * rotorR, Math.sin(spokeA) * rotorR);
+        ctx.stroke();
+      });
+    }
+
+    // Center hub cap with chrome ring and lug nuts
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f3f4f6';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = '#9ca3af';
+    for (let i = 0; i < 5; i++) {
+      const la = (i * Math.PI * 2) / 5;
+      ctx.beginPath();
+      ctx.arc(Math.cos(la) * 6, Math.sin(la) * 6, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore(); // end rotating rim
+
+    ctx.restore(); // end wheel
+  }
+
+  function drawCar() {
+    const roadY = getRoadY();
+    const cx = width * sim.carXRatio;
+
+    // Dynamics: suspension travel + pitch angle
+    const cy = roadY - sim.wheelRadius + sim.suspensionOffset;
+    const pitch = sim.pitch;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(pitch);
+
+    // Car Dimensions: Length ~440px, Height ~115px
+    const halfL = 220;
+    const wheelBaseFront = 126;
+    const wheelBaseRear = -132;
+    const wheelCenterY = 0;
+
+    // 1. Contact shadow under vehicle (soft multi-layered ambient occlusion)
+    ctx.save();
+    ctx.rotate(-pitch); // Ground shadow stays aligned to road
+    const shadowGrad = ctx.createRadialGradient(0, 26, 30, 0, 26, halfL + 60);
+    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.88)');
+    shadowGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.55)');
+    shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = shadowGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 26, halfL + 45, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 2. Headlight Volumetric Light Beam (Projecting forward on road)
+    ctx.save();
+    const lightSourceX = halfL - 10;
+    const lightSourceY = -28;
+
+    const beamDist = highBeams ? 820 : 520;
+    const beamSpread = highBeams ? 170 : 110;
+
+    const beamGrad = ctx.createRadialGradient(
+      lightSourceX, lightSourceY, 6,
+      lightSourceX + beamDist * 0.45, lightSourceY + 50, beamDist
+    );
+    beamGrad.addColorStop(0.0, 'rgba(230, 245, 255, 0.85)');
+    beamGrad.addColorStop(0.12, 'rgba(175, 220, 255, 0.38)');
+    beamGrad.addColorStop(0.45, 'rgba(140, 195, 255, 0.12)');
+    beamGrad.addColorStop(0.85, 'rgba(100, 160, 255, 0.03)');
+    beamGrad.addColorStop(1.0, 'rgba(100, 160, 255, 0)');
+
+    ctx.fillStyle = beamGrad;
+    ctx.beginPath();
+    ctx.moveTo(lightSourceX, lightSourceY - 5);
+    ctx.lineTo(lightSourceX + beamDist, lightSourceY - 20);
+    ctx.lineTo(lightSourceX + beamDist, lightSourceY + beamSpread);
+    ctx.lineTo(lightSourceX + 40, lightSourceY + 34);
+    ctx.closePath();
+    ctx.fill();
+
+    // Road surface illuminated ellipse
+    ctx.save();
+    ctx.rotate(-pitch);
+    const poolGrad = ctx.createRadialGradient(
+      lightSourceX + 220, 24, 20,
+      lightSourceX + 260, 24, 280
+    );
+    poolGrad.addColorStop(0, 'rgba(235, 248, 255, 0.32)');
+    poolGrad.addColorStop(0.5, 'rgba(160, 210, 255, 0.14)');
+    poolGrad.addColorStop(1, 'rgba(160, 210, 255, 0)');
+    ctx.fillStyle = poolGrad;
+    ctx.beginPath();
+    ctx.ellipse(lightSourceX + 260, 24, 240, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.restore(); // end headlight volumetric
+
+    // 3. Taillight Glow Flare (Crimson trail & illumination behind car)
+    const tailX = -halfL + 8;
+    const tailY = -34;
+    const tailGlow = ctx.createRadialGradient(tailX, tailY, 4, tailX - 45, tailY, 110);
+    tailGlow.addColorStop(0, 'rgba(255, 25, 45, 0.95)');
+    tailGlow.addColorStop(0.25, 'rgba(220, 20, 40, 0.45)');
+    tailGlow.addColorStop(0.7, 'rgba(180, 10, 30, 0.12)');
+    tailGlow.addColorStop(1, 'rgba(180, 10, 30, 0)');
+    ctx.fillStyle = tailGlow;
+    ctx.beginPath();
+    ctx.arc(tailX - 25, tailY, 100, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Main Body Silhouette & Metallic Panels
+    // Aerodynamic grand tourer path
+    ctx.beginPath();
+    // Start at rear lower diffuser
+    ctx.moveTo(-halfL + 25, 14);
+    // Rear bumper & exhaust notch
+    ctx.lineTo(-halfL + 5, 8);
+    ctx.quadraticCurveTo(-halfL - 4, -10, -halfL + 4, -28);
+    // Rear deck lid / ducktail spoiler
+    ctx.lineTo(-halfL + 2, -36);
+    ctx.quadraticCurveTo(-halfL + 18, -42, -halfL + 42, -43);
+    // Fastback rear glass rake
+    ctx.quadraticCurveTo(-75, -50, -38, -88);
+    // Sleek roofline
+    ctx.quadraticCurveTo(15, -94, 65, -86);
+    // Raked A-pillar and windshield
+    ctx.quadraticCurveTo(95, -74, 126, -49);
+    // Long muscular bonnet / hood
+    ctx.quadraticCurveTo(170, -46, halfL - 18, -37);
+    // Sharp aerodynamic nose & front splitter
+    ctx.quadraticCurveTo(halfL + 8, -32, halfL + 12, -22);
+    ctx.lineTo(halfL + 8, -6);
+    ctx.lineTo(halfL - 22, 10);
+    // Front chin spoiler
+    ctx.lineTo(wheelBaseFront + 52, 14);
+
+    // Front wheel well cutout
+    ctx.arc(wheelBaseFront, wheelCenterY, sim.wheelRadius + 7, 0, Math.PI, true);
+
+    // Side skirt between wheels
+    ctx.lineTo(wheelBaseRear + sim.wheelRadius + 7, 14);
+
+    // Rear wheel well cutout
+    ctx.arc(wheelBaseRear, wheelCenterY, sim.wheelRadius + 7, 0, Math.PI, true);
+
+    // Back to rear diffuser
+    ctx.lineTo(-halfL + 25, 14);
+    ctx.closePath();
+
+    // Metallic Obsidian / Midnight Sapphire gradient
+    const bodyGrad = ctx.createLinearGradient(0, -95, 0, 18);
+    bodyGrad.addColorStop(0.0, '#4b6584'); // Sky reflection highlight along roof
+    bodyGrad.addColorStop(0.18, '#1e272e');
+    bodyGrad.addColorStop(0.38, '#0f172a'); // Midnight deep body tone
+    bodyGrad.addColorStop(0.65, '#1e293b'); // Shoulder crease bounce
+    bodyGrad.addColorStop(0.85, '#0b0f19');
+    bodyGrad.addColorStop(1.0, '#020617'); // Dark rocker panel
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+
+    // Specular body stroke
+    ctx.strokeStyle = 'rgba(200, 225, 255, 0.25)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // 5. Shoulder Crease Highlight (Dynamic reflection line along side)
+    const creaseGrad = ctx.createLinearGradient(-halfL + 30, -38, halfL - 30, -32);
+    creaseGrad.addColorStop(0, 'rgba(255, 150, 90, 0.15)');
+    creaseGrad.addColorStop(0.4, 'rgba(255, 255, 255, 0.65)');
+    creaseGrad.addColorStop(0.8, 'rgba(255, 200, 140, 0.35)');
+    creaseGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+    ctx.strokeStyle = creaseGrad;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-halfL + 40, -38);
+    ctx.quadraticCurveTo(0, -39, halfL - 25, -31);
+    ctx.stroke();
+
+    // 6. Windows / Cabin Greenhouse
+    ctx.beginPath();
+    // A-pillar inner
+    ctx.moveTo(118, -48);
+    ctx.lineTo(60, -82);
+    // Roof inner
+    ctx.quadraticCurveTo(15, -89, -32, -83);
+    // C-pillar inner
+    ctx.quadraticCurveTo(-65, -55, -112, -43);
+    // Beltline
+    ctx.lineTo(118, -48);
+    ctx.closePath();
+
+    // Window Glass with twilight sky reflection
+    const glassGrad = ctx.createLinearGradient(0, -90, 0, -42);
+    glassGrad.addColorStop(0, '#ff9f43'); // Sunset reflection on top of glass
+    glassGrad.addColorStop(0.35, '#a55eea'); // Purple twilight transition
+    glassGrad.addColorStop(0.7, '#1b1429');
+    glassGrad.addColorStop(1, '#0c0714');
+    ctx.fillStyle = glassGrad;
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Driver silhouette inside cabin
+    ctx.fillStyle = 'rgba(10, 8, 16, 0.85)';
+    // Driver head & shoulders
+    ctx.beginPath();
+    ctx.arc(-8, -62, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-4, -46, 16, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Steering wheel slant
+    ctx.strokeStyle = '#1e1b26';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(34, -45);
+    ctx.lineTo(24, -62);
+    ctx.stroke();
+
+    // B-Pillar pillar divider
+    ctx.strokeStyle = '#0a0d14';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.moveTo(4, -86);
+    ctx.lineTo(4, -46);
+    ctx.stroke();
+
+    // Aerodynamic side mirror
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(88, -52, 16, 8, 3) : ctx.fillRect(88, -52, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#ff7675'; // Mirror twilight catch
+    ctx.fillRect(89, -51, 3, 6);
+
+    // Door panel shut lines & handle
+    ctx.strokeStyle = 'rgba(5, 7, 12, 0.8)';
+    ctx.lineWidth = 1.6;
+    // Front door seam
+    ctx.beginPath();
+    ctx.moveTo(92, -47);
+    ctx.lineTo(84, 8);
+    ctx.stroke();
+    // Rear door seam
+    ctx.beginPath();
+    ctx.moveTo(-28, -45);
+    ctx.lineTo(-34, 10);
+    ctx.stroke();
+
+    // Flush modern door handle
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(18, -40, 20, 3.5);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillRect(18, -41, 20, 1);
+
+    // 7. Headlight assembly details
+    const hlX = halfL - 14;
+    const hlY = -27;
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.ellipse(hlX, hlY, 9, 5, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Intense LED projector core
+    ctx.fillStyle = '#38bdf8';
+    ctx.shadowColor = '#0ea5e9';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(hlX + 3, hlY, 3.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 8. Taillight full-width LED strip
+    ctx.fillStyle = '#ef4444';
+    ctx.shadowColor = '#dc2626';
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(tailX - 2, tailY - 3, 16, 6, 2) : ctx.fillRect(tailX - 2, tailY - 3, 16, 6);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Twin chrome exhaust tips
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(-halfL + 6, 5, 12, 4.5);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-halfL + 6, 6, 4, 2.5);
+
+    // 9. Wheels & Rims (drawn on top of chassis)
+    drawWheel(wheelBaseRear, wheelCenterY, sim.wheelRotation, false);
+    drawWheel(wheelBaseFront, wheelCenterY, sim.wheelRotation, true);
+
+    ctx.restore(); // end car translate/rotate
+  }
+
+  function updateParticles(dt) {
+    const roadY = getRoadY();
+    const cx = width * sim.carXRatio;
+    const halfL = 220;
+    const exhaustX = cx - halfL + 8;
+    const exhaustY = roadY - sim.wheelRadius + 6;
+
+    // Spawn exhaust smoke/vapor
+    if (Math.random() < 0.6) {
+      exhaustParticles.push({
+        x: exhaustX,
+        y: exhaustY + (Math.random() * 4 - 2),
+        vx: -sim.speed * 0.45 - Math.random() * 80,
+        vy: -15 - Math.random() * 20,
+        radius: 3.5 + Math.random() * 3,
+        alpha: 0.35 + Math.random() * 0.25,
+        growth: 16 + Math.random() * 14,
+        decay: 1.2
+      });
+    }
+
+    // Spawn road dust / tire mist behind wheels
+    const rearWheelX = cx - 132;
+    if (Math.random() < 0.4) {
+      roadDustParticles.push({
+        x: rearWheelX - 35,
+        y: roadY - 2 + (Math.random() * 4),
+        vx: -sim.speed * 0.8 - Math.random() * 120,
+        vy: -22 - Math.random() * 35,
+        radius: 2 + Math.random() * 2.5,
+        alpha: 0.28,
+        growth: 12,
+        decay: 1.8
+      });
+    }
+
+    // Update & draw exhaust particles
+    for (let i = exhaustParticles.length - 1; i >= 0; i--) {
+      const p = exhaustParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.radius += p.growth * dt;
+      p.alpha -= p.decay * dt;
+
+      if (p.alpha <= 0 || p.x < -100) {
+        exhaustParticles.splice(i, 1);
+        continue;
+      }
+
+      ctx.fillStyle = `rgba(220, 160, 140, ${p.alpha * 0.45})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Update & draw road dust particles
+    for (let i = roadDustParticles.length - 1; i >= 0; i--) {
+      const p = roadDustParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.radius += p.growth * dt;
+      p.alpha -= p.decay * dt;
+
+      if (p.alpha <= 0 || p.x < -100) {
+        roadDustParticles.splice(i, 1);
+        continue;
+      }
+
+      ctx.fillStyle = `rgba(255, 180, 130, ${p.alpha * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawForegroundOvergrowth() {
+    const roadY = getRoadY();
+    const fgY = height;
+    const spacing = 18;
+    const totalW = width + 200;
+    const scroll = fgGrassX % totalW;
+
+    ctx.fillStyle = '#06050a';
+    for (let x = -60; x <= width + 60; x += spacing) {
+      const px = x - (scroll % spacing);
+      const h = 28 + Math.sin(x * 0.35) * 18;
+      ctx.beginPath();
+      ctx.moveTo(px - 14, fgY);
+      ctx.quadraticCurveTo(px, fgY - h, px + 8, fgY);
+      ctx.fill();
+    }
+  }
+
+  // -------------------------------------------------------------
+  // MAIN ANIMATION LOOP
+  // -------------------------------------------------------------
+
+  let lastTime = performance.now();
+
+  function animate(now) {
+    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    lastTime = now;
+    sim.time += dt;
+
+    // Parallax scrolling speeds relative to road velocity
+    const baseSpeed = sim.speed;
+    distMountainsX += baseSpeed * 0.025 * dt;
+    midMountainsX += baseSpeed * 0.08 * dt;
+    farTreesX += baseSpeed * 0.22 * dt;
+    midTreesX += baseSpeed * 0.45 * dt;
+    polesX += baseSpeed * 0.85 * dt;
+    roadMarkersX += baseSpeed * 1.0 * dt;
+    roadTextureX += baseSpeed * 1.0 * dt;
+    fgGrassX += baseSpeed * 1.35 * dt;
+
+    // Wheel rotation synchronization: angular distance = distance / radius
+    const angularVelocity = baseSpeed / sim.wheelRadius;
+    sim.wheelRotation = (sim.wheelRotation + angularVelocity * dt) % (Math.PI * 2);
+
+    // Realistic suspension micro-motion (road noise simulation)
+    // Spring-damper physics driven by multi-frequency road texture
+    const roadBump =
+      Math.sin(sim.time * 9.5) * 0.85 +
+      Math.sin(sim.time * 21.0) * 0.45 +
+      (Math.random() - 0.5) * 0.6;
+
+    const springK = 85;
+    const damping = 12;
+    const forceY = -springK * sim.suspensionOffset - damping * sim.suspensionVelocity + roadBump * 42;
+    sim.suspensionVelocity += forceY * dt;
+    sim.suspensionOffset += sim.suspensionVelocity * dt;
+
+    // Chassis pitch rocking (subtle forward-back tilt)
+    const pitchForce = -120 * sim.pitch - 14 * sim.pitchVelocity + (Math.sin(sim.time * 8.2)) * 0.08;
+    sim.pitchVelocity += pitchForce * dt;
+    sim.pitch += sim.pitchVelocity * dt;
+
+    // Clear frame
+    ctx.clearRect(0, 0, width, height);
+
+    // Render Scene Layers in strict depth order
+    drawSky(dt);
+    drawDistantMountains();
+    drawMidMountains();
+    drawFarTrees();
+    drawMidTrees();
+    drawUtilityPoles();
+    drawGuardrailAndRoadside();
+    drawRoad();
+
+    // Render Foreground Hero Vehicle & FX
+    drawCar();
+    updateParticles(dt);
+    drawForegroundOvergrowth();
+
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>

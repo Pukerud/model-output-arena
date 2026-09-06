@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-3.8-flash-high",
+  "model_display": "Gemini 3.8 Flash High (Antigravity Harness)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-09-06T12:36:00Z",
+  "runner": "Gemini 3.8 Flash High via Antigravity IDE",
+  "notes": "Single-shot run in Antigravity IDE. Full-page vanilla HTML5 canvas simulation with multi-tiered parallax scrolling (dusk sunset gradient sky with procedural drifting clouds, setting sun corona, flocking birds, distant alpine ridges with wind turbines, secondary foothills, mid-ground pine & deciduous tree lines, catenary utility power poles, roadside guardrails with amber reflectors, textured asphalt road with dashed lane markings, and foreground grass silhouette). Foreground vehicle is an aerodynamic Grand Tourer sports coupe rendered with obsidian/sapphire metallic specular gradients, twilight cabin reflections with driver silhouette, volumetric xenon headlights illuminating the road ahead, crimson LED taillight glow, alloy wheels with Brembo calipers and synchronized angular rotation, spring-damper suspension physics with chassis pitch rocking, and procedural exhaust smoke & road dust particles. Includes interactive high-beam toggle and Web Audio API synthesizer for engine rumble and road hiss.",
+  "hosting": "api",
+  "weights": "closed"
+}
