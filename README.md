@@ -121,6 +121,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Qwen3.8-27B Uncensored HauhauCS Aggressive Q8_K_P | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p`](./providers/local/qwen3.8-27b-uncensored-hauhaucs-aggressive-q8-k-p) |
 | OpenAI | GPT-6 | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6`](./providers/openai/gpt-6) |
 | Google | Gemini 3.8 Flash High (Antigravity Harness) | ☁️ API | 🔒 Proprietary | [`providers/google/gemini-3.8-flash-high`](./providers/google/gemini-3.8-flash-high) |
+| DeepSeek | DeepSeek V4.1 Flash | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-flash`](./providers/deepseek/deepseek-flash) |
 
 ## How outputs were generated
 

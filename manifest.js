@@ -822,6 +822,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/google/gemini-3.8-flash-high/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "deepseek",
+      provider_display: "DeepSeek",
+      model: "deepseek-flash",
+      model_display: "DeepSeek V4.1 Flash",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/deepseek/deepseek-flash",
+      added: "2026-09-10",
+      outputs: {
+        "01-car-parallax":      "providers/deepseek/deepseek-flash/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/deepseek/deepseek-flash/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/deepseek/deepseek-flash/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

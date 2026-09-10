@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-flash",
+  "model_display": "DeepSeek V4.1 Flash",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-09-10T07:44:25Z",
+  "runner": "DeepSeek V4.1 Flash via OpenClaw agent (deepseek/deepseek-flash)",
+  "notes": "Sunset coastal highway, pure canvas, no libraries. A depth-layered parallax world: drifting clouds and stars, three mountain ridges drawn as continuous functions (so they scroll with no visible tiling seam), three treelines, telegraph poles carrying twin sagging wires, roadside scrub with flowers, then a layered verge and asphalt with two dash rows and motion streaks. The car is a bezier-built wine-red coupe whose wheel rotation is derived from travelled distance divided by wheel radius, so the tyres are literally locked to the road at any speed; body heave comes from two detuned sines, pitch is driven by the throttle with a slow spring, and there are exhaust puffs, tyre smoke, contact shadow, wheel-well shading, a warm headlight bloom and a tail-light glow. A canvas grain pass and CSS vignette finish it. Hold SPACE (or the mouse) to boost, R to restart. Verified by rendering headless frames in Chrome.",
+  "hosting": "api",
+  "weights": "closed"
+}

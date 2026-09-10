@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-flash",
+  "model_display": "DeepSeek V4.1 Flash",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-10T07:44:25Z",
+  "runner": "DeepSeek V4.1 Flash via OpenClaw agent (deepseek/deepseek-flash)",
+  "notes": "Three.js r128 (UMD build from a CDN) graveyard stage on which Michael Jackson, Pepe the Frog, Trump and Musk perform the Thriller routine as a loving parody. Every performer is a procedurally-built primitive humanoid with a real joint hierarchy (hips, torso, shoulders, elbows; hips, knees, ankles) plus costume work: fedora, curls and a single white glove for Michael; bulging eyes and red lips for Pepe; navy suit, long red tie and blond sweep for Trump; dark suit and black tee for Musk. The routine is a 24-second keyframed timeline at 120 BPM - rise out of the grave, zombie shuffle, the claw, the moonwalk, double-arm raise, a spin, the shoulder-twitch groove, and a held finale - with per-dancer phase offsets and personalities. Cinematic lighting: a shadow-casting moon key, magenta/cyan cross spots, a warm followspot that tracks whoever the camera is framing, ground fog, gravestones, a swaying zombie horde and a beat-pulsing stage ring. Five camera framings, slow-mo and a ?t= deep link to any moment in the routine.",
+  "hosting": "api",
+  "weights": "closed"
+}

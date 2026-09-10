@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "provider_display": "DeepSeek",
+  "model": "deepseek-flash",
+  "model_display": "DeepSeek V4.1 Flash",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-10T07:44:25Z",
+  "runner": "DeepSeek V4.1 Flash via OpenClaw agent (deepseek/deepseek-flash)",
+  "notes": "Single-file Plants-vs-Zombies, with the plan written at the top of the script and then followed. 5 lanes x 9 columns with a sun economy (sky sun plus sunflowers), six plants (sunflower, peashooter, wall-nut, snow pea, repeater, cherry bomb), each with cost, recharge, HP and its own procedural vector art, and five zombies (shambler, cone head, bucket head, sprinter, giant) whose armour visibly falls off as it is shot. Wave tables per level; four levels including an endless mode with escalating HP and speed. One mower per lane, screen shake, particles, floating score, WebAudio blips with a mute toggle, keyboard shortcuts, hover placement preview and a shovel, plus menu / level select / how-to-play / pause / game-over / victory screens and a localStorage top-12 leaderboard. Verified by driving the real update loop headlessly: waves spawn and clear on schedule, peas kill and score, mowers fire once, game-over and victory are both reachable, and the leaderboard entry persists.",
+  "hosting": "api",
+  "weights": "closed"
+}

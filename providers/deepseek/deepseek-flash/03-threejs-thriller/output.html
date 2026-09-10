@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THRILLER — a Three.js dance scene</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05050a; }
+  body { font-family: "Trebuchet MS", "Segoe UI", ui-sans-serif, system-ui, sans-serif; color: #f2e9dc; }
+  #stage { display: block; width: 100vw; height: 100vh; }
+
+  .overlay { position: fixed; z-index: 5; pointer-events: none; }
+
+  #title { top: 26px; left: 32px; }
+  #title h1 {
+    margin: 0; font-size: clamp(30px, 6.4vw, 74px); letter-spacing: .22em; font-weight: 800;
+    background: linear-gradient(#ff5b4a, #ffb347 55%, #ffe9a8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 42px rgba(255,90,60,.45);
+  }
+  #title p { margin: 6px 0 0; font-size: 12px; letter-spacing: .34em; text-transform: uppercase; color: #9c8fa8; }
+
+  #hint { bottom: 22px; left: 32px; font-size: 11px; letter-spacing: .16em; color: #8d8298; line-height: 1.9; }
+  #hint kbd {
+    background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 5px; padding: 1px 7px; font-family: inherit; color: #e6dced;
+  }
+
+  #panel { bottom: 22px; right: 26px; pointer-events: auto; display: flex; gap: 9px; }
+  #panel button {
+    pointer-events: auto; font-family: inherit; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: #efe4f5; background: rgba(20,14,28,.78); border: 1px solid rgba(255,140,110,.35);
+    border-radius: 9px; padding: 10px 15px; cursor: pointer; transition: all .16s ease;
+    backdrop-filter: blur(6px);
+  }
+  #panel button:hover { border-color: #ff8a5c; color: #fff; box-shadow: 0 0 22px rgba(255,110,70,.32); }
+  #panel button.on { background: rgba(255,110,70,.24); border-color: #ff9d6b; color: #fff; }
+
+  #beat {
+    top: 30px; right: 32px; width: 78px; height: 78px; border-radius: 50%;
+    border: 2px solid rgba(255,120,90,.35); display: flex; align-items: center; justify-content: center;
+    font-size: 10px; letter-spacing: .2em; color: #ffb08a; text-transform: uppercase;
+    transition: box-shadow .1s ease, border-color .1s ease;
+  }
+  #beat.hit { box-shadow: 0 0 34px rgba(255,120,80,.75), inset 0 0 22px rgba(255,120,80,.4); border-color: #ffb08a; }
+
+  #cameraLabel { top: 122px; right: 36px; font-size: 10px; letter-spacing: .26em; color: #8d8298; text-transform: uppercase; text-align: right; }
+
+  #loading {
+    position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+    background: #05050a; font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: #7d7288;
+    transition: opacity .6s ease;
+  }
+  #loading.gone { opacity: 0; pointer-events: none; }
+  #err { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center;
+         padding: 40px; text-align: center; background: #0a0708; font-size: 14px; line-height: 1.8; color: #ffb9a0; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div class="overlay" id="title">
+  <h1>THRILLER</h1>
+  <p>Michael Jackson · Pepe · Trump · Musk — a lovable parody</p>
+</div>
+
+<div class="overlay" id="beat">Beat</div>
+<div class="overlay" id="cameraLabel">Camera: auto dolly</div>
+
+<div id="hint" class="overlay">
+  <div><kbd>Space</kbd> pause &nbsp; <kbd>C</kbd> camera &nbsp; <kbd>S</kbd> slow-mo &nbsp; <kbd>R</kbd> restart dance</div>
+</div>
+
+<div id="panel" class="overlay">
+  <button id="btnCam">Camera</button>
+  <button id="btnSlow">Slow-mo</button>
+  <button id="btnRestart">Restart</button>
+</div>
+
+<div id="loading">Loading the graveyard…</div>
+<div id="err"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================================
+ * THRILLER — a Three.js dance scene.
+ *
+ * Everything is procedural: there are no model files. Each performer is a
+ * primitive-built humanoid (spheres, cylinders, boxes) wired into a hierarchy
+ * of groups — hips → torso → shoulders → elbows, hips → knees → ankles — which
+ * is what makes real limb animation possible rather than a bobbing box.
+ *
+ * The routine is a keyframed timeline at 120 BPM: the iconic zombie shuffle,
+ * the claw-raise, the moonwalk slide, the double-arm rise, a spin, the
+ * shoulder-twitch groove and a held finale. Poses are interpolated per frame
+ * and each dancer runs the same timeline with a small phase offset and its own
+ * personality (MJ is crisp, Pepe is jittery, Trump does the double-point,
+ * Musk is deadpan and slightly off-beat).
+ *
+ * Lighting is the other half of the look: a cold moon key from behind, two
+ * saturated cross-lights, a warm followspot that tracks whichever performer is
+ * being framed, ground fog, and hard shadows on a reflective stage.
+ * ==========================================================================*/
+(function () {
+  "use strict";
+
+  if (typeof THREE === "undefined") {
+    document.getElementById("err").style.display = "flex";
+    document.getElementById("err").innerHTML =
+      "Three.js could not be loaded from the CDN.<br>Connect to the internet and reload.";
+    document.getElementById("loading").classList.add("gone");
+    return;
+  }
+
+  var TAU = Math.PI * 2;
+  var BPM = 120;
+  var BEAT = 60 / BPM;                 // 0.5s
+  var ROUTINE = 24;                    // seconds per loop
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function ease(t) { return t * t * (3 - 2 * t); }
+
+  // ---------------------------------------------------------------- renderer --
+  var canvas = document.getElementById("stage");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if ("outputEncoding" in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x05060d);
+  scene.fog = new THREE.FogExp2(0x07070f, 0.030);
+
+  var camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 300);
+  camera.position.set(0, 3.0, 12.0);
+
+  // ---------------------------------------------------------------- stage -----
+  // Floor: dark, glossy, and lit by a hand-made radial gradient map so the
+  // spotlight pools read without any external textures.
+  function makeRadialTexture(inner, outer) {
+    var c = document.createElement("canvas");
+    c.width = c.height = 512;
+    var g = c.getContext("2d");
+    var grad = g.createRadialGradient(256, 256, 10, 256, 256, 254);
+    grad.addColorStop(0, inner);
+    grad.addColorStop(0.55, outer);
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 512, 512);
+    var t = new THREE.CanvasTexture(c);
+    return t;
+  }
+
+  var floorMat = new THREE.MeshStandardMaterial({
+    color: 0x14131c,
+    roughness: 0.34,
+    metalness: 0.62,
+    map: makeRadialTexture("rgba(255,255,255,0.10)", "rgba(120,110,160,0.045)")
+  });
+  var floor = new THREE.Mesh(new THREE.CircleGeometry(34, 72), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Stage trim ring — a thin emissive hoop that pulses on the beat.
+  var ringMat = new THREE.MeshStandardMaterial({ color: 0x2a0d16, emissive: 0xff3a1e, emissiveIntensity: 0.55, roughness: 0.5 });
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(7.4, 0.045, 12, 128), ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.012;
+  scene.add(ring);
+
+  // Back wall: a very dark slab so silhouettes have something to bite into.
+  var wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(70, 26),
+    new THREE.MeshStandardMaterial({ color: 0x0a0912, roughness: 1, metalness: 0 })
+  );
+  wall.position.set(0, 12, -13);
+  scene.add(wall);
+
+  // Moon disc + halo behind the action.
+  var moon = new THREE.Mesh(
+    new THREE.CircleGeometry(2.6, 48),
+    new THREE.MeshBasicMaterial({ color: 0xfdf3d8, transparent: true, opacity: 0.95, fog: false })
+  );
+  moon.position.set(-6.5, 9.5, -12.4);
+  scene.add(moon);
+  var halo = new THREE.Mesh(
+    new THREE.CircleGeometry(7.5, 48),
+    new THREE.MeshBasicMaterial({ color: 0xbcd0ff, transparent: true, opacity: 0.10, fog: false })
+  );
+  halo.position.copy(moon.position);
+  scene.add(halo);
+
+  // ---------------------------------------------------------------- lights ----
+  scene.add(new THREE.HemisphereLight(0x2b3560, 0x080610, 0.55));
+
+  var moonKey = new THREE.DirectionalLight(0xa9c4ff, 1.05);
+  moonKey.position.set(-7, 11, -9);
+  moonKey.castShadow = true;
+  moonKey.shadow.mapSize.set(2048, 2048);
+  moonKey.shadow.camera.near = 1;
+  moonKey.shadow.camera.far = 40;
+  moonKey.shadow.camera.left = -14;
+  moonKey.shadow.camera.right = 14;
+  moonKey.shadow.camera.top = 14;
+  moonKey.shadow.camera.bottom = -6;
+  moonKey.shadow.bias = -0.0008;
+  scene.add(moonKey);
+
+  var crossL = new THREE.SpotLight(0xff2e6a, 3.2, 38, Math.PI / 6, 0.7, 1.3);
+  crossL.position.set(-9, 8.5, 4.5);
+  crossL.target.position.set(0, 1.4, 0);
+  scene.add(crossL, crossL.target);
+
+  var crossR = new THREE.SpotLight(0x27d7ff, 3.0, 38, Math.PI / 6, 0.7, 1.3);
+  crossR.position.set(9, 8.0, 4.5);
+  crossR.target.position.set(0.4, 1.4, 0);
+  scene.add(crossR, crossR.target);
+
+  // Warm followspot that tracks the framed performer.
+  var follow = new THREE.SpotLight(0xffd9a0, 2.6, 30, Math.PI / 9, 0.42, 1.1);
+  follow.position.set(0, 10.5, 6);
+  follow.castShadow = true;
+  follow.shadow.mapSize.set(1024, 1024);
+  follow.shadow.bias = -0.0006;
+  var followTarget = new THREE.Object3D();
+  scene.add(follow, followTarget);
+  follow.target = followTarget;
+
+  // Low, moody uplight so legs do not disappear into the floor.
+  var up = new THREE.PointLight(0xff6a3a, 1.5, 14, 2);
+  up.position.set(0, 0.4, 3.2);
+  scene.add(up);
+
+  // Front fill: without this the dark suits read as holes in the frame.
+  var fill = new THREE.DirectionalLight(0x9fb4ff, 0.30);
+  fill.position.set(2.5, 4.5, 9);
+  scene.add(fill);
+
+  // ---------------------------------------------------------------- crowd -----
+  // Background graves and a swaying horde of silhouette zombies for depth.
+  var crowd = [];
+  function buildCrowd() {
+    var graveMat = new THREE.MeshStandardMaterial({ color: 0x1b1c24, roughness: 0.95 });
+    for (var i = 0; i < 26; i++) {
+      var a = (i / 26) * TAU + 0.4;
+      var rad = 15 + (i % 4) * 1.7;
+      var gh = 1.1 + (i % 5) * 0.28;
+      var g = new THREE.Mesh(new THREE.BoxGeometry(0.9, gh, 0.24), graveMat);
+      g.position.set(Math.cos(a) * rad, gh / 2, Math.sin(a) * rad - 2);
+      g.rotation.y = -a + Math.PI / 2;
+      g.rotation.z = ((i % 3) - 1) * 0.06;
+      g.castShadow = true;
+      scene.add(g);
+      // Rounded headstone top.
+      var top = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.24, 12, 1, false, 0, Math.PI), graveMat);
+      top.rotation.set(Math.PI / 2, 0, 0);
+      top.position.set(g.position.x, gh, g.position.z);
+      top.rotation.y = g.rotation.y;
+      scene.add(top);
+    }
+
+    // Two rows of zombie silhouettes, kept strictly BEHIND the performers.
+    for (var r = 0; r < 2; r++) {
+      var rowRad = 9.5 + r * 2.6;
+      var count = 11 + r * 4;
+      for (var c = 0; c < count; c++) {
+        var ang = -Math.PI * 0.66 + (c / (count - 1)) * Math.PI * 1.32;
+        // Depth is a function of the arc, never of the sine: everything in the
+        // crowd lives at z <= -8 so it can never drift in front of the cast.
+        var x = Math.cos(ang) * rowRad;
+        var z = -8.5 - r * 2.4 - (1 - Math.abs(Math.cos(ang))) * 3.2;
+        var body = new THREE.Group();
+        var mat = new THREE.MeshStandardMaterial({
+          color: 0x0d0f16, roughness: 0.94,
+          emissive: 0x120810, emissiveIntensity: 0.5
+        });
+        var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.24, 0.9, 8), mat);
+        torso.position.y = 1.0; torso.castShadow = true; body.add(torso);
+        var head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 10, 8), mat);
+        head.position.y = 1.62; head.castShadow = true; body.add(head);
+        for (var s = 0; s < 2; s++) {
+          var arm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.78, 6), mat);
+          arm.position.set(s ? 0.26 : -0.26, 1.16, 0.16);
+          arm.rotation.x = -1.05 + s * 0.06;
+          arm.castShadow = true;
+          body.add(arm);
+        }
+        body.position.set(x, 0, z);
+        body.rotation.y = Math.PI + Math.cos(ang) * 0.3;
+        body.scale.setScalar(0.94);
+        scene.add(body);
+        crowd.push({ g: body, phase: Math.random() * TAU, amp: 0.05 + Math.random() * 0.07, speed: 0.8 + Math.random() * 0.7 });
+      }
+    }
+  }
+  buildCrowd();
+
+  // Ground fog: a few huge, very transparent planes that drift.
+  var fogPlanes = [];
+  for (var f = 0; f < 5; f++) {
+    var fm = new THREE.Mesh(
+      new THREE.PlaneGeometry(60, 18),
+      new THREE.MeshBasicMaterial({
+        map: makeRadialTexture("rgba(190,205,255,0.16)", "rgba(140,150,220,0.05)"),
+        transparent: true, depthWrite: false, opacity: 0.5
+      })
+    );
+    fm.position.set(0, 0.5 + f * 0.55, -2 - f * 2.2);
+    scene.add(fm);
+    fogPlanes.push(fm);
+  }
+
+  // =============================================================== performers ==
+  function std(color, opts) {
+    opts = opts || {};
+    return new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: opts.roughness == null ? 0.55 : opts.roughness,
+      metalness: opts.metalness == null ? 0.18 : opts.metalness,
+      emissive: opts.emissive || 0x000000,
+      emissiveIntensity: opts.emissiveIntensity || 0
+    });
+  }
+
+  // A primitive humanoid with a real joint hierarchy:
+  //   root > hips > torso > head / shoulders > elbows
+  //                > hipL/R > knees > feet
+  // All joint rotations are applied in radians; a limb hangs along -Y, so a
+  // negative rotation.x swings it forward (toward the camera).
+  function makeHumanoid(opts) {
+    opts = opts || {};
+    var skinM = std(opts.skin || 0xe3b48f, { roughness: 0.62, metalness: 0.05 });
+    var suitM = std(opts.suit || 0x1a1a24, { roughness: 0.72, metalness: 0.10 });
+    var shirtM = std(opts.shirt || 0xf2f2f2, { roughness: 0.78 });
+    var hairM = std(opts.hair || 0x140f0c, { roughness: 0.9 });
+    var shoeM = std(0x0d0c10, { roughness: 0.4, metalness: 0.35 });
+    var accentM = std(opts.accent || 0xd23a2f, { roughness: 0.5, metalness: 0.2 });
+
+    var root = new THREE.Group();
+    var hips = new THREE.Group();
+    hips.position.y = 0.94;
+    root.add(hips);
+
+    var pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.26, 0.30), suitM);
+    pelvis.position.y = 0.0;
+    pelvis.castShadow = true;
+    hips.add(pelvis);
+
+    var torso = new THREE.Group();
+    torso.position.y = 0.12;
+    hips.add(torso);
+
+    var chest = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.60, 0.32), suitM);
+    chest.position.y = 0.30;
+    chest.castShadow = true;
+    torso.add(chest);
+
+    // Optional front panel (shirt / tee / tie).
+    if (opts.front) {
+      var panel = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.44, 0.04), opts.front.mat || shirtM);
+      panel.position.set(0, 0.34, 0.17);
+      torso.add(panel);
+    }
+    if (opts.tie) {
+      var tie = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.34, 0.03), accentM);
+      tie.position.set(0, 0.30, 0.20);
+      torso.add(tie);
+    }
+
+    // Shoulders / arms.
+    function arm(side) {
+      var sh = new THREE.Group();
+      sh.position.set(side * 0.30, 0.52, 0);
+      torso.add(sh);
+      var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.068, 0.30, 10), suitM);
+      upper.position.y = -0.15;
+      upper.castShadow = true;
+      sh.add(upper);
+      var el = new THREE.Group();
+      el.position.y = -0.30;
+      sh.add(el);
+      var fore = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.056, 0.29, 10), opts.bareArms ? skinM : suitM);
+      fore.position.y = -0.145;
+      fore.castShadow = true;
+      el.add(fore);
+      var hand = new THREE.Mesh(new THREE.SphereGeometry(0.072, 12, 10), (side > 0 && opts.glove) ? std(0xf5f5f5, { roughness: 0.4 }) : skinM);
+      hand.position.y = -0.30;
+      hand.castShadow = true;
+      el.add(hand);
+      return { sh: sh, el: el };
+    }
+    var armL = arm(-1), armR = arm(1);
+
+    // Hips / legs.
+    function leg(side) {
+      var hp = new THREE.Group();
+      hp.position.set(side * 0.135, -0.08, 0);
+      hips.add(hp);
+      var thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.09, 0.42, 10), suitM);
+      thigh.position.y = -0.21;
+      thigh.castShadow = true;
+      hp.add(thigh);
+      var kn = new THREE.Group();
+      kn.position.y = -0.42;
+      hp.add(kn);
+      var shin = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.072, 0.44, 10), suitM);
+      shin.position.y = -0.22;
+      shin.castShadow = true;
+      kn.add(shin);
+      var foot = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.09, 0.30), shoeM);
+      foot.position.set(0, -0.44, 0.06);
+      foot.castShadow = true;
+      kn.add(foot);
+      return { hp: hp, kn: kn, foot: foot };
+    }
+    var legL = leg(-1), legR = leg(1);
+
+    // Neck + head.
+    var head = new THREE.Group();
+    head.position.y = 0.70;
+    torso.add(head);
+    var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.082, 0.10, 10), skinM);
+    neck.position.y = -0.03;
+    head.add(neck);
+    var skull = new THREE.Mesh(new THREE.SphereGeometry(0.155, 20, 16), skinM);
+    skull.scale.set(1, 1.08, 0.98);
+    skull.position.y = 0.13;
+    skull.castShadow = true;
+    head.add(skull);
+
+    var rig = {
+      root: root, hips: hips, torso: torso, head: head,
+      armL: armL.sh, elbL: armL.el, armR: armR.sh, elbR: armR.el,
+      hipL: legL.hp, kneeL: legL.kn, footL: legL.foot,
+      hipR: legR.hp, kneeR: legR.kn, footR: legR.foot,
+      headMesh: head, skull: skull, baseHipY: 0.94,
+      mats: { skin: skinM, suit: suitM, shirt: shirtM, hair: hairM, accent: accentM, shoe: shoeM }
+    };
+    if (opts.dress) opts.dress(rig, { skinM: skinM, suitM: suitM, hairM: hairM, accentM: accentM, shirtM: shirtM });
+    return rig;
+  }
+
+  // --- costumes ---------------------------------------------------------------
+  function fedora(rig, m, color) {
+    var hat = new THREE.Group();
+    var crown = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.155, 0.16, 18), m);
+    crown.position.y = 0.30; crown.castShadow = true;
+    var brim = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.235, 0.018, 24), m);
+    brim.position.y = 0.215; brim.castShadow = true;
+    var band = new THREE.Mesh(new THREE.TorusGeometry(0.146, 0.016, 8, 24), std(0x0c0c0c, { roughness: 0.5 }));
+    band.rotation.x = Math.PI / 2; band.position.y = 0.245;
+    hat.add(crown, brim, band);
+    rig.head.add(hat);
+  }
+  function curlyHair(rig, m) {
+    for (var i = 0; i < 26; i++) {
+      var a = (i / 26) * TAU;
+      var r = 0.135 + (i % 3) * 0.012;
+      var s = new THREE.Mesh(new THREE.SphereGeometry(0.041, 8, 6), m);
+      s.position.set(Math.cos(a) * r, 0.13 + 0.075 + Math.sin(i * 2.1) * 0.028, Math.sin(a) * r * 0.95 - 0.01);
+      s.castShadow = true;
+      rig.head.add(s);
+    }
+  }
+  function freshCut(rig, m, sweep) {
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(0.158, 18, 12, 0, TAU, 0, Math.PI * 0.58), m);
+    cap.position.y = 0.135;
+    cap.castShadow = true;
+    rig.head.add(cap);
+    if (sweep) {
+      var swoop = new THREE.Mesh(new THREE.SphereGeometry(0.10, 14, 10), m);
+      swoop.scale.set(1.25, 0.5, 1.0);
+      swoop.position.set(0.02, 0.20, 0.055);
+      rig.head.add(swoop);
+    }
+  }
+
+  // Michael: black suit, red jacket panels, fedora, single white glove.
+  var mj = makeHumanoid({
+    skin: 0x8a5a3c, suit: 0x111116, shirt: 0xd23a2f, hair: 0x0a0806,
+    accent: 0xd23a2f, glove: true, front: { mat: std(0xd23a2f, { roughness: 0.5, metalness: 0.22 }) },
+    dress: function (rig, m) {
+      // Red jacket sleeves and collar.
+      rig.armL.children[0].material = std(0xd23a2f, { roughness: 0.45, metalness: 0.25 });
+      rig.armR.children[0].material = std(0xd23a2f, { roughness: 0.45, metalness: 0.25 });
+      var collar = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.028, 8, 18), m.accentM);
+      collar.rotation.x = Math.PI / 2; collar.position.y = 0.62;
+      rig.torso.add(collar);
+      curlyHair(rig, m.hairM);
+      fedora(rig, std(0x0e0e12, { roughness: 0.5 }));
+      // White glove already applied to the right hand by makeHumanoid.
+    }
+  });
+
+  // Pepe: green frog, bulging eyes, red lips, grey suit.
+  var pepe = makeHumanoid({
+    skin: 0x53a33a, suit: 0x2c2f38, shirt: 0xe8e8e8, hair: 0x2f7a24, bareArms: true,
+    dress: function (rig, m) {
+      var lip = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.026, 8, 18, Math.PI), std(0xc02a3a, { roughness: 0.45 }));
+      lip.rotation.set(Math.PI / 2, 0, Math.PI);
+      lip.position.set(0, 0.06, 0.145);
+      rig.head.add(lip);
+      for (var s = 0; s < 2; s++) {
+        var eye = new THREE.Mesh(new THREE.SphereGeometry(0.072, 14, 12), std(0xf4f4ea, { roughness: 0.35 }));
+        eye.position.set(s ? 0.075 : -0.075, 0.245, 0.055);
+        eye.castShadow = true;
+        rig.head.add(eye);
+        var pup = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 8), std(0x0a0a0a, { roughness: 0.25 }));
+        pup.position.set(s ? 0.085 : -0.085, 0.252, 0.108);
+        rig.head.add(pup);
+      }
+    }
+  });
+
+  // Trump: navy suit, long red tie, blond sweep.
+  var trump = makeHumanoid({
+    skin: 0xe8a878, suit: 0x1b2a5e, shirt: 0xf6f6f6, hair: 0xd9b26a, accent: 0xd8382c, tie: true,
+    dress: function (rig, m) {
+      freshCut(rig, m.hairM, true);
+      var tieTail = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.30, 0.028), m.accentM);
+      tieTail.position.set(0, 0.06, 0.185);
+      rig.torso.add(tieTail);
+    }
+  });
+
+  // Musk: dark suit, black tee, short hair, faint smirk posture.
+  var musk = makeHumanoid({
+    skin: 0xdcb392, suit: 0x191c26, shirt: 0x0e0e12, hair: 0x181310,
+    front: { mat: std(0x0e0e12, { roughness: 0.85 }) },
+    dress: function (rig, m) { freshCut(rig, m.hairM, false); }
+  });
+
+  // Cast layout on stage. Each has its own spot and facing.
+  var cast = [
+    { rig: mj,    name: "Michael", base: new THREE.Vector3(-0.85, 0, 1.0),  rot: 0.10,  phase: 0.00, style: { crisp: 1.00, lazy: 0.00, jitter: 0.05 } },
+    { rig: pepe,  name: "Pepe",    base: new THREE.Vector3(-2.7, 0, -0.3),  rot: 0.30,  phase: 0.07, style: { crisp: 0.80, lazy: 0.25, jitter: 0.55 } },
+    { rig: trump, name: "Trump",   base: new THREE.Vector3(2.7, 0, -0.4),   rot: -0.32, phase: -0.05, style: { crisp: 0.86, lazy: 0.15, jitter: 0.20 } },
+    { rig: musk,  name: "Musk",    base: new THREE.Vector3(1.1, 0, -2.4),   rot: -0.12, phase: 0.13, style: { crisp: 0.74, lazy: 0.30, jitter: 0.10 } }
+  ];
+  cast.forEach(function (c) {
+    c.rig.root.position.copy(c.base);
+    c.rig.root.rotation.y = c.rot;
+    scene.add(c.rig.root);
+    // A small personal spotlight tint per performer.
+    var tint = c === cast[0] ? 0xffd9a0 : (c === cast[1] ? 0x9fffa8 : (c === cast[2] ? 0xff9a86 : 0xa8d8ff));
+    var personal = new THREE.PointLight(tint, 0.55, 7, 2);
+    personal.position.set(0, 2.4, 1.6);
+    c.light = personal;
+    c.rig.root.add(personal);
+  });
+
+  // =============================================================== choreography
+  function basePose() {
+    return {
+      hipY: 0, rotY: 0, lean: 0, twist: 0, sway: 0, slideZ: 0, slideX: 0,
+      aL: { x: -0.06, y: 0.0, z: 0.13 }, eL: { x: -0.18 },
+      aR: { x: -0.06, y: 0.0, z: -0.13 }, eR: { x: -0.18 },
+      lL: { x: 0.0, z: 0.05 }, kL: { x: 0.05 },
+      lR: { x: 0.0, z: -0.05 }, kR: { x: 0.05 },
+      headX: 0, headY: 0, headZ: 0
+    };
+  }
+  function mix(a, b, t) {
+    var p = basePose();
+    t = ease(clamp(t, 0, 1));
+    p.hipY = lerp(a.hipY, b.hipY, t);
+    p.rotY = lerp(a.rotY, b.rotY, t);
+    p.lean = lerp(a.lean, b.lean, t);
+    p.twist = lerp(a.twist, b.twist, t);
+    p.sway = lerp(a.sway, b.sway, t);
+    p.slideZ = lerp(a.slideZ, b.slideZ, t);
+    p.slideX = lerp(a.slideX, b.slideX, t);
+    ["aL", "eL", "aR", "eR", "lL", "kL", "lR", "kR"].forEach(function (k) {
+      for (var ax in a[k]) p[k][ax] = lerp(a[k][ax], b[k][ax], t);
+    });
+    p.headX = lerp(a.headX, b.headX, t);
+    p.headY = lerp(a.headY, b.headY, t);
+    p.headZ = lerp(a.headZ, b.headZ, t);
+    return p;
+  }
+
+  // The routine. `t` is loop time in seconds; returns a fully-formed pose.
+  function dancePose(t, style) {
+    var p = basePose();
+    var crisp = style.crisp, lazy = style.lazy, jit = style.jitter;
+    var jitter = function (k) { return Math.sin(t * 9.3 + k * 2.1) * 0.03 * jit; };
+    var beat = ((t / BEAT) % 1);
+    var pulse = Math.sin(beat * Math.PI);
+
+    // --- 0..2s : rise out of the grave --------------------------------------
+    if (t < 2) {
+      var u = t / 2;
+      var slump = basePose();
+      slump.lean = -0.42; slump.hipY = -0.14;
+      slump.aL.x = -1.15; slump.aR.x = -1.15;
+      slump.eL.x = -0.35; slump.eR.x = -0.35;
+      slump.kL.x = 0.75; slump.kR.x = 0.75;
+      slump.lL.x = 0.30; slump.lR.x = 0.30;
+      slump.headX = -0.34;
+      p = mix(slump, basePose(), u);
+      // A little overshoot at the top of the rise.
+      var over = Math.sin(u * Math.PI) * 0.09 * crisp;
+      p.lean += over;
+      p.hipY += over * 0.5;
+      return p;
+    }
+
+    // --- 2..8s : the zombie shuffle -----------------------------------------
+    if (t < 8) {
+      var z = t - 2;
+      var step = Math.sin((z / BEAT) * Math.PI);
+      var drag = Math.sin(z * 1.15);
+      p.lean = -0.30 + Math.sin(beat * Math.PI) * 0.05 * crisp;
+      p.hipY = -0.10 + Math.abs(step) * 0.035;
+      p.twist = step * 0.16 * crisp + jitter(1);
+      p.sway = Math.sin(z * 2.3) * 0.06;
+      // Arms out front, wrists rolling — the signature shuffle.
+      p.aL = { x: -1.42 + drag * 0.10, y: 0, z: 0.16 + step * 0.05 };
+      p.aR = { x: -1.42 - drag * 0.10, y: 0, z: -0.16 - step * 0.05 };
+      p.eL = { x: -0.42 + drag * 0.16 };
+      p.eR = { x: -0.42 - drag * 0.16 };
+      // Legs drag in counterpoint.
+      p.lL = { x: 0.34 * step - 0.06, z: 0.06 };
+      p.lR = { x: -0.34 * step - 0.06, z: -0.06 };
+      p.kL = { x: 0.30 + Math.max(0, -step) * 0.45 + lazy * 0.2 };
+      p.kR = { x: 0.30 + Math.max(0, step) * 0.45 + lazy * 0.2 };
+      p.headX = -0.16 + Math.sin(z * 1.7) * 0.10;
+      p.headZ = Math.sin(z * 0.9) * 0.10 * (1 + jit);
+      p.rotY = Math.sin(z * 0.55) * 0.14;
+      return p;
+    }
+
+    // --- 8..10s : the claw ---------------------------------------------------
+    if (t < 10) {
+      var c = (t - 8) / 2;
+      var enter = clamp(c / 0.35, 0, 1);
+      var hold = basePose();
+      hold.lean = -0.20; hold.hipY = -0.06;
+      hold.aR = { x: -2.55, y: -0.25, z: -0.42 };
+      hold.eR = { x: -1.05 };
+      hold.aL = { x: -0.35, y: 0, z: 0.55 };
+      hold.eL = { x: -1.25 };
+      hold.headX = 0.22; hold.headZ = -0.14; hold.headY = -0.18;
+      hold.lL = { x: 0.10, z: 0.09 }; hold.lR = { x: -0.16, z: -0.09 };
+      hold.kL = { x: 0.22 }; hold.kR = { x: 0.30 };
+      hold.twist = -0.12;
+      p = mix(basePose(), hold, enter);
+      // Tiny claw tremor.
+      p.eR.x += Math.sin(t * 22) * 0.05 * (1 + jit);
+      p.aR.x += Math.sin(t * 17) * 0.03;
+      return p;
+    }
+
+    // --- 10..14s : the moonwalk ---------------------------------------------
+    if (t < 14) {
+      var m = (t - 10) / 4;
+      var slide = Math.sin(m * Math.PI * 2) * 0.5 + 0.5;
+      var cyc = (t - 10) / BEAT;
+      var ph = cyc % 1;
+      p.slideZ = slide * 1.15 * crisp;
+      p.slideX = Math.sin(m * TAU) * 0.25;
+      p.lean = 0.06 + Math.sin(ph * Math.PI) * 0.04;
+      p.hipY = -0.03 + Math.sin(ph * Math.PI) * 0.02;
+      // Front foot toe-points and drags back; back foot stays flat.
+      p.lL = { x: -0.30 + Math.sin(ph * Math.PI) * 0.55, z: 0.06 };
+      p.lR = { x: 0.22 - Math.sin(ph * Math.PI) * 0.42, z: -0.06 };
+      p.kL = { x: 0.34 - Math.sin(ph * Math.PI) * 0.28 };
+      p.kR = { x: 0.10 + Math.sin(ph * Math.PI) * 0.22 };
+      p.aL = { x: -0.55 + Math.sin(m * TAU) * 0.35, y: 0, z: 0.20 };
+      p.aR = { x: -0.55 - Math.sin(m * TAU) * 0.35, y: 0, z: -0.20 };
+      p.eL = { x: -0.85 - Math.sin(m * TAU) * 0.25 };
+      p.eR = { x: -0.85 + Math.sin(m * TAU) * 0.25 };
+      p.twist = Math.sin(m * TAU) * 0.22;
+      p.headY = Math.sin(m * TAU) * 0.30;
+      p.headZ = Math.sin(m * TAU) * 0.06;
+      return p;
+    }
+
+    // --- 14..16s : both arms rise --------------------------------------------
+    if (t < 16) {
+      var r = (t - 14) / 2;
+      var upPose = basePose();
+      upPose.lean = -0.30;
+      upPose.aL = { x: -2.80, y: 0, z: 0.34 };
+      upPose.aR = { x: -2.80, y: 0, z: -0.34 };
+      upPose.eL = { x: -0.10 }; upPose.eR = { x: -0.10 };
+      upPose.headX = 0.30; upPose.hipY = 0.015;
+      upPose.lL = { x: 0.05, z: 0.07 }; upPose.lR = { x: -0.05, z: -0.07 };
+      p = mix(basePose(), upPose, clamp(r / 0.4, 0, 1));
+      // Wait out the rest of the section holding the pose.
+      p.aL.x += Math.sin(t * 5) * 0.03;
+      p.aR.x -= Math.sin(t * 5) * 0.03;
+      return p;
+    }
+
+    // --- 16..18s : the spin ---------------------------------------------------
+    if (t < 18) {
+      var s = (t - 16) / 2;
+      p.rotY = TAU * ease(clamp(s / 0.7, 0, 1));
+      p.lean = -0.12;
+      p.aL = { x: -0.70, y: 0, z: 1.15 };
+      p.aR = { x: -0.70, y: 0, z: -1.15 };
+      p.eL = { x: -0.95 }; p.eR = { x: -0.95 };
+      p.kL = { x: 0.28 }; p.kR = { x: 0.34 };
+      p.hipY = -0.02;
+      p.headY = -0.25 * (1 - s);
+      return p;
+    }
+
+    // --- 18..22s : the shoulder-twitch groove ---------------------------------
+    if (t < 22) {
+      var g = t - 18;
+      var b2 = Math.sin((g / BEAT) * Math.PI);
+      p.lean = 0.04 + b2 * 0.05 * crisp;
+      p.hipY = -0.05 - b2 * 0.05 * crisp;
+      p.twist = Math.sin((g / BEAT) * TAU) * 0.24;
+      p.sway = Math.sin((g / (BEAT * 2)) * TAU) * 0.07;
+      p.aL = { x: -0.95 + b2 * 0.55, y: 0, z: 0.42 + b2 * 0.18 };
+      p.aR = { x: -0.95 - b2 * 0.55, y: 0, z: -0.42 - b2 * 0.18 };
+      p.eL = { x: -1.35 + b2 * 0.35 };
+      p.eR = { x: -1.35 - b2 * 0.35 };
+      p.lL = { x: 0.06 * b2, z: 0.08 };
+      p.lR = { x: -0.06 * b2, z: -0.08 };
+      p.kL = { x: 0.18 + b2 * 0.30 * lazy };
+      p.kR = { x: 0.18 + b2 * 0.30 * lazy };
+      p.headX = -0.06 + b2 * 0.10;
+      p.headY = Math.sin((g / (BEAT * 2)) * TAU) * 0.22;
+      p.headZ = b2 * 0.06;
+      return p;
+    }
+
+    // --- 22..24s : finale -----------------------------------------------------
+    var f = (t - 22) / 2;
+    var fin = basePose();
+    fin.lean = -0.24; fin.twist = -0.10;
+    fin.aR = { x: -2.45, y: -0.20, z: -0.50 };
+    fin.eR = { x: -1.00 };
+    fin.aL = { x: -1.05, y: 0.10, z: 0.95 };
+    fin.eL = { x: -1.90 };
+    fin.headX = 0.26; fin.headY = -0.22; fin.headZ = -0.12;
+    fin.lL = { x: 0.12, z: 0.10 };
+    fin.lR = { x: -0.30, z: -0.10 };
+    fin.kL = { x: 0.20 }; fin.kR = { x: 0.66 };
+    fin.hipY = -0.05;
+    p = mix(basePose(), fin, clamp(f / 0.35, 0, 1));
+    p.aR.x += Math.sin(t * 21) * 0.04 * (1 + jit);
+    return p;
+  }
+
+  function applyPose(rig, p) {
+    rig.hips.position.y = rig.baseHipY + p.hipY;
+    rig.root.rotation.y = rig.baseRotY + p.rotY;
+    rig.root.position.z = rig.baseZ + p.slideZ;
+    rig.root.position.x = rig.baseX + p.slideX;
+    rig.torso.rotation.set(p.lean, p.twist, p.sway);
+    rig.head.rotation.set(p.headX, p.headY, p.headZ);
+    rig.armL.rotation.set(p.aL.x, p.aL.y, p.aL.z);
+    rig.armR.rotation.set(p.aR.x, p.aR.y, p.aR.z);
+    rig.elbL.rotation.set(p.eL.x, 0, 0);
+    rig.elbR.rotation.set(p.eR.x, 0, 0);
+    rig.hipL.rotation.set(p.lL.x, 0, p.lL.z);
+    rig.hipR.rotation.set(p.lR.x, 0, p.lR.z);
+    rig.kneeL.rotation.set(p.kL.x, 0, 0);
+    rig.kneeR.rotation.set(p.kR.x, 0, 0);
+  }
+
+  // Cache the static bits of each performer's transform.
+  cast.forEach(function (c) {
+    c.rig.baseX = c.base.x;
+    c.rig.baseZ = c.base.z;
+    c.rig.baseRotY = c.rot;
+  });
+
+  // =============================================================== camera dir =
+  var CAM_MODES = ["auto dolly", "wide static", "push-in on Michael", "low hero angle", "orbit ring"];
+  var camMode = 0;
+  var followed = 0;                    // index into cast for the followspot
+
+  function cameraPose(t, dt) {
+    var mode = CAM_MODES[camMode];
+    var beatPulse = Math.sin(((t / BEAT) % 1) * Math.PI);
+    var pos = new THREE.Vector3();
+    var look = new THREE.Vector3();
+
+    if (mode === "wide static") {
+      pos.set(0, 3.4, 14.6);
+      look.set(0, 1.5, -0.6);
+    } else if (mode === "push-in on Michael") {
+      var mjPos = cast[0];
+      var k = (Math.sin(t * 0.22) * 0.5 + 0.5);
+      pos.set(mjPos.base.x + Math.sin(t * 0.31) * 1.5, 2.0 + k * 0.7, mjPos.base.z + 5.4 - k * 1.6);
+      look.set(mjPos.rig.root.position.x, 1.25, mjPos.rig.root.position.z);
+      followed = 0;
+    } else if (mode === "low hero angle") {
+      pos.set(Math.sin(t * 0.17) * 8.4, 1.05 + beatPulse * 0.12, 8.2);
+      look.set(cast[followed].rig.root.position.x * 0.5, 1.45, cast[followed].rig.root.position.z * 0.5);
+    } else if (mode === "orbit ring") {
+      var a = t * 0.32;
+      pos.set(Math.cos(a) * 10.4, 4.8 + Math.sin(t * 0.5) * 0.8, Math.sin(a) * 10.4 + 1.2);
+      look.set(0, 1.35, -0.4);
+    } else {
+      // auto dolly — a slow push in and out, cutting between framings on bars.
+      var shot = Math.floor(t / 6) % 4;
+      var u = (t % 6) / 6;
+      if (shot === 0) {
+        pos.set(lerp(-1.6, 1.6, u), lerp(2.6, 3.9, u), lerp(11.2, 13.4, u));
+        look.set(lerp(-0.6, 0.6, u), 1.35, -0.4);
+        followed = 0;
+      } else if (shot === 1) {
+        pos.set(lerp(-9.6, -7.6, u), 2.9, lerp(6.4, 8.2, u));
+        look.set(-2.6, 1.30, -0.8);
+        followed = 1;
+      } else if (shot === 2) {
+        pos.set(lerp(9.4, 7.4, u), 2.7, lerp(6.0, 7.8, u));
+        look.set(2.8, 1.30, -0.8);
+        followed = 2;
+      } else {
+        pos.set(lerp(4.4, -3.6, u), lerp(1.7, 2.3, u), lerp(7.4, 8.6, u));
+        look.set(0, 1.25, -0.4);
+        followed = 3;
+      }
+    }
+    // Beat breath: the camera inhales very slightly on every beat.
+    pos.y += beatPulse * 0.035;
+    return { pos: pos, look: look };
+  }
+
+  // =============================================================== runtime =====
+  var clock = new THREE.Clock();
+  var danceTime = 0;
+  var paused = false;
+  var slowmo = false;
+  var timeScale = 1;
+  var camPos = new THREE.Vector3(0, 3.0, 12.0);
+  var camLook = new THREE.Vector3(0, 1.4, 0);
+  var beatEl = document.getElementById("beat");
+  var cameraLabel = document.getElementById("cameraLabel");
+  var lastBeat = -1;
+  var shake = 0;
+
+  // Deep link to a moment in the routine:  output.html?t=13.5
+  var params = new URLSearchParams(window.location.search);
+  if (params.has("t")) {
+    var seek = parseFloat(params.get("t"));
+    if (!isNaN(seek)) danceTime = ((seek % ROUTINE) + ROUTINE) % ROUTINE;
+  }
+  if (params.has("cam")) {
+    var ci = parseInt(params.get("cam"), 10);
+    if (ci >= 0 && ci < CAM_MODES.length) camMode = ci;
+  }
+  cameraLabel.textContent = "Camera: " + CAM_MODES[camMode];
+
+  function setCamMode(i) {
+    camMode = ((i % CAM_MODES.length) + CAM_MODES.length) % CAM_MODES.length;
+    cameraLabel.textContent = "Camera: " + CAM_MODES[camMode];
+  }
+
+  document.getElementById("btnCam").onclick = function () { setCamMode(camMode + 1); };
+  document.getElementById("btnRestart").onclick = function () { danceTime = 0; shake = 0.6; };
+  var btnSlow = document.getElementById("btnSlow");
+  btnSlow.onclick = function () {
+    slowmo = !slowmo;
+    btnSlow.classList.toggle("on", slowmo);
+  };
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { paused = !paused; e.preventDefault(); }
+    else if (e.key === "c" || e.key === "C") setCamMode(camMode + 1);
+    else if (e.key === "s" || e.key === "S") btnSlow.onclick();
+    else if (e.key === "r" || e.key === "R") { danceTime = 0; shake = 0.6; }
+  });
+  window.addEventListener("resize", function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // =============================================================== frame =======
+  var tmpV = new THREE.Vector3();
+
+  function frame() {
+    requestAnimationFrame(frame);
+    var dt = Math.min(clock.getDelta(), 0.05);
+    timeScale = lerp(timeScale, slowmo ? 0.32 : 1, clamp(dt * 4, 0, 1));
+    if (!paused) danceTime += dt * timeScale;
+    var t = danceTime % ROUTINE;
+
+    // ---- performers --------------------------------------------------------
+    for (var i = 0; i < cast.length; i++) {
+      var c = cast[i];
+      var local = t + c.phase;
+      while (local < 0) local += ROUTINE;
+      local = local % ROUTINE;
+      applyPose(c.rig, dancePose(local, c.style));
+      // Subtle breathing/lean so nobody is perfectly still.
+      c.rig.torso.rotation.z += Math.sin(t * 1.3 + i) * 0.012;
+    }
+
+    // ---- crowd -------------------------------------------------------------
+    for (var q = 0; q < crowd.length; q++) {
+      var cr = crowd[q];
+      cr.g.rotation.z = Math.sin(t * cr.speed + cr.phase) * cr.amp;
+      cr.g.position.y = Math.sin(t * cr.speed * 1.7 + cr.phase) * 0.035 - 0.02;
+    }
+
+    // ---- fog ---------------------------------------------------------------
+    for (var fp = 0; fp < fogPlanes.length; fp++) {
+      var plane = fogPlanes[fp];
+      plane.position.x = Math.sin(t * 0.07 + fp) * 3.4;
+      plane.material.opacity = 0.34 + 0.16 * Math.sin(t * 0.4 + fp * 1.7);
+    }
+
+    // ---- beat --------------------------------------------------------------
+    var beatIndex = Math.floor(t / BEAT);
+    var beatPulse = Math.sin(((t / BEAT) % 1) * Math.PI);
+    if (beatIndex !== lastBeat) {
+      lastBeat = beatIndex;
+      beatEl.classList.add("hit");
+      setTimeout(function () { beatEl.classList.remove("hit"); }, 110);
+      shake = Math.min(0.35, shake + 0.10);
+    }
+    ringMat.emissiveIntensity = 0.35 + beatPulse * 0.85;
+    ring.scale.setScalar(1 + beatPulse * 0.006);
+    up.intensity = 1.1 + beatPulse * 0.9;
+    crossL.intensity = 2.9 + beatPulse * 0.9;
+    crossR.intensity = 2.7 + (1 - beatPulse) * 0.9;
+
+    // ---- camera ------------------------------------------------------------
+    var target = cameraPose(t, dt);
+    var blend = clamp(dt * (camMode === 0 ? 2.4 : 3.2), 0, 1);
+    camPos.lerp(target.pos, blend);
+    camLook.lerp(target.look, clamp(dt * 3.0, 0, 1));
+
+    if (shake > 0.001) {
+      shake = Math.max(0, shake - dt * 2.4);
+      camPos.x += (Math.random() - 0.5) * shake * 0.09;
+      camPos.y += (Math.random() - 0.5) * shake * 0.07;
+    }
+    camera.position.copy(camPos);
+    camera.lookAt(camLook);
+
+    // ── warm followspot tracks whoever is framed ──
+    var focusRig = cast[followed].rig;
+    tmpV.set(focusRig.root.position.x * 0.85, 1.35, focusRig.root.position.z * 0.85);
+    followTarget.position.lerp(tmpV, clamp(dt * 2.6, 0, 1));
+    follow.position.x = lerp(follow.position.x, focusRig.root.position.x * 0.55, clamp(dt * 1.8, 0, 1));
+    follow.intensity = 2.2 + beatPulse * 0.8;
+
+    // ── moon halo breathes ──
+    halo.material.opacity = 0.08 + beatPulse * 0.05;
+
+    renderer.render(scene, camera);
+  }
+
+  // =============================================================== boot =======
+  // Everything is procedural, so there is nothing to wait for beyond the first
+  // compiled frame — hide the loader once a frame has actually landed.
+  renderer.compile(scene, camera);
+  frame();
+  requestAnimationFrame(function () {
+    document.getElementById("loading").classList.add("gone");
+  });
+})();
+</script>
+</body>
+</html>

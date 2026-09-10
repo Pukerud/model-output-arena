@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunset Drive — Layered Parallax (vanilla canvas)</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #12080f; }
+  body { font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
+  #stage { display: block; width: 100vw; height: 100vh; }
+  .hud {
+    position: fixed; left: 18px; bottom: 16px; z-index: 5;
+    color: #ffe9d2; letter-spacing: .04em; font-size: 12px; line-height: 1.55;
+    text-shadow: 0 1px 3px rgba(0,0,0,.75); user-select: none; pointer-events: none;
+  }
+  .hud b { color: #ffd08a; font-weight: 600; }
+  .hud .key {
+    display: inline-block; padding: 1px 7px; margin: 0 2px; border-radius: 5px;
+    border: 1px solid rgba(255,224,180,.45); background: rgba(40,18,12,.4);
+    font-variant-numeric: tabular-nums; font-size: 11px;
+  }
+  .speedo {
+    position: fixed; right: 20px; bottom: 18px; z-index: 5; text-align: right;
+    color: #ffe9d2; font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    user-select: none; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,.75);
+  }
+  .speedo .v { display: block; font-size: 34px; letter-spacing: .02em; line-height: 1;
+    font-variant-numeric: tabular-nums; color: #ffd7a0; font-weight: 300; }
+  .vignette { position: fixed; inset: 0; z-index: 4; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 45%, rgba(0,0,0,0) 42%, rgba(24,6,14,.55) 100%); }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div class="vignette"></div>
+<div class="hud">
+  <div><b>Sunset Drive</b> — layered parallax, zero libraries</div>
+  <div><span class="key">SPACE</span> hold to boost <span class="key">R</span> restart</div>
+</div>
+<div class="speedo"><span class="v" id="kmh">0</span>km/h</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // Sunset Drive — a single-file, library-free canvas animation.
+  //
+  // Everything is drawn with the 2D context. The scene is built from depth
+  // layers, each scrolling at its own multiple of the car's travelled distance,
+  // which is what produces the parallax. The car itself is pinned near the
+  // left third of the screen so the world does the moving.
+  //
+  // Wheel rotation is not a canned animation: the spin angle is literally
+  // travelledDistance / wheelRadius, so the tyres stay locked to the asphalt
+  // no matter how the speed changes. Body heave, pitch, exhaust and tyre smoke
+  // are driven by the smoothed speed so the car reads as connected to the road.
+  // ---------------------------------------------------------------------------
+
+  var canvas = document.getElementById("stage");
+  var ctx = canvas.getContext("2d", { alpha: false });
+  var kmhEl = document.getElementById("kmh");
+
+  var TAU = Math.PI * 2;
+
+  // --- small helpers ---------------------------------------------------------
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smoothstep(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+  function easeOutCubic(t) { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); }
+
+  // Deterministic pseudo-random so scenery is stable across frames/frames.
+  function rand(seed) {
+    var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+    return x - Math.floor(x);
+  }
+  function randRange(seed, lo, hi) { return lo + rand(seed) * (hi - lo); }
+
+  // --- viewport --------------------------------------------------------------
+  var W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildScene();
+  }
+
+  // The horizon sits slightly below centre; all scene geometry is expressed as a
+  // fraction of the viewport height so the composition survives any aspect ratio.
+  var horizon = 0, roadY = 0, groundY = 0, carBaseY = 0, scale = 1;
+  function layout() {
+    horizon = H * 0.52;
+    roadY = H * 0.70;          // top edge of the asphalt
+    groundY = H * 0.63;        // where the verge starts
+    carBaseY = H * 0.795;      // where the tyres touch the road
+    scale = clamp(H / 780, 0.62, 1.5);
+  }
+
+  // --- palette ---------------------------------------------------------------
+  // A dusk gradient: the sky warms toward the horizon and cools at the zenith.
+  var skyTop = "#1b1038";
+  var skyMid = "#6a2a55";
+  var skyLow = "#c9553f";
+  var skyHot = "#ffb057";
+
+  function drawSky(speed01) {
+    var g = ctx.createLinearGradient(0, 0, 0, horizon + H * 0.05);
+    g.addColorStop(0.00, skyTop);
+    g.addColorStop(0.34, skyMid);
+    g.addColorStop(0.68, skyLow);
+    g.addColorStop(1.00, skyHot);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, horizon + 2);
+
+    // The sun sinks a touch as the drive goes on, giving the light a slow drift.
+    var sunX = W * 0.74;
+    var sunY = horizon - H * (0.085 + speed01 * 0.035);
+    var sunR = Math.min(W, H) * 0.055;
+
+    // Wide atmospheric bloom around the sun.
+    var bloom = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 7.5);
+    bloom.addColorStop(0.00, "rgba(255,226,160,0.55)");
+    bloom.addColorStop(0.22, "rgba(255,150,90,0.22)");
+    bloom.addColorStop(0.55, "rgba(190,70,90,0.09)");
+    bloom.addColorStop(1.00, "rgba(0,0,0,0)");
+    ctx.fillStyle = bloom;
+    ctx.fillRect(0, 0, W, horizon + H * 0.05);
+
+    // Sun disc, slightly flattened by the haze it is sitting in.
+    var disc = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR);
+    disc.addColorStop(0.0, "#fff6d8");
+    disc.addColorStop(0.55, "#ffd074");
+    disc.addColorStop(1.0, "rgba(255,140,70,0.65)");
+    ctx.fillStyle = disc;
+    ctx.beginPath();
+    ctx.ellipse(sunX, sunY, sunR, sunR * 0.92, 0, 0, TAU);
+    ctx.fill();
+  }
+
+  // Stars fade in as the drive progresses and the light drops.
+  var stars = [];
+  function buildStars() {
+    stars.length = 0;
+    var count = Math.round((W * H) / 9000);
+    for (var i = 0; i < count; i++) {
+      var t = rand(i * 3.1);
+      stars.push({
+        x: rand(i * 1.7) * W,
+        y: Math.pow(rand(i * 2.3), 1.7) * horizon * 0.92,
+        r: randRange(i * 5.1, 0.5, 1.5),
+        phase: rand(i * 7.3) * TAU,
+        speed: randRange(i * 9.7, 0.8, 2.2)
+      });
+    }
+  }
+  function drawStars(time, speed01) {
+    var alpha = clamp(0.10 + speed01 * 0.45, 0, 0.6);
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      // Stars drift very slowly — the most distant thing in the scene.
+      var x = s.x - (drift * 0.004) % W;
+      if (x < 0) x += W;
+      var tw = 0.55 + 0.45 * Math.sin(time * s.speed + s.phase);
+      ctx.globalAlpha = alpha * tw * (1 - s.y / (horizon * 1.05));
+      ctx.fillStyle = "#fff2dd";
+      ctx.beginPath();
+      ctx.arc(x, s.y, s.r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // --- clouds ----------------------------------------------------------------
+  var clouds = [];
+  function buildClouds() {
+    clouds.length = 0;
+    for (var i = 0; i < 15; i++) {
+      var puffs = [];
+      var n = Math.round(randRange(i * 4.4, 4, 8));
+      for (var p = 0; p < n; p++) {
+        puffs.push({
+          dx: (p - (n - 1) / 2) * randRange(i * 6.1 + p, 26, 54),
+          dy: randRange(i * 8.2 + p, -14, 12),
+          r: randRange(i * 11.3 + p, 20, 52)
+        });
+      }
+      clouds.push({
+        x: rand(i * 2.9) * (W + 500) - 250,
+        y: randRange(i * 3.7, H * 0.05, horizon * 0.66),
+        a: randRange(i * 5.9, 0.07, 0.26),
+        depth: randRange(i * 6.7, 0.55, 1.35),
+        warm: rand(i * 12.1),
+        puffs: puffs
+      });
+    }
+  }
+  function drawClouds(speed01) {
+    for (var i = 0; i < clouds.length; i++) {
+      var c = clouds[i];
+      var x = c.x - (drift * 0.012 * c.depth) % (W + 520);
+      if (x < -280) x += W + 520;
+      // Clouds nearer the sun catch the warm light.
+      var sunProximity = 1 - clamp(Math.abs(x - W * 0.74) / (W * 0.7), 0, 1);
+      var warm = clamp(c.warm * 0.6 + sunProximity * 0.7 + speed01 * 0.25, 0, 1);
+      var col = "rgba(" + Math.round(lerp(150, 255, warm)) + "," +
+                         Math.round(lerp(120, 178, warm)) + "," +
+                         Math.round(lerp(150, 132, warm)) + "," + c.a + ")";
+      ctx.fillStyle = col;
+      for (var p = 0; p < c.puffs.length; p++) {
+        var pf = c.puffs[p];
+        ctx.beginPath();
+        ctx.ellipse(x + pf.dx, c.y + pf.dy, pf.r, pf.r * 0.52, 0, 0, TAU);
+        ctx.fill();
+      }
+    }
+  }
+
+  // --- distant ridges --------------------------------------------------------
+  // Ridges are functions rather than sprites, so they scroll continuously with
+  // no seams and never "pop" when a tile wraps.
+  var ridges = [];
+  function buildRidges() {
+    ridges = [
+      { depth: 0.055, amp: 0.085, base: 0.66, freq: 0.0011, seed: 11.0, col: "#6a3a63", haze: 0.72 },
+      { depth: 0.095, amp: 0.105, base: 0.52, freq: 0.0017, seed: 27.0, col: "#54304f", haze: 0.52 },
+      { depth: 0.150, amp: 0.075, base: 0.34, freq: 0.0031, seed: 41.0, col: "#3b2242", haze: 0.34 }
+    ];
+  }
+  function ridgeHeight(r, x) {
+    var a = Math.sin(x * r.freq + r.seed);
+    var b = Math.sin(x * r.freq * 2.31 + r.seed * 1.7) * 0.5;
+    var c = Math.sin(x * r.freq * 5.13 + r.seed * 2.9) * 0.22;
+    var d = Math.sin(x * r.freq * 9.7 + r.seed * 4.3) * 0.09;
+    return (a + b + c + d) / 1.81;
+  }
+  function drawRidges(speed01) {
+    for (var i = 0; i < ridges.length; i++) {
+      var r = ridges[i];
+      var off = drift * r.depth * 0.9;
+      var amp = r.amp * H;
+      var top = horizon;
+      ctx.beginPath();
+      ctx.moveTo(0, top + H);
+      var step = Math.max(4, W / 220);
+      for (var x = 0; x <= W + step; x += step) {
+        var h = ridgeHeight(r, x + off);
+        // Flatten slightly toward the right so the sun has room to breathe.
+        var flat = lerp(1, 0.72, clamp((x / W - 0.55) / 0.45, 0, 1));
+        ctx.lineTo(x, top - h * amp * flat + (1 - r.base) * 0);
+      }
+      ctx.lineTo(W, top + H);
+      ctx.closePath();
+      var g = ctx.createLinearGradient(0, top - amp, 0, top + H * 0.16);
+      g.addColorStop(0, r.col);
+      g.addColorStop(1, "rgba(" + hexToRgb(r.col) + ",0.25)");
+      ctx.fillStyle = g;
+      ctx.fill();
+
+      // Atmospheric haze sheet in front of the ridge.
+      ctx.fillStyle = "rgba(214,116,96," + (r.haze * 0.10) + ")";
+      ctx.fillRect(0, top - amp, W, amp + H * 0.06);
+    }
+  }
+  function hexToRgb(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(",");
+  }
+
+  // --- tiled scenery ---------------------------------------------------------
+  // World travel is accumulated as `drift`; a layer samples the scenery at
+  // drift * depth, so deeper layers slide across the screen more slowly.
+  function drawTiled(offset, spacing, drawFn) {
+    var start = Math.floor(offset / spacing) - 1;
+    var end = Math.ceil((offset + W) / spacing) + 1;
+    for (var i = start; i <= end; i++) {
+      drawFn(i * spacing - offset, i);
+    }
+  }
+
+  // --- trees -----------------------------------------------------------------
+  // NB: baselines are stored as fractions of the viewport height. They must NOT
+  // be computed at load time, because H and groundY are only known after the
+  // first layout() — reading them early silently puts every tree off-screen.
+  var treeRows = [
+    { depth: 0.26, spacing: 158, yFrac: 0.580, hMin: 0.085, hMax: 0.135, col: "#432a4a", rim: "#c26a4a", alpha: 0.88 },
+    { depth: 0.44, spacing: 272, yFrac: 0.606, hMin: 0.110, hMax: 0.175, col: "#2c1b3c", rim: "#a4553f", alpha: 0.95 },
+    { depth: 0.68, spacing: 430, yFrac: 0.638, hMin: 0.140, hMax: 0.215, col: "#1a0f26", rim: "#8d4433", alpha: 1.00 }
+  ];
+  function drawTreeRow(row, index) {
+    var off = drift * row.depth;
+    drawTiled(off, row.spacing, function (x, i) {
+      var seed = i * 3.77 + index * 19.3;
+      var h = H * randRange(seed, row.hMin, row.hMax);
+      var w = h * randRange(seed + 1.1, 0.34, 0.52);
+      var sway = Math.sin(time * 0.7 + i * 1.3) * h * 0.012;
+      var baseY = H * row.yFrac;
+      var topY = baseY - h;
+
+      ctx.save();
+      ctx.globalAlpha = row.alpha;
+
+      // Trunk
+      ctx.fillStyle = row.col;
+      ctx.beginPath();
+      ctx.moveTo(x - w * 0.05, baseY);
+      ctx.quadraticCurveTo(x + sway - w * 0.045, baseY - h * 0.5, x + sway - w * 0.03, topY + h * 0.28);
+      ctx.lineTo(x + sway + w * 0.03, topY + h * 0.28);
+      ctx.quadraticCurveTo(x + sway + w * 0.045, baseY - h * 0.5, x + w * 0.05, baseY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Foliage: three overlapping conifer/deciduous lumps per tree.
+      var lumps = 3;
+      for (var l = 0; l < lumps; l++) {
+        var ly = topY + h * (0.16 + l * 0.20);
+        var lw = w * (0.55 - l * 0.10);
+        ctx.beginPath();
+        ctx.ellipse(x + sway * (1 - l * 0.2), ly, lw, h * 0.20, 0, 0, TAU);
+        ctx.fill();
+      }
+
+      // Warm rim light on the sun-facing side of the canopy.
+      var side = x < W * 0.74 ? 1 : -1;
+      ctx.globalAlpha = row.alpha * 0.5;
+      ctx.strokeStyle = row.rim;
+      ctx.lineWidth = Math.max(1, h * 0.012);
+      ctx.beginPath();
+      ctx.moveTo(x + sway * 0.4 + side * w * 0.30, topY + h * 0.14);
+      ctx.quadraticCurveTo(x + side * w * 0.52, topY + h * 0.32, x + sway + side * w * 0.34, topY + h * 0.58);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  // --- utility poles ---------------------------------------------------------
+  function drawPoles(depth, spacing, height, fade) {
+    var off = drift * depth;
+    var poles = [];
+    drawTiled(off, spacing, function (x, i) { poles.push(x); });
+
+    // Wires first, so the poles sit on top of them.
+    ctx.strokeStyle = "rgba(26,14,22," + (0.75 * fade) + ")";
+    ctx.lineWidth = Math.max(1, 1.6 * scale);
+    for (var p = 0; p < poles.length - 1; p++) {
+      var x1 = poles[p], x2 = poles[p + 1];
+      var y = groundY - height;
+      for (var w = 0; w < 2; w++) {
+        var dy = w * height * 0.16;
+        var sag = height * 0.055;
+        ctx.beginPath();
+        ctx.moveTo(x1, y + dy);
+        ctx.quadraticCurveTo((x1 + x2) / 2, y + dy + sag, x2, y + dy);
+        ctx.stroke();
+      }
+    }
+
+    for (var k = 0; k < poles.length; k++) {
+      var px = poles[k];
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = "#170e19";
+      var w = Math.max(2, 4.4 * scale);
+      ctx.fillRect(px - w / 2, groundY - height, w, height);
+      // Crossarm
+      var armW = 42 * scale;
+      ctx.fillRect(px - armW / 2, groundY - height + height * 0.05, armW, Math.max(1.5, 2.6 * scale));
+      // Second, lower arm
+      ctx.fillRect(px - armW * 0.36, groundY - height + height * 0.21, armW * 0.72, Math.max(1.2, 2.2 * scale));
+      ctx.restore();
+    }
+  }
+
+  // --- roadside scrub --------------------------------------------------------
+  function drawScrub(depth, spacing, sizeMin, sizeMax, col, seedBase) {
+    var off = drift * depth;
+    drawTiled(off, spacing, function (x, i) {
+      var seed = i * 2.13 + seedBase;
+      var s = sizeMin + rand(seed) * (sizeMax - sizeMin);
+      s *= scale;
+      var yBase = groundY - H * 0.005 + rand(seed + 0.7) * H * 0.012;
+      ctx.fillStyle = col;
+      for (var b = 0; b < 3; b++) {
+        var bx = x + (b - 1) * s * 0.55;
+        var br = s * (0.7 + rand(seed + b * 3.3) * 0.5);
+        ctx.beginPath();
+        ctx.ellipse(bx, yBase - br * 0.35, br, br * 0.72, 0, 0, TAU);
+        ctx.fill();
+      }
+      // A few flower dots on the near band only.
+      if (sizeMax > 10) {
+        for (var f = 0; f < 4; f++) {
+          var fx = x + (rand(seed + f * 5.7) - 0.5) * s * 2.2;
+          var fy = yBase - rand(seed + f * 8.1) * s * 1.1;
+          ctx.fillStyle = f % 2 ? "rgba(255,196,120,0.75)" : "rgba(255,120,140,0.6)";
+          ctx.beginPath();
+          ctx.arc(fx, fy, Math.max(1, s * 0.09), 0, TAU);
+          ctx.fill();
+        }
+      }
+    });
+  }
+
+  // --- verge and asphalt -----------------------------------------------------
+  function drawGround(speed01) {
+    // Verge: dark warm earth between the horizon and the asphalt edge.
+    var g = ctx.createLinearGradient(0, horizon, 0, roadY + H * 0.04);
+    g.addColorStop(0, "rgba(58,28,44,0.98)");
+    g.addColorStop(0.5, "#341a2c");
+    g.addColorStop(1, "#2a1424");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, horizon - 1, W, roadY - horizon + H * 0.06);
+
+    // Warm haze where the low sun grazes the ground.
+    var haze = ctx.createLinearGradient(0, horizon, 0, horizon + H * 0.10);
+    haze.addColorStop(0, "rgba(255,150,96,0.20)");
+    haze.addColorStop(1, "rgba(255,150,96,0)");
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, horizon - 1, W, H * 0.10);
+  }
+
+  function drawRoad(speed01) {
+    var roadBottom = H + 2;
+
+    // Asphalt body with a cool sheen at the top edge.
+    var g = ctx.createLinearGradient(0, roadY, 0, roadBottom);
+    g.addColorStop(0.00, "#4a3241");
+    g.addColorStop(0.06, "#3a2634");
+    g.addColorStop(0.45, "#2b1a26");
+    g.addColorStop(1.00, "#1d1019");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, roadY, W, roadBottom - roadY);
+
+    // Sun glitter band skipping across the near edge of the tarmac.
+    var glit = ctx.createLinearGradient(0, roadY, 0, roadY + H * 0.09);
+    glit.addColorStop(0, "rgba(255,168,110,0.26)");
+    glit.addColorStop(1, "rgba(255,168,110,0)");
+    ctx.fillStyle = glit;
+    ctx.fillRect(0, roadY, W, H * 0.09);
+
+    // Solid edge line where the asphalt meets the verge.
+    var edgeY = roadY + 3;
+    ctx.strokeStyle = "rgba(240,222,196,0.42)";
+    ctx.lineWidth = Math.max(1.5, 3 * scale);
+    ctx.beginPath();
+    ctx.moveTo(0, edgeY);
+    ctx.lineTo(W, edgeY);
+    ctx.stroke();
+
+    // Centre dashes — the fastest road furniture in the frame, so they read as
+    // the layer closest to the car.
+    var dashSpacing = 190 * scale;
+    var off = drift * 1.0;
+    ctx.fillStyle = "rgba(246,232,206,0.78)";
+    var dashH = Math.max(2.5, 5 * scale);
+    var dashW = dashSpacing * 0.42;
+    var dashY = roadY + (H - roadY) * 0.42;
+    drawTiled(off, dashSpacing, function (x) {
+      ctx.fillRect(x, dashY, dashW, dashH);
+    });
+
+    // Faint lane texture: a second, dimmer dash row lower in frame.
+    ctx.fillStyle = "rgba(240,224,200,0.10)";
+    drawTiled(off * 1.04, dashSpacing * 0.62, function (x) {
+      ctx.fillRect(x, dashY + (H - roadY) * 0.26, dashSpacing * 0.30, dashH * 0.6);
+    });
+
+    // Asphalt grain — cheap, tiled, and it kills the flat-gradient look.
+    ctx.fillStyle = "rgba(255,255,255,0.03)";
+    drawTiled(off * 1.0, 26 * scale, function (x, i) {
+      var y = roadY + rand(i * 1.31) * (H - roadY);
+      ctx.fillRect(x, y, 3 * scale, 1.2);
+    });
+
+    // Motion streaks appear once you get moving.
+    if (speed01 > 0.15) {
+      var a = (speed01 - 0.15) * 0.22;
+      ctx.strokeStyle = "rgba(255,232,206," + a.toFixed(3) + ")";
+      ctx.lineWidth = 1;
+      drawTiled(off * 1.08, 74 * scale, function (x, i) {
+        var y = roadY + (H - roadY) * (0.15 + rand(i * 4.7) * 0.8);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 40 * scale * (0.6 + speed01), y);
+        ctx.stroke();
+      });
+    }
+  }
+
+  // --- foreground fringe -----------------------------------------------------
+  // Very fast, very dark blades right at the bottom edge. They sell the speed
+  // and frame the composition without hiding the car.
+  function drawForeground(speed01) {
+    var off = drift * 1.55;
+    ctx.fillStyle = "#100a13";
+    drawTiled(off, 15 * scale, function (x, i) {
+      var seed = i * 6.19;
+      var h = (18 + rand(seed) * 44) * scale;
+      var lean = rand(seed + 1.3) * 10 - 5 + Math.sin(time * 2 + i) * 2.4;
+      var w = 2.4 + rand(seed + 2.7) * 3.2;
+      ctx.beginPath();
+      ctx.moveTo(x - w / 2, H + 4);
+      ctx.quadraticCurveTo(x - w / 2 + lean * 0.4, H - h * 0.5, x + lean, H - h);
+      ctx.quadraticCurveTo(x + w / 2 + lean * 0.4, H - h * 0.5, x + w / 2, H + 4);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Slight blur-vignette along the bottom to imply depth of field.
+    var g = ctx.createLinearGradient(0, H * 0.88, 0, H);
+    g.addColorStop(0, "rgba(10,4,10,0)");
+    g.addColorStop(1, "rgba(10,4,10,0.85)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, H * 0.88, W, H * 0.12);
+  }
+
+  // --- the car ---------------------------------------------------------------
+  function drawCar(speed01, bob, pitch) {
+    var r = 34 * scale;                 // wheel radius (the unit of the car)
+    var carX = W * 0.355;
+    var L = r * 8.3;                    // overall length
+    var wheelbase = L * 0.625;
+    var rearWX = carX - wheelbase / 2;
+    var frontWX = carX + wheelbase / 2;
+    var groundLine = carBaseY + bob;
+
+    var wheelCY = groundLine - r;        // tyre centres
+    var bodyBot = groundLine - r * 0.86; // sill
+    var beltY = groundLine - r * 1.86;   // window base / shoulder line
+    var roofY = groundLine - r * 2.72;   // roof
+    var noseX = carX + L * 0.50;
+    var tailX = carX - L * 0.50;
+
+    // --- contact shadow ----------------------------------------------------
+    var sh = ctx.createRadialGradient(carX, groundLine + r * 0.26, 0, carX, groundLine + r * 0.26, L * 0.62);
+    sh.addColorStop(0, "rgba(8,3,10,0.60)");
+    sh.addColorStop(0.55, "rgba(8,3,10,0.24)");
+    sh.addColorStop(1, "rgba(8,3,10,0)");
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.ellipse(carX, groundLine + r * 0.26, L * 0.62, r * 0.48, 0, 0, TAU);
+    ctx.fill();
+
+    ctx.save();
+    // Pitch around the car's own centre: accelerating lifts the nose a hair.
+    ctx.translate(carX, groundLine);
+    ctx.rotate(pitch);
+    ctx.translate(-carX, -groundLine);
+
+    // --- lower body --------------------------------------------------------
+    ctx.beginPath();
+    ctx.moveTo(tailX, bodyBot + r * 0.06);
+    ctx.quadraticCurveTo(tailX - L * 0.010, beltY + r * 0.30, tailX + L * 0.020, beltY + r * 0.42);
+    ctx.quadraticCurveTo(carX - L * 0.20, beltY + r * 0.02, carX - L * 0.08, beltY);
+    ctx.lineTo(carX + L * 0.05, beltY);
+    ctx.quadraticCurveTo(noseX - L * 0.06, beltY + r * 0.10, noseX - L * 0.022, beltY + r * 0.38);
+    ctx.quadraticCurveTo(noseX + L * 0.004, bodyBot - r * 0.16, noseX - L * 0.010, bodyBot + r * 0.02);
+    ctx.quadraticCurveTo(carX, bodyBot + r * 0.26, tailX, bodyBot + r * 0.06);
+    ctx.closePath();
+
+    var paint = ctx.createLinearGradient(0, roofY, 0, bodyBot);
+    paint.addColorStop(0.00, "#b03347");
+    paint.addColorStop(0.24, "#8a1f31");
+    paint.addColorStop(0.56, "#5e1122");
+    paint.addColorStop(0.86, "#360a15");
+    paint.addColorStop(1.00, "#1d040a");
+    ctx.fillStyle = paint;
+    ctx.fill();
+
+    // Bottom-of-door shading so the sill does not look painted on.
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = "#180309";
+    ctx.beginPath();
+    ctx.moveTo(tailX + L * 0.03, bodyBot - r * 0.05);
+    ctx.quadraticCurveTo(carX, bodyBot + r * 0.22, noseX - L * 0.03, bodyBot - r * 0.02);
+    ctx.lineTo(noseX - L * 0.02, bodyBot + r * 0.06);
+    ctx.quadraticCurveTo(carX, bodyBot + r * 0.30, tailX + L * 0.03, bodyBot + r * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // --- greenhouse --------------------------------------------------------
+    var cabBack = carX - L * 0.255;
+    var cabFront = carX + L * 0.170;
+    var roofBack = carX - L * 0.120;
+    var roofFront = carX + L * 0.055;
+    ctx.beginPath();
+    ctx.moveTo(cabBack, beltY + r * 0.04);
+    ctx.quadraticCurveTo(cabBack + L * 0.030, roofY + r * 0.22, roofBack, roofY);
+    ctx.lineTo(roofFront, roofY);
+    ctx.quadraticCurveTo(cabFront - L * 0.020, roofY + r * 0.26, cabFront, beltY + r * 0.04);
+    ctx.closePath();
+    var cabin = ctx.createLinearGradient(0, roofY, 0, beltY);
+    cabin.addColorStop(0, "#93253a");
+    cabin.addColorStop(1, "#3d0c17");
+    ctx.fillStyle = cabin;
+    ctx.fill();
+
+    // --- glass: rear quarter, door, windscreen -----------------------------
+    var glass = ctx.createLinearGradient(carX - L * 0.10, roofY, carX + L * 0.13, beltY);
+    glass.addColorStop(0.00, "#ffdca6");
+    glass.addColorStop(0.26, "#d68a9c");
+    glass.addColorStop(0.60, "#71416a");
+    glass.addColorStop(1.00, "#241a33");
+    function pane(x1, x2, r1, r2, s1, s2) {
+      ctx.beginPath();
+      ctx.moveTo(x1, beltY - r * 0.03);
+      ctx.lineTo(r1, roofY + r * 0.17);
+      ctx.lineTo(r2, roofY + r * 0.17);
+      ctx.lineTo(x2, beltY - r * 0.03);
+      ctx.closePath();
+      ctx.fillStyle = glass;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(30,8,14,0.55)";
+      ctx.lineWidth = Math.max(1, 1.2 * scale);
+      ctx.stroke();
+    }
+    pane(cabBack + L * 0.022, carX - L * 0.128, cabBack + L * 0.060, carX - L * 0.152);
+    pane(carX - L * 0.118, carX - L * 0.010, carX - L * 0.126, carX - L * 0.004);
+    pane(carX + L * 0.002, carX + L * 0.148, carX - L * 0.002, roofFront, roofFront, 0);
+    // The windscreen needs a proper slanted right edge; redraw it on its own.
+    ctx.beginPath();
+    ctx.moveTo(carX + L * 0.002, beltY - r * 0.03);
+    ctx.lineTo(carX - L * 0.002, roofY + r * 0.17);
+    ctx.lineTo(roofFront, roofY + r * 0.17);
+    ctx.lineTo(carX + L * 0.148, beltY - r * 0.03);
+    ctx.closePath();
+    ctx.fillStyle = glass;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(30,8,14,0.55)";
+    ctx.stroke();
+
+    // Roof highlight.
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    ctx.fillStyle = "rgba(255,236,206,0.9)";
+    ctx.fillRect(roofBack - L * 0.004, roofY, (roofFront - roofBack) * 1.04, Math.max(1.2, 2.2 * scale));
+    ctx.restore();
+
+    // Shoulder highlight along the belt line.
+    ctx.strokeStyle = "rgba(255,196,164,0.34)";
+    ctx.lineWidth = Math.max(1, 1.8 * scale);
+    ctx.beginPath();
+    ctx.moveTo(carX - L * 0.07, beltY + r * 0.03);
+    ctx.lineTo(carX + L * 0.04, beltY + r * 0.03);
+    ctx.quadraticCurveTo(noseX - L * 0.07, beltY + r * 0.12, noseX - L * 0.025, beltY + r * 0.42);
+    ctx.stroke();
+
+    // --- door seams, handles, mirror ---------------------------------------
+    ctx.strokeStyle = "rgba(18,3,8,0.70)";
+    ctx.lineWidth = Math.max(1, 1.3 * scale);
+    ctx.beginPath();
+    ctx.moveTo(carX - L * 0.125, beltY + r * 0.12);
+    ctx.lineTo(carX - L * 0.118, bodyBot - r * 0.02);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(carX + L * 0.012, beltY + r * 0.12);
+    ctx.lineTo(carX + L * 0.020, bodyBot - r * 0.02);
+    ctx.stroke();
+    ctx.fillStyle = "#e8c9a4";
+    ctx.fillRect(carX - L * 0.085, beltY + r * 0.40, L * 0.055, Math.max(1.6, 2.4 * scale));
+    ctx.fillRect(carX + L * 0.032, beltY + r * 0.40, L * 0.050, Math.max(1.6, 2.4 * scale));
+
+    // Wing mirror sitting on the belt line by the A-pillar.
+    var mirX = carX + L * 0.100, mirY = beltY + r * 0.12;
+    ctx.fillStyle = "#2a0a13";
+    ctx.beginPath();
+    ctx.moveTo(mirX, mirY);
+    ctx.quadraticCurveTo(mirX + r * 0.10, mirY - r * 0.26, mirX + r * 0.34, mirY - r * 0.24);
+    ctx.lineTo(mirX + r * 0.34, mirY - r * 0.04);
+    ctx.quadraticCurveTo(mirX + r * 0.12, mirY - r * 0.02, mirX, mirY + r * 0.06);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- lights -------------------------------------------------------------
+    var hlX = noseX - L * 0.016, hlY = beltY + r * 0.60;
+    var hl = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, r * 0.78);
+    hl.addColorStop(0, "rgba(255,246,220,0.95)");
+    hl.addColorStop(0.38, "rgba(255,204,134,0.38)");
+    hl.addColorStop(1, "rgba(255,180,110,0)");
+    ctx.fillStyle = hl;
+    ctx.beginPath(); ctx.arc(hlX, hlY, r * 0.78, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#fff3d0";
+    ctx.beginPath(); ctx.ellipse(hlX, hlY, r * 0.12, r * 0.09, 0, 0, TAU); ctx.fill();
+
+    var tlX = tailX + L * 0.010, tlY = beltY + r * 0.56;
+    var tl = ctx.createRadialGradient(tlX, tlY, 0, tlX, tlY, r * 0.52);
+    tl.addColorStop(0, "rgba(255,76,60,0.85)");
+    tl.addColorStop(1, "rgba(255,60,50,0)");
+    ctx.fillStyle = tl;
+    ctx.beginPath(); ctx.arc(tlX, tlY, r * 0.52, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#ff6a52";
+    ctx.fillRect(tlX - r * 0.05, tlY - r * 0.07, r * 0.10, r * 0.15);
+
+    // --- wheel wells, then the wheels in front of the body ------------------
+    function well(wx) {
+      ctx.beginPath();
+      ctx.arc(wx, wheelCY, r * 1.24, Math.PI * 1.02, Math.PI * 1.98);
+      ctx.closePath();
+      ctx.fillStyle = "#160409";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,186,150,0.30)";
+      ctx.lineWidth = Math.max(1, 1.6 * scale);
+      ctx.beginPath();
+      ctx.arc(wx, wheelCY, r * 1.24, Math.PI * 1.06, Math.PI * 1.94);
+      ctx.stroke();
+    }
+    well(rearWX);
+    well(frontWX);
+    drawWheel(rearWX, wheelCY, r, speed01);
+    drawWheel(frontWX, wheelCY, r, speed01);
+
+    ctx.restore();
+  }
+
+  // A wheel is: tyre, tread ticks, rim, spokes, hub. The spin angle is derived
+  // from the distance actually travelled, so no slip is ever visible.
+  function wheelAngle(radius) { return -drift / radius; }
+
+  function drawTyreOnly(cx, cy, r, speed01) {
+    ctx.save();
+    ctx.fillStyle = "#120c10";
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawWheel(cx, cy, r, speed01) {
+    var a = wheelAngle(r);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Tyre.
+    var tg = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+    tg.addColorStop(0, "#2b2130");
+    tg.addColorStop(0.62, "#170f17");
+    tg.addColorStop(1, "#0b070b");
+    ctx.fillStyle = tg;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+
+    // Tread ticks — they make the rotation unmistakable at speed.
+    ctx.rotate(a);
+    ctx.strokeStyle = "rgba(120,104,120,0.55)";
+    ctx.lineWidth = Math.max(1, r * 0.05);
+    var ticks = 18;
+    for (var t = 0; t < ticks; t++) {
+      var ta = (t / ticks) * TAU;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ta) * r * 0.86, Math.sin(ta) * r * 0.86);
+      ctx.lineTo(Math.cos(ta) * r * 0.99, Math.sin(ta) * r * 0.99);
+      ctx.stroke();
+    }
+
+    // Rim.
+    var rimR = r * 0.60;
+    var rg = ctx.createLinearGradient(-rimR, -rimR, rimR, rimR);
+    rg.addColorStop(0, "#d9cfc4");
+    rg.addColorStop(0.45, "#8d7f78");
+    rg.addColorStop(1, "#3b3130");
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(0, 0, rimR, 0, TAU); ctx.fill();
+
+    // Spokes.
+    ctx.strokeStyle = "#c9beb4";
+    ctx.lineWidth = Math.max(1.4, r * 0.14);
+    for (var s = 0; s < 5; s++) {
+      var sa = (s / 5) * TAU;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(sa) * rimR * 0.18, Math.sin(sa) * rimR * 0.18);
+      ctx.lineTo(Math.cos(sa) * rimR * 0.92, Math.sin(sa) * rimR * 0.92);
+      ctx.stroke();
+    }
+
+    // Brake disc peeking through, plus the hub nut.
+    ctx.fillStyle = "#5a4f52";
+    ctx.beginPath(); ctx.arc(0, 0, rimR * 0.52, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#221a1e";
+    ctx.beginPath(); ctx.arc(0, 0, rimR * 0.20, 0, TAU); ctx.fill();
+
+    // Motion blur on the rim: a low-alpha smear scaled by speed.
+    if (speed01 > 0.25) {
+      ctx.globalAlpha = (speed01 - 0.25) * 0.30;
+      ctx.strokeStyle = "#e3d8cc";
+      ctx.lineWidth = Math.max(1, r * 0.10);
+      ctx.beginPath();
+      ctx.arc(0, 0, rimR * 0.72, a % TAU, (a % TAU) + 1.1);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+  }
+
+  // --- particles -------------------------------------------------------------
+  var puffs = [];
+  function spawnPuff(x, y, kind, speed01) {
+    puffs.push({
+      x: x, y: y,
+      vx: -(60 + Math.random() * 90) * scale * (0.6 + speed01),
+      vy: -(8 + Math.random() * 26) * scale,
+      r: (kind === "smoke" ? 9 : 6) * scale * (0.7 + Math.random() * 0.7),
+      life: 0,
+      max: kind === "smoke" ? 1.1 : 1.6,
+      kind: kind,
+      seed: Math.random() * 100
+    });
+    if (puffs.length > 220) puffs.shift();
+  }
+  function updatePuffs(dt) {
+    for (var i = puffs.length - 1; i >= 0; i--) {
+      var p = puffs[i];
+      p.life += dt;
+      if (p.life >= p.max) { puffs.splice(i, 1); continue; }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= (1 - 1.8 * dt);
+      p.vy -= 6 * scale * dt * (p.kind === "smoke" ? 1 : 0.4);
+      p.r += (p.kind === "smoke" ? 26 : 14) * scale * dt;
+    }
+  }
+  function drawPuffs() {
+    for (var i = 0; i < puffs.length; i++) {
+      var p = puffs[i];
+      var t = p.life / p.max;
+      var a = (1 - t) * (p.kind === "smoke" ? 0.30 : 0.20);
+      ctx.fillStyle = p.kind === "smoke"
+        ? "rgba(210,190,200," + a.toFixed(3) + ")"
+        : "rgba(255,190,140," + a.toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, TAU);
+      ctx.fill();
+    }
+  }
+
+  // --- birds -----------------------------------------------------------------
+  var birds = [];
+  function buildBirds() {
+    birds.length = 0;
+    for (var i = 0; i < 7; i++) {
+      birds.push({
+        x: rand(i * 9.1) * W,
+        y: randRange(i * 4.3, H * 0.08, horizon * 0.60),
+        s: randRange(i * 2.6, 3, 7) * scale,
+        phase: rand(i * 5.5) * TAU,
+        speed: randRange(i * 8.8, 0.35, 0.9),
+        depth: randRange(i * 3.4, 0.1, 0.4)
+      });
+    }
+  }
+  function drawBirds() {
+    ctx.strokeStyle = "rgba(30,14,24,0.62)";
+    ctx.lineWidth = Math.max(1, 1.5 * scale);
+    for (var i = 0; i < birds.length; i++) {
+      var b = birds[i];
+      var x = b.x - (drift * b.depth * 0.05) % (W * 1.4);
+      if (x < -40) x += W * 1.4;
+      var flap = Math.sin(time * 3.4 + b.phase) * b.s * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(x - b.s, b.y + flap);
+      ctx.quadraticCurveTo(x - b.s * 0.4, b.y - flap * 0.5, x, b.y);
+      ctx.quadraticCurveTo(x + b.s * 0.4, b.y - flap * 0.5, x + b.s, b.y + flap);
+      ctx.stroke();
+    }
+  }
+
+  // --- grain / finishing -----------------------------------------------------
+  var grainPattern = null;
+  function buildGrain() {
+    var c = document.createElement("canvas");
+    c.width = 128; c.height = 128;
+    var g = c.getContext("2d");
+    var img = g.createImageData(128, 128);
+    for (var i = 0; i < img.data.length; i += 4) {
+      var v = 140 + Math.random() * 115;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 16;
+    }
+    g.putImageData(img, 0, 0);
+    grainPattern = ctx.createPattern(c, "repeat");
+  }
+  function drawGrain() {
+    if (!grainPattern) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "overlay";
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = grainPattern;
+    ctx.translate((Math.random() * 128) | 0, (Math.random() * 128) | 0);
+    ctx.fillRect(-128, -128, W + 256, H + 256);
+    ctx.restore();
+  }
+
+  // --- scene construction ----------------------------------------------------
+  function buildScene() {
+    layout();
+    buildStars();
+    buildClouds();
+    buildRidges();
+    buildBirds();
+  }
+
+  // --- state -----------------------------------------------------------------
+  var drift = 0;               // total world distance (px) — the master clock
+  var speed = 0;               // current px/s
+  var time = 0;
+  var boosting = false;
+  var lastCarSpeed = 0;
+  var accel = 0;
+  var pitch = 0;
+  var bobPhase = 0;
+  var CRUISE = 340;
+  var BOOST = 760;
+
+  function reset() {
+    drift = 0; speed = CRUISE * scale; lastCarSpeed = speed;
+    puffs.length = 0; accel = 0; pitch = 0; bobPhase = 0;
+  }
+
+  // --- input -----------------------------------------------------------------
+  window.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { boosting = true; e.preventDefault(); }
+    if (e.key === "r" || e.key === "R") reset();
+  });
+  window.addEventListener("keyup", function (e) {
+    if (e.code === "Space") { boosting = false; e.preventDefault(); }
+  });
+  window.addEventListener("pointerdown", function () { boosting = true; });
+  window.addEventListener("pointerup", function () { boosting = false; });
+  window.addEventListener("blur", function () { boosting = false; });
+  window.addEventListener("resize", resize);
+
+  // --- main loop -------------------------------------------------------------
+  var last = 0;
+  function frame(now) {
+    if (!last) last = now;
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    time += dt;
+
+    // Ease toward the target speed so the boost arrives and leaves smoothly.
+    var target = (boosting ? BOOST : CRUISE) * scale;
+    var prevSpeed = speed;
+    var k = target > speed ? 1.6 : 1.15;
+    speed += (target - speed) * clamp(k * dt, 0, 1);
+
+    drift += speed * dt;
+    var speed01 = clamp((speed / scale - CRUISE * 0.6) / (BOOST - CRUISE * 0.6), 0, 1);
+
+    // Body heave: two slightly detuned sines so it never looks like a metronome.
+    bobPhase += dt * (4 + speed01 * 12);
+    var bob = Math.sin(bobPhase) * 1.8 * scale * (0.5 + speed01 * 1.6)
+            + Math.sin(bobPhase * 2.37 + 1.1) * 0.9 * scale * (0.4 + speed01);
+
+    // Pitch responds to throttle with a slow spring, so the car leans back
+    // under acceleration and settles when you let go.
+    accel += ((speed - prevSpeed) / Math.max(dt, 0.001)) * dt * 0.0016;
+    accel = clamp(accel, -0.09, 0.09);
+    pitch = lerp(pitch, accel, clamp(3.2 * dt, 0, 1));
+
+    // Exhaust and tyre smoke.
+    var carX = W * 0.355;
+    var wheelR = 40 * scale;
+    var exhaustX = carX - wheelR * 3.5;
+    var exhaustY = carBaseY + bob - wheelR * 0.30;
+    if (Math.random() < 0.55 + speed01 * 0.45) {
+      spawnPuff(exhaustX, exhaustY, "exhaust", speed01);
+    }
+    if (speed01 > 0.45 && Math.random() < 0.5) {
+      spawnPuff(carX - wheelR * 2.9, carBaseY + bob + wheelR * 0.85, "smoke", speed01);
+    }
+    updatePuffs(dt);
+
+    // ---- render ----------------------------------------------------------
+    ctx.save();
+    drawSky(speed01);
+    drawStars(time, speed01);
+    drawClouds(speed01);
+    drawRidges(speed01);
+    drawGround(speed01);   // terrain first: trees, poles and scrub stand ON it
+
+    // Far treeline, then poles, then the nearer tree rows.
+    drawTreeRow(treeRows[0], 0);
+    drawPoles(0.34, 300 * scale, H * 0.16, 0.85);
+    drawTreeRow(treeRows[1], 1);
+    drawPoles(0.52, 420 * scale, H * 0.20, 1.0);
+    drawTreeRow(treeRows[2], 2);
+
+    drawScrub(0.60, 150 * scale, 8, 16, "rgba(24,12,26,0.95)", 3.1);
+    drawScrub(0.78, 200 * scale, 12, 22, "rgba(18,9,20,0.98)", 7.7);
+    drawRoad(speed01);
+
+    drawPuffs();
+    drawCar(speed01, bob, pitch);
+
+    drawBirds();
+    drawForeground(speed01);
+
+    // Speed lines in the sky: very subtle, only when boosting.
+    if (speed01 > 0.5) {
+      ctx.strokeStyle = "rgba(255,226,196," + ((speed01 - 0.5) * 0.10).toFixed(3) + ")";
+      ctx.lineWidth = 1.5;
+      for (var i = 0; i < 12; i++) {
+        var y = rand(i * 3.3) * horizon;
+        var x = W - ((drift * 1.9 + i * 220) % (W + 400));
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 90 * scale, y);
+        ctx.stroke();
+      }
+    }
+
+    drawGrain();
+    ctx.restore();
+
+    kmhEl.textContent = Math.round(60 + speed01 * 140);
+    requestAnimationFrame(frame);
+  }
+
+  buildGrain();
+  resize();
+  reset();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
