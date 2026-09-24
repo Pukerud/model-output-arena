@@ -7,6 +7,8 @@
 <!-- Loads window.ARENA from manifest.js. Works on file:// because <script src> of
      local relative files is allowed in every browser. -->
 <script src="manifest.js"></script>
+<script src="run-metrics.js"></script>
+<script src="metrics-display.js"></script>
 <style>
   :root{
     --bg:#0b0e14; --panel:#141925; --panel-2:#1b2230; --line:#262f42;
@@ -74,6 +76,8 @@
   .col .head .spacer{flex:1}
   .col .head a{color:var(--accent-2); text-decoration:none; font-size:12px}
   .col .head a:hover{text-decoration:underline}
+  .run-metrics{padding:7px 14px;border-bottom:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+  .run-metrics a{color:var(--accent-2);margin-left:8px}
   .tagA,.tagB{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.04em}
   .tagA{background:rgba(124,92,255,.16);color:#b9a6ff;border:1px solid rgba(124,92,255,.4)}
   .tagB{background:rgba(34,211,238,.14);color:#9bebff;border:1px solid rgba(34,211,238,.4)}
@@ -98,6 +102,9 @@
     .field.group .picks .mdl{flex:1 1 100%;max-width:none}
     .btns{width:100%;margin-left:0}
     .btns button{flex:1}
+    main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;height:auto;min-height:0}
+    main .col{min-height:70vh;border-right:0;border-bottom:1px solid var(--line)}
+    main .divider{display:none}
   }
 </style>
 </head>
@@ -148,6 +155,7 @@
       <span class="spacer"></span>
       <a id="aOpen" href="#" target="_blank" rel="noopener">Open ↗</a>
     </div>
+    <div class="run-metrics" id="aMetrics" aria-live="polite"></div>
     <iframe id="aFrame" referrerpolicy="no-referrer"></iframe>
   </section>
   <div class="divider" id="divider" title="drag to resize"></div>
@@ -159,6 +167,7 @@
       <span class="spacer"></span>
       <a id="bOpen" href="#" target="_blank" rel="noopener">Open ↗</a>
     </div>
+    <div class="run-metrics" id="bMetrics" aria-live="polite"></div>
     <iframe id="bFrame" referrerpolicy="no-referrer"></iframe>
   </section>
 </main>
@@ -274,6 +283,19 @@
   function setIframe(frame, openLink, nameEl, whoEl, tag, modelSlug, testId){
     const m = findModel(modelSlug);
     const p = pathFor(modelSlug, testId);
+    const metricsEl = $(tag.toLowerCase() + "Metrics");
+    const run = m && (window.ARENA_RUN_METRICS || {})[m.path];
+    const metrics = ArenaMetrics.describe(run);
+    metricsEl.textContent = m ? metrics.text : "No model selected.";
+    metricsEl.title = m ? metrics.detail : "";
+    if (m && run) {
+      const link = document.createElement("a");
+      link.href = m.path + "/run.json";
+      link.textContent = "Run details";
+      link.target = "_blank";
+      link.rel = "noopener";
+      metricsEl.appendChild(link);
+    }
     if(!m || !p){
       frame.src = "about:blank";
       nameEl.textContent = "—";

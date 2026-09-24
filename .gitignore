@@ -10,3 +10,6 @@ desktop.ini
 node_modules/
 npm-debug.log*
 yarn-error.log*
+
+# Python recorder/test caches
+__pycache__/

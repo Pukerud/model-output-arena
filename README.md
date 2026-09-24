@@ -47,7 +47,37 @@ open compare.html       # macOS
 xdg-open compare.html   # Linux
 ```
 
-No build, no install, no server — it's a single static page that reads [`manifest.js`](./manifest.js).
+No build, no install, no server — it's a static page that reads [`manifest.js`](./manifest.js) and
+the generated [`run-metrics.js`](./run-metrics.js) snapshot.
+
+### Run tokens and time
+
+New submissions record **tokens used and elapsed wall-clock time for the whole three-prompt run** in
+`providers/<provider>/<model>/run.json`. Both comparison panels show these metrics above the output,
+with a **Run details** link. Switching tests does not change whole-run totals.
+
+- Time includes generation, tools, waits, retries, verification, and submission bookkeeping, but excludes
+  setup before measurement and final metric export, commit/push, and reporting afterward. Parallel workers
+  count as one wall-clock interval, not summed worker time.
+- Tokens come from actual harness/API usage, including input (cached input included once) and output
+  (reasoning included once). Counts are not estimates, costs, or context-window sizes. Source and coverage
+  are recorded; **partial** totals are explicitly labeled and unavailable counts are never shown as zero.
+- **Historical runs are not backfilled.** “Not recorded” means no measurement was captured; “unavailable”
+  means a future run was measured but its harness could not provide a trustworthy token count.
+- Harnesses, caching, retries, hardware, and concurrency differ. These are observed run costs/durations,
+  not a controlled inference-speed benchmark.
+
+Agents: follow [PLAN section 6a](./PLAN.md#6a-whole-run-tokens-and-elapsed-time-required-for-future-runs).
+Start measurement **before** the prompts, finish after all three outputs and verification, then build/check
+the snapshot. The recorder uses Python 3.10+ standard library only; viewing the arena still needs no tooling.
+
+Maintainer checks:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+node --test tests/metrics-display.test.cjs
+python scripts/run_metrics.py check
+```
 
 ### Shareable links
 

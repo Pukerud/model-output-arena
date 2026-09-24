@@ -6,16 +6,19 @@
 ## 0. TL;DR
 
 1. Work out **who you are** (your provider + model).
-2. Create `providers/<provider-slug>/<model-slug>/01-car-parallax/`, `02-plants-vs-zombies/`, `03-threejs-thriller/`.
+2. **Before reading/generating the prompts**, start measurement (section 6a):
+   `python scripts/run_metrics.py start <provider-slug>/<model-slug>`.
+   Then create `01-car-parallax/`, `02-plants-vs-zombies/`, `03-threejs-thriller/` inside the new model folder.
 3. For **each** of the three prompts in [`PROMPTS/`](./PROMPTS): generate the complete answer exactly as
    the prompt asks, save it as `output.html`, copy the prompt text into `prompt.md`, and fill in `meta.json`.
 4. Append your model to [`manifest.js`](./manifest.js) so `compare.html` can show it.
 5. Add your model as a row in the **Models tested** table in [`README.md`](./README.md).
-6. Commit + push. Done.
+6. Verify outputs, finish whole-run metrics, rebuild/check `run-metrics.js` (section 6a), then commit + push.
 
 **Do not modify other models' folders, `PLAN.md`, or `PROMPTS/`. The only edits you make outside your
-own `providers/<provider>/<model>/` folder are: append one entry to `manifest.js` and add one row to the
-Models tested table in `README.md`. Never touch other models' rows/entries.**
+own `providers/<provider>/<model>/` folder are: append one entry to `manifest.js`, add one row to the
+Models tested table in `README.md`, and regenerate `run-metrics.js` with the helper. Never touch other
+models' rows/entries. These submission restrictions do not prohibit user-requested repository maintenance.**
 
 ## 1. The goal
 
@@ -28,6 +31,7 @@ your model — that defeats the comparison.
 providers/
 └── <provider-slug>/          # e.g. z-ai, openai, anthropic, google, deepseek, xai
     └── <model-slug>/         # e.g. glm-5.2, gpt-4o, claude-3.5-sonnet
+        ├── run.json         # future runs: whole three-prompt run timing + sourced token usage
         ├── 01-car-parallax/
         │   ├── output.html   # your complete answer — untouched, exactly as produced
         │   ├── prompt.md     # the exact prompt text (verbatim copy of PROMPTS/01-car-parallax.md)
@@ -118,6 +122,90 @@ Create one per test:
 
   Fill what you know; leave unknowns as `""`. API/hosted models omit `runtime` entirely.
 
+## 6a. Whole-run tokens and elapsed time (required for future runs)
+
+One **run** is the entire three-prompt model submission, not one response or the selected test.
+Use Python 3.10+ and the standard-library recorder; no service, package installation, or API key is needed.
+The script records timing and validates your usage report; it does **not** call a model or discover private
+harness transcripts automatically. If the harness does not expose trustworthy usage, record that honestly.
+
+### Start before doing the work
+
+1. Identify your provider/model and read these instructions, but do not start processing the test prompts yet.
+2. Arrange usage capture in a **fresh dedicated harness session**, or record an exact cumulative baseline.
+   Prefer a supervising runner that can read the worker's final usage after its completion event.
+3. Run `python scripts/run_metrics.py start openai/example-model` (replace with your slugs).
+   This creates the model folder and `run.json` with a UTC start timestamp. It refuses an existing folder,
+   so old submissions cannot accidentally be backfilled. Create the three test subfolders afterward.
+4. Generate all three outputs, write metadata, register the model, update README, and verify the submission.
+   Include tools, retries, follow-ups, and any delegated generation in usage accounting. Keep their outputs raw.
+
+### Normalize real usage, never estimate it
+
+After the generation worker(s) complete, collect the whole-run usage from the harness/API's authoritative
+usage events or cumulative counters. For cumulative counters, subtract the pre-run baseline from the final
+snapshot; do not sum successive cumulative snapshots. For per-call events, sum each distinct call once,
+including retries. Include all run workers; do not include an unrelated supervisor conversation.
+
+Write a small **sanitized** report, for example `providers/openai/example-model/usage.json`:
+
+```json
+{
+  "coverage": "complete",
+  "source": "Harness final run usage; dedicated worker; cumulative end minus baseline",
+  "reason": "",
+  "input_tokens": 12000,
+  "output_tokens": 8000,
+  "total_tokens": 20000
+}
+```
+
+The numbers above are illustrative, **not defaults**. Replace them with observed counts.
+
+- `input_tokens`: all processed input, **including cached input** once. `output_tokens`: generated output,
+  **including reasoning** once. Cache/reasoning detail counters are usually subsets: never blindly add them
+  to input/output totals. If a provider excludes them, normalize using its documented semantics.
+- `total_tokens`: input + output when both complete components are known. A trustworthy harness may report
+  only total; then keep the two components `null`. This is usage, not price or context-window occupancy.
+- `coverage: "complete"` means **all** model calls in the measured three-prompt workload are represented.
+  It requires an exact total and a nonempty source. Record the source/aggregation method specifically enough
+  to audit, but do not publish API keys, private transcript paths, session tokens, or full transcripts.
+- `coverage: "partial"` means calls or components are missing. Keep known counts, use `null` for unknowns,
+  and explain precisely what was excluded in `reason`. The UI labels partial totals, never full-run totals.
+- For unavailable usage, use the `--unavailable` option below. Unknown is **null, never 0**; measured zero
+  is valid. Never infer tokens from file size, character counts, model limits, or a guessed tokenizer.
+- If the agent cannot observe its own final turn, use a supervising runner/final usage event. A last visible
+  snapshot that omits later generation or verification calls is **partial**, not complete.
+
+### Finish, build, verify
+
+After **all three outputs and submission bookkeeping/verification are complete**, run:
+
+```bash
+python scripts/run_metrics.py finish openai/example-model --usage providers/openai/example-model/usage.json
+# Or, when the harness exposes no trustworthy whole-run counts:
+# python scripts/run_metrics.py finish openai/example-model --unavailable "This harness exposes no token usage"
+python scripts/run_metrics.py build
+python scripts/run_metrics.py check
+```
+
+Do not run both finish alternatives. `finish` verifies three nonempty outputs, exact prompt bytes and hashes,
+and matching metadata identity; it rejects duplicate completion and invalid counts. It does not judge HTML
+quality, so perform the normal output verification before finishing.
+
+The resulting `run.json` has `schema_version: 1`, `scope: "three-prompt-run"`, all three `test_ids`,
+`status: "completed"`, `started_at`, `completed_at`, `duration_ms`, and `usage`. Elapsed time is the UTC
+wall-clock interval from `start` to `finish`, including tools, waits, retries, and verification, **not the sum
+of parallel workers' durations**. Keep the host clock synchronized; negative/inconsistent intervals fail.
+Setup before start and metric finalization/index generation, commit/push, and final reporting afterward are
+outside the measured workload. Capture usage at that same workload boundary; document any mismatch as partial.
+
+`run.json` is the source of truth. `build` creates the deterministic `run-metrics.js` snapshot used by the
+static comparison page without fetch requests (including `file://`). `check` rejects stale snapshots,
+unfinished runs, invalid metadata, and changed prompt artifacts. It validates only folders with `run.json`;
+**historical folders remain untouched and display “not recorded.”** Do not fabricate timestamps or metrics
+for an old run. A prematurely finalized run is immutable; do not quietly add further generation afterward.
+
 ## 7. Register in `manifest.js`
 
 Append a new object to `window.ARENA.models` (do **not** delete existing entries). **Set `hosting`**
@@ -167,7 +255,8 @@ This is the one allowed edit to `README.md`.
 ## 9. Commit + push
 
 ```bash
-git add providers/ manifest.js README.md
+python scripts/run_metrics.py check
+git add providers/<provider-slug>/<model-slug>/ manifest.js README.md run-metrics.js
 git commit -m "Add <provider-slug>/<model-slug> outputs"
 git push
 ```
