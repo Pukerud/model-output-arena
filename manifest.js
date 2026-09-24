@@ -463,6 +463,21 @@ window.ARENA = {
       },
     },
     {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-6-luna",
+      model_display: "GPT-6 Luna",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-6-luna",
+      added: "2026-09-24",
+      outputs: {
+        "01-car-parallax":      "providers/openai/gpt-6-luna/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-6-luna/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/openai/gpt-6-luna/03-threejs-thriller/output.html",
+      },
+    },
+    {
       provider: "local",
       provider_display: "Local (llama.cpp)",
       model: "laguna-s-2.1 i3XSS",
