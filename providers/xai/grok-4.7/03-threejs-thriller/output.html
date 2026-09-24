@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thriller Quartet</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05040a; color: #f3ead8; }
+  canvas { display: block; }
+  .card {
+    position: fixed; left: 16px; top: 16px; z-index: 2; max-width: 380px;
+    padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.16);
+    background: linear-gradient(160deg, rgba(10,8,18,.78), rgba(70,12,24,.42));
+    font-family: Georgia, serif;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: .04em; }
+  p { margin: 0; font-size: 13px; line-height: 1.45; color: #ddd4e6; }
+  button {
+    margin-top: 10px; font: inherit; color: white; background: #2a1020;
+    border: 1px solid rgba(255,255,255,.25); border-radius: 10px; padding: 7px 12px; cursor: pointer;
+  }
+  .grain {
+    pointer-events: none; position: fixed; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.05) 0.5px, transparent 0.5px);
+    background-size: 3px 3px; mix-blend-mode: screen; opacity: .25;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Moonwalk of the Dead</h1>
+  <p>Michael Jackson, Pepe the Frog, Donald Trump, and Elon Musk run the Thriller steps under a graveyard moon. Drag to look around.</p>
+  <button id="pause" type="button">Pause</button>
+</div>
+<div class="grain"></div>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(() => {
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x07060f);
+  scene.fog = new THREE.FogExp2(0x07060f, 0.045);
+  const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 120);
+  camera.position.set(0, 2.3, 11);
+
+  scene.add(new THREE.AmbientLight(0x6a7396, 0.35));
+  const moon = new THREE.DirectionalLight(0xdde7ff, 1.6);
+  moon.position.set(-8, 14, 6);
+  moon.castShadow = true;
+  moon.shadow.mapSize.set(2048, 2048);
+  scene.add(moon);
+  const warm = new THREE.SpotLight(0xffb077, 8, 28, 0.55, 0.4, 1);
+  warm.position.set(4, 7, 8);
+  warm.castShadow = true;
+  warm.target.position.set(0, 1, 0);
+  scene.add(warm, warm.target);
+  const crimson = new THREE.SpotLight(0xff2a3c, 10, 22, 0.7, 0.5, 1);
+  crimson.position.set(-6, 5, 7);
+  crimson.target.position.set(0, 1.2, 0);
+  scene.add(crimson, crimson.target);
+  const rim = new THREE.DirectionalLight(0x7d5cff, 0.7);
+  rim.position.set(6, 3, -8);
+  scene.add(rim);
+
+  const moonOrb = new THREE.Mesh(
+    new THREE.SphereGeometry(1.4, 32, 24),
+    new THREE.MeshBasicMaterial({ color: 0xfff2cf })
+  );
+  moonOrb.position.set(-9, 8.5, -16);
+  scene.add(moonOrb);
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(2.3, 24, 16),
+    new THREE.MeshBasicMaterial({ color: 0xc9d6ff, transparent: true, opacity: 0.12 })
+  );
+  halo.position.copy(moonOrb.position);
+  scene.add(halo);
+
+  const ground = new THREE.Mesh(
+    new THREE.CircleGeometry(24, 64),
+    new THREE.MeshStandardMaterial({ color: 0x141611, roughness: 0.95 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  const path = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.5, 16),
+    new THREE.MeshStandardMaterial({ color: 0x2a2418, roughness: 0.8 })
+  );
+  path.rotation.x = -Math.PI / 2;
+  path.position.y = 0.02;
+  path.receiveShadow = true;
+  scene.add(path);
+
+  function stone(x, z, s) {
+    const g = new THREE.Group();
+    const slab = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7 * s, 1.1 * s, 0.22),
+      new THREE.MeshStandardMaterial({ color: 0x8d8a84, roughness: 0.72 })
+    );
+    slab.position.y = 0.55 * s;
+    slab.castShadow = true;
+    g.add(slab);
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.38 * s, 0.38 * s, 0.18, 16),
+      new THREE.MeshStandardMaterial({ color: 0xb7b3aa, roughness: 0.6 })
+    );
+    cap.position.y = 1.15 * s;
+    g.add(cap);
+    g.position.set(x, 0, z);
+    scene.add(g);
+  }
+  [[-6.2, -1.2], [-5.4, 2.2], [5.6, -1.4], [6.4, 1.8], [-7.2, 3.4], [7.2, 3.1], [0.2, -5.2]].forEach((p, i) => stone(p[0], p[1], 0.8 + (i % 3) * 0.25));
+
+  function tree(x, z, h) {
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.16, h, 6),
+      new THREE.MeshStandardMaterial({ color: 0x2a2018, roughness: 1 })
+    );
+    trunk.position.set(x, h / 2, z);
+    trunk.castShadow = true;
+    scene.add(trunk);
+    for (let i = 0; i < 4; i++) {
+      const branch = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.05, h * 0.45, 5),
+        new THREE.MeshStandardMaterial({ color: 0x231910 })
+      );
+      branch.position.set(x + Math.cos(i) * 0.4, h * 0.65, z + Math.sin(i) * 0.3);
+      branch.rotation.z = 0.8 * (i % 2 ? 1 : -1);
+      scene.add(branch);
+    }
+  }
+  [[-7, -1, 3.2], [7.2, 0.4, 3.6], [-6, 4, 2.6], [6.4, -3, 2.8]].forEach((t) => tree(t[0], t[1], t[2]));
+
+  const mat = (color, rough = 0.55, metal = 0.04) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
+  function box(w, h, d, color, x, y, z) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    return m;
+  }
+  function pivot(parent, x, y, z) {
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+    parent.add(g);
+    return g;
+  }
+
+  function dancer(kind) {
+    const root = new THREE.Group();
+    const body = new THREE.Group();
+    root.add(body);
+    const shirt = kind === "mj" ? 0xc4162a : kind === "pepe" ? 0x3caf45 : kind === "trump" ? 0x1d2f73 : 0x161616;
+    const skin = kind === "pepe" ? 0x67d14d : kind === "trump" ? 0xe39a56 : kind === "elon" ? 0xd7b094 : 0xe7d2bc;
+    const pants = kind === "elon" ? 0x35507a : 0x141414;
+    body.add(box(kind === "pepe" ? 0.7 : 0.48, 0.62, kind === "pepe" ? 0.42 : 0.26, shirt, 0, 1.18, 0));
+    if (kind === "trump") body.add(box(0.08, 0.42, 0.04, 0xc41218, 0, 1.05, 0.15));
+    if (kind === "mj") body.add(box(0.54, 0.18, 0.3, 0xf2f2f2, 0, 1.42, 0));
+    const headPivot = pivot(body, 0, 1.58, 0);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(kind === "pepe" ? 0.34 : 0.2, 24, 18), mat(skin, 0.45));
+    head.castShadow = true;
+    headPivot.add(head);
+    if (kind === "pepe") {
+      const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), mat(0xffffff, 0.3));
+      const eyeR = eyeL.clone();
+      eyeL.position.set(-0.12, 0.05, 0.24);
+      eyeR.position.set(0.12, 0.05, 0.24);
+      head.add(eyeL, eyeR);
+      const pL = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), mat(0x111111, 0.4));
+      const pR = pL.clone();
+      pL.position.set(-0.12, 0.04, 0.33);
+      pR.position.set(0.12, 0.04, 0.33);
+      head.add(pL, pR);
+      const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.06), mat(0xc81e3a));
+      mouth.position.set(0, -0.14, 0.28);
+      head.add(mouth);
+    } else {
+      const hairColor = kind === "trump" ? 0xf0d15a : kind === "elon" ? 0x4a3428 : 0x1a1a1a;
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.21, 20, 14), mat(hairColor, 0.7));
+      hair.scale.set(kind === "trump" ? 1.15 : 1, kind === "trump" ? 0.55 : 0.7, 1);
+      hair.position.y = kind === "trump" ? 0.16 : 0.12;
+      head.add(hair);
+      if (kind === "mj") {
+        const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.16, 20), mat(0x111111, 0.45));
+        hat.position.y = 0.22;
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.03, 24), mat(0x111111, 0.45));
+        brim.position.y = 0.14;
+        head.add(hat, brim);
+      }
+    }
+    const armL = pivot(body, -0.32, 1.4, 0);
+    const armR = pivot(body, 0.32, 1.4, 0);
+    armL.add(box(0.12, 0.48, 0.12, shirt, 0, -0.24, 0));
+    armR.add(box(0.12, 0.48, 0.12, kind === "mj" ? 0xf4f4f4 : shirt, 0, -0.24, 0));
+    const legL = pivot(body, -0.14, 0.86, 0);
+    const legR = pivot(body, 0.14, 0.86, 0);
+    legL.add(box(0.14, 0.5, 0.16, pants, 0, -0.25, 0));
+    legR.add(box(0.14, 0.5, 0.16, pants, 0, -0.25, 0));
+    const shoe = kind === "mj" ? 0xf7f7f7 : 0x221910;
+    legL.add(box(0.16, 0.08, 0.26, shoe, 0, -0.52, 0.05));
+    legR.add(box(0.16, 0.08, 0.26, shoe, 0, -0.52, 0.05));
+    scene.add(root);
+    return { root, body, head: headPivot, armL, armR, legL, legR, kind };
+  }
+
+  const cast = [
+    dancer("mj"),
+    dancer("pepe"),
+    dancer("trump"),
+    dancer("elon")
+  ];
+  cast.forEach((fig, i) => {
+    fig.root.position.set(-3 + i * 2, 0, (i % 2) * 0.35);
+    if (fig.kind === "pepe") fig.root.scale.setScalar(0.92);
+  });
+
+  let playing = true;
+  let t = 0;
+  let last = performance.now();
+  let yaw = 0, pitch = 0.18, drag = false, lx = 0, ly = 0;
+  document.getElementById("pause").onclick = () => { playing = !playing; };
+  renderer.domElement.addEventListener("pointerdown", (e) => { drag = true; lx = e.clientX; ly = e.clientY; });
+  window.addEventListener("pointerup", () => { drag = false; });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    yaw -= (e.clientX - lx) * 0.005;
+    pitch = Math.max(-0.2, Math.min(0.6, pitch + (e.clientY - ly) * 0.003));
+    lx = e.clientX; ly = e.clientY;
+  });
+  window.addEventListener("resize", () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  function dance(fig, time, index) {
+    const bpm = 118 / 60;
+    const beat = time * bpm * Math.PI * 2 + index * 0.15;
+    const step = Math.sin(beat);
+    const phrase = Math.floor(time * bpm / 2) % 4;
+    fig.body.position.y = Math.abs(step) * 0.08;
+    fig.body.rotation.z = step * 0.05;
+    fig.head.rotation.z = -step * 0.12;
+    fig.head.rotation.x = phrase === 2 ? 0.25 : 0.05;
+    if (phrase === 0) {
+      fig.armL.rotation.z = 1.15 + step * 0.25;
+      fig.armR.rotation.z = -1.15 - step * 0.25;
+      fig.armL.rotation.x = 0.2;
+      fig.armR.rotation.x = 0.2;
+    } else if (phrase === 1) {
+      fig.armL.rotation.x = -1.1 + step * 0.3;
+      fig.armR.rotation.x = -1.1 - step * 0.3;
+      fig.armL.rotation.z = 0.25;
+      fig.armR.rotation.z = -0.25;
+    } else if (phrase === 2) {
+      fig.armL.rotation.z = 2.2;
+      fig.armR.rotation.z = -0.3 + step * 0.4;
+      fig.armL.rotation.x = -0.4;
+      fig.armR.rotation.x = -0.5;
+    } else {
+      fig.armL.rotation.x = -0.4 + step * 0.8;
+      fig.armR.rotation.x = -0.4 - step * 0.8;
+      fig.armL.rotation.z = 0.4;
+      fig.armR.rotation.z = -0.4;
+    }
+    fig.legL.rotation.x = step * 0.55;
+    fig.legR.rotation.x = -step * 0.55;
+    fig.root.position.x = -3 + index * 2 + (phrase === 3 ? step * 0.18 : 0);
+    fig.root.rotation.y = phrase === 2 ? Math.sin(beat) * 0.4 : 0;
+  }
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (playing) t += dt;
+    cast.forEach((fig, i) => dance(fig, t, i));
+    const radius = 10.5;
+    const auto = playing ? t * 0.12 : 0;
+    camera.position.set(Math.sin(yaw + auto) * radius, 2.1 + pitch * 3, Math.cos(yaw + auto) * radius);
+    camera.lookAt(0, 1.25, 0);
+    crimson.position.x = -5 + Math.sin(t * 0.7) * 1.5;
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -22,5 +22,28 @@ window.ARENA_RUN_METRICS = {
       "output_tokens": null,
       "total_tokens": null
     }
+  },
+  "providers/xai/grok-4.7": {
+    "schema_version": 1,
+    "provider": "xai",
+    "model": "grok-4.7",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-09-24T23:09:29.068Z",
+    "completed_at": "2026-09-24T23:24:28.880Z",
+    "duration_ms": 899812,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "OpenClaw session_status exposes only rounded per-turn totals for this webchat session, with no authoritative whole-run usage ledger.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
   }
 };

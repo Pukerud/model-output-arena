@@ -154,6 +154,7 @@ Two independent axes are labelled:
 | Google | Gemini 3.8 Flash High (Antigravity Harness) | ☁️ API | 🔒 Proprietary | [`providers/google/gemini-3.8-flash-high`](./providers/google/gemini-3.8-flash-high) |
 | DeepSeek | DeepSeek V4.1 Flash | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-flash`](./providers/deepseek/deepseek-flash) |
 | OpenAI | GPT-6 Sol | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6-sol`](./providers/openai/gpt-6-sol) |
+| xAI | Grok 4.7 | ☁️ API | 🔒 Proprietary | [`providers/xai/grok-4.7`](./providers/xai/grok-4.7) |
 
 ## How outputs were generated
 

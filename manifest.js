@@ -867,6 +867,21 @@ window.ARENA = {
         "03-threejs-thriller": "providers/openai/gpt-6-sol/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "xai",
+      provider_display: "xAI",
+      model: "grok-4.7",
+      model_display: "Grok 4.7",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/xai/grok-4.7",
+      added: "2026-09-25",
+      outputs: {
+        "01-car-parallax":      "providers/xai/grok-4.7/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/xai/grok-4.7/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/xai/grok-4.7/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

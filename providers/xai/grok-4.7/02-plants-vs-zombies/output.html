@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lawn Last Light</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #10210f; color: #f4ffe8; font-family: "Trebuchet MS", Verdana, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .panel {
+    position: fixed; inset: 0; display: none; place-items: center; padding: 24px;
+    background: linear-gradient(180deg, rgba(6,16,8,.28), rgba(6,16,8,.62));
+  }
+  .panel.on { display: grid; }
+  .card {
+    width: min(680px, 100%);
+    background: linear-gradient(180deg, #234018, #14260f 70%);
+    border: 2px solid #d7ec7a; border-radius: 22px; padding: 28px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.45);
+  }
+  h1 { margin: 0 0 8px; font-size: 46px; letter-spacing: .03em; text-shadow: 0 4px 0 #0c1808; }
+  h2 { margin: 0 0 10px; }
+  p, li { line-height: 1.45; color: #e7f6cf; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  button, input {
+    font: inherit; border-radius: 12px; border: 2px solid #d7ec7a;
+    background: #3f6b22; color: white; padding: 10px 14px; cursor: pointer;
+  }
+  button:hover { background: #52882b; }
+  input { background: #0f1c0c; cursor: text; width: 220px; }
+  ol.board { margin: 8px 0 0; padding: 0; list-style: none; }
+  ol.board li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.12); }
+  .hud {
+    position: fixed; left: 12px; right: 12px; top: 10px; display: none; align-items: center; gap: 8px; z-index: 2;
+  }
+  .hud.on { display: flex; }
+  .sun {
+    min-width: 86px; padding: 8px 12px; border-radius: 14px; background: #f2c14e; color: #3a2500;
+    font-weight: 800; text-align: center; border: 2px solid #fff2b0;
+  }
+  .packet {
+    width: 92px; height: 58px; border-radius: 12px; border: 2px solid #203014; background: #6ea83a;
+    color: #102006; cursor: pointer; position: relative; overflow: hidden; text-align: left; padding: 6px 8px;
+  }
+  .packet b { display: block; font-size: 13px; }
+  .packet span { font-size: 12px; font-weight: 800; }
+  .packet.sel { outline: 3px solid #fff4a8; }
+  .packet.poor { filter: grayscale(.45); }
+  .cool { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.55); }
+  .meta { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .pill { background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 8px 12px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud" id="hud">
+  <div class="sun" id="sun">150</div>
+  <button class="packet" data-plant="sunflower"><b>Sunflower</b><span>50</span></button>
+  <button class="packet" data-plant="peashooter"><b>Pea</b><span>100</span></button>
+  <button class="packet" data-plant="snowpea"><b>Snow</b><span>175</span></button>
+  <button class="packet" data-plant="wallnut"><b>Wall</b><span>50</span></button>
+  <button class="packet" data-plant="cherry"><b>Cherry</b><span>150</span></button>
+  <div class="meta">
+    <div class="pill" id="waveLabel">Wave 1</div>
+    <div class="pill" id="scoreLabel">0</div>
+    <button id="pauseBtn" type="button">Pause</button>
+  </div>
+</div>
+<section class="panel on" id="menu">
+  <div class="card">
+    <h1>Lawn Last Light</h1>
+    <p>A compact lane defense. Collect sun, plant a row, and do not let the horde reach the house.</p>
+    <div class="row">
+      <button id="playBtn" type="button">Play</button>
+      <button id="helpBtn" type="button">How to play</button>
+      <button id="boardBtn" type="button">Leaderboard</button>
+    </div>
+  </div>
+</section>
+<section class="panel" id="help">
+  <div class="card">
+    <h2>How to play</h2>
+    <ul>
+      <li>Click falling sun, or sun from sunflowers, before you spend it.</li>
+      <li>Select a seed packet, then click an empty lawn tile. Keys 1–5 select packets.</li>
+      <li>Peashooters fire down the lane. Snow peas slow. Wall-nuts stall. Cherries burst.</li>
+      <li>Each lane has one mower. After that, a zombie at the house ends the night.</li>
+      <li>Esc pauses. Your best scores stay in this browser.</li>
+    </ul>
+    <div class="row"><button id="helpBack" type="button">Back</button></div>
+  </div>
+</section>
+<section class="panel" id="board">
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <ol class="board" id="boardList"></ol>
+    <div class="row"><button id="boardBack" type="button">Back</button></div>
+  </div>
+</section>
+<section class="panel" id="over">
+  <div class="card">
+    <h2 id="overTitle">The lawn fell</h2>
+    <p id="overText"></p>
+    <div class="row">
+      <input id="name" maxlength="16" placeholder="Your name" value="Gardener">
+      <button id="saveBtn" type="button">Save score</button>
+      <button id="retryBtn" type="button">Retry</button>
+      <button id="overMenu" type="button">Menu</button>
+    </div>
+  </div>
+</section>
+<script>
+(() => {
+  /*
+    Plan followed:
+    1. Menu, how-to, leaderboard, pause, and defeat screens.
+    2. Five-lane lawn, sun economy, five plant roles.
+    3. Walker, cone, and bucket zombies in escalating waves, plus one mower per lane.
+    4. Score from defeats and waves, stored locally as a top-eight board.
+    5. One canvas for play and HTML for the chrome.
+  */
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const COLS = 9, ROWS = 5;
+  const KEY = "arena-pvz-grok-4.7";
+  const PLANTS = {
+    sunflower: { cost: 50, hp: 300, recharge: 5, name: "Sunflower" },
+    peashooter: { cost: 100, hp: 300, recharge: 7, name: "Pea" },
+    snowpea: { cost: 175, hp: 300, recharge: 8, name: "Snow" },
+    wallnut: { cost: 50, hp: 1600, recharge: 14, name: "Wall" },
+    cherry: { cost: 150, hp: 400, recharge: 22, name: "Cherry" }
+  };
+  const ORDER = Object.keys(PLANTS);
+  const screens = {
+    menu: document.getElementById("menu"),
+    help: document.getElementById("help"),
+    board: document.getElementById("board"),
+    over: document.getElementById("over")
+  };
+  const hud = document.getElementById("hud");
+  let w = 1, h = 1, dpr = 1;
+  let state = "menu";
+  let selected = null;
+  let sun = 150, score = 0, wave = 0, kills = 0;
+  let nextWave = 8, banner = 0;
+  let plants, zombies, shots, suns, mowers, cooldowns, saved;
+  let last = performance.now();
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function grid() {
+    const top = 92, left = 108;
+    const cellW = Math.max(72, (w - left - 28) / COLS);
+    const cellH = Math.max(86, (h - top - 24) / ROWS);
+    return { top, left, cellW, cellH };
+  }
+  function cellCenter(c, r) {
+    const g = grid();
+    return { x: g.left + (c + 0.5) * g.cellW, y: g.top + (r + 0.62) * g.cellH, g };
+  }
+  function show(name) {
+    Object.entries(screens).forEach(([k, el]) => el.classList.toggle("on", k === name));
+    hud.classList.toggle("on", name === null && (state === "play" || state === "pause"));
+  }
+  function loadBoard() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+  }
+  function renderBoard() {
+    const list = document.getElementById("boardList");
+    const rows = loadBoard();
+    list.innerHTML = rows.length ? rows.map((r, i) =>
+      `<li><span>${i + 1}. ${r.name}</span><span>wave ${r.wave} · ${r.score}</span></li>`).join("")
+      : "<li><span>No scores yet.</span><span></span></li>";
+  }
+  function reset() {
+    plants = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    zombies = []; shots = []; suns = [];
+    mowers = Array(ROWS).fill(null);
+    cooldowns = Object.fromEntries(ORDER.map((k) => [k, 0]));
+    sun = 150; score = 0; wave = 0; kills = 0; nextWave = 6; banner = 0; selected = null; saved = false;
+    for (let i = 0; i < 4; i++) suns.push({ x: 180 + i * 90, y: -20 - i * 30, vy: 36, value: 25, life: 12, row: -1 });
+  }
+  function startGame() {
+    reset();
+    state = "play";
+    show(null);
+    syncHud();
+  }
+  function syncHud() {
+    document.getElementById("sun").textContent = sun;
+    document.getElementById("waveLabel").textContent = "Wave " + Math.max(wave, 1);
+    document.getElementById("scoreLabel").textContent = score;
+    document.querySelectorAll(".packet").forEach((btn) => {
+      const id = btn.dataset.plant;
+      const spec = PLANTS[id];
+      const cd = cooldowns[id];
+      btn.classList.toggle("sel", selected === id);
+      btn.classList.toggle("poor", sun < spec.cost || cd > 0);
+      let bar = btn.querySelector(".cool");
+      if (!bar) { bar = document.createElement("div"); bar.className = "cool"; btn.appendChild(bar); }
+      bar.style.height = cd > 0 ? Math.min(100, cd / spec.recharge * 100) + "%" : "0";
+    });
+  }
+  function pick(id) { selected = selected === id ? null : id; syncHud(); }
+  document.querySelectorAll(".packet").forEach((btn) => btn.addEventListener("click", () => {
+    if (state === "play") pick(btn.dataset.plant);
+  }));
+  document.getElementById("playBtn").onclick = startGame;
+  document.getElementById("retryBtn").onclick = startGame;
+  document.getElementById("helpBtn").onclick = () => show("help");
+  document.getElementById("helpBack").onclick = () => show("menu");
+  document.getElementById("boardBtn").onclick = () => { renderBoard(); show("board"); };
+  document.getElementById("boardBack").onclick = () => show("menu");
+  document.getElementById("overMenu").onclick = () => { state = "menu"; show("menu"); };
+  document.getElementById("pauseBtn").onclick = () => togglePause();
+  document.getElementById("saveBtn").onclick = () => {
+    if (saved) return;
+    const name = (document.getElementById("name").value || "Gardener").trim().slice(0, 16);
+    const rows = loadBoard();
+    rows.push({ name, score, wave, at: Date.now() });
+    rows.sort((a, b) => b.score - a.score || b.wave - a.wave);
+    localStorage.setItem(KEY, JSON.stringify(rows.slice(0, 8)));
+    saved = true;
+    renderBoard();
+    show("board");
+  };
+  function togglePause() {
+    if (state === "play") state = "pause";
+    else if (state === "pause") state = "play";
+  }
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") togglePause();
+    const n = ORDER[Number(e.key) - 1];
+    if (n && state === "play") pick(n);
+  });
+
+  canvas.addEventListener("click", (e) => {
+    if (state !== "play") return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const sunHit = suns.find((s) => Math.hypot(s.x - x, s.y - y) < 24);
+    if (sunHit) { sun += sunHit.value; suns.splice(suns.indexOf(sunHit), 1); syncHud(); return; }
+    if (!selected) return;
+    const g = grid();
+    const c = Math.floor((x - g.left) / g.cellW);
+    const r = Math.floor((y - g.top) / g.cellH);
+    if (c < 0 || r < 0 || c >= COLS || r >= ROWS || plants[r][c]) return;
+    const spec = PLANTS[selected];
+    if (sun < spec.cost || cooldowns[selected] > 0) return;
+    sun -= spec.cost;
+    cooldowns[selected] = spec.recharge;
+    plants[r][c] = { type: selected, hp: spec.hp, max: spec.hp, timer: selected === "cherry" ? 0.55 : 1.2, fuse: selected === "cherry" ? 0.7 : 0 };
+    selected = null;
+    syncHud();
+  });
+
+  function spawnZombie(row, type) {
+    const g = grid();
+    const hp = type === "bucket" ? 1100 : type === "cone" ? 560 : 190;
+    zombies.push({
+      row, type, hp, max: hp, x: g.left + g.cellW * COLS + 30,
+      speed: type === "bucket" ? 16 : 22, slow: 0, eat: 0
+    });
+  }
+  function beginWave() {
+    wave += 1;
+    banner = 2.4;
+    const count = Math.min(8, 1 + wave);
+    for (let i = 0; i < count; i++) {
+      const roll = Math.random();
+      const type = wave > 3 && roll > 0.72 ? "bucket" : wave > 1 && roll > 0.45 ? "cone" : "walker";
+      zombies.push({ delay: 0.4 + i * 0.85, row: Math.floor(Math.random() * ROWS), type });
+    }
+    nextWave = Math.max(12, 20 - wave);
+    syncHud();
+  }
+  function explode(r, c) {
+    const origin = cellCenter(c, r);
+    zombies.forEach((z) => {
+      if (z.delay > 0) return;
+      const zy = cellCenter(0, z.row).y;
+      if (Math.hypot(z.x - origin.x, zy - origin.y) < grid().cellW * 1.7) z.hp -= 900;
+    });
+    plants[r][c] = null;
+  }
+  function defeat() {
+    state = "over";
+    saved = false;
+    document.getElementById("overText").textContent = `You reached wave ${wave} with ${kills} zombies stopped and a score of ${score}.`;
+    show("over");
+  }
+  function update(dt) {
+    ORDER.forEach((id) => { cooldowns[id] = Math.max(0, cooldowns[id] - dt); });
+    nextWave -= dt;
+    banner = Math.max(0, banner - dt);
+    if (nextWave <= 0) beginWave();
+    for (let i = zombies.length - 1; i >= 0; i--) {
+      const z = zombies[i];
+      if (z.delay > 0) { z.delay -= dt; if (z.delay <= 0) spawnZombie(z.row, z.type), zombies.splice(i, 1); }
+    }
+    const g = grid();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = plants[r][c];
+        if (!p) continue;
+        p.timer -= dt;
+        if (p.type === "cherry") {
+          p.fuse -= dt;
+          if (p.fuse <= 0) explode(r, c);
+        } else if (p.type === "sunflower" && p.timer <= 0) {
+          p.timer = 8;
+          const at = cellCenter(c, r);
+          suns.push({ x: at.x, y: at.y - 20, vy: -10, value: 25, life: 10, row: r });
+        } else if ((p.type === "peashooter" || p.type === "snowpea") && p.timer <= 0) {
+          const threat = zombies.some((z) => !z.delay && z.row === r && z.x > cellCenter(c, r).x);
+          if (threat) {
+            p.timer = p.type === "snowpea" ? 1.55 : 1.35;
+            const at = cellCenter(c, r);
+            shots.push({ x: at.x + 16, row: r, snow: p.type === "snowpea", dmg: 20 });
+          }
+        }
+      }
+    }
+    suns.forEach((s) => {
+      s.life -= dt;
+      if (s.vy < 70) s.vy += 40 * dt;
+      s.y += s.vy * dt;
+      const floor = s.row >= 0 ? cellCenter(0, s.row).y - 30 : 70 + (s.x % 5) * 8;
+      if (s.y > floor) { s.y = floor; s.vy = 0; }
+    });
+    for (let i = suns.length - 1; i >= 0; i--) if (suns[i].life <= 0) suns.splice(i, 1);
+    shots.forEach((s) => { s.x += 280 * dt; });
+    zombies.forEach((z) => {
+      if (z.delay > 0) return;
+      z.slow = Math.max(0, z.slow - dt);
+      const speed = z.speed * (z.slow > 0 ? 0.42 : 1);
+      const col = Math.floor((z.x - g.left) / g.cellW);
+      const plant = col >= 0 && col < COLS ? plants[z.row][col] : null;
+      const atPlant = plant && Math.abs(z.x - cellCenter(col, z.row).x) < g.cellW * 0.32;
+      if (atPlant) {
+        z.eat += dt;
+        plant.hp -= 80 * dt;
+        if (plant.hp <= 0) plants[z.row][col] = null;
+      } else {
+        z.x -= speed * dt;
+      }
+      shots.forEach((s) => {
+        if (s.hit || s.row !== z.row) return;
+        if (Math.abs(s.x - z.x) < 16) {
+          s.hit = true;
+          z.hp -= s.dmg;
+          if (s.snow) z.slow = 3.2;
+        }
+      });
+      if (z.x < g.left - 8 && !mowers[z.row]) {
+        mowers[z.row] = { x: g.left - 24 };
+      }
+    });
+    mowers.forEach((m, row) => {
+      if (!m) return;
+      m.x += 460 * dt;
+      zombies.forEach((z) => { if (!z.delay && z.row === row && z.x < m.x + 20) z.hp = 0; });
+    });
+    for (let i = shots.length - 1; i >= 0; i--) if (shots[i].hit || shots[i].x > w + 20) shots.splice(i, 1);
+    for (let i = zombies.length - 1; i >= 0; i--) {
+      const z = zombies[i];
+      if (z.delay > 0) continue;
+      if (z.hp <= 0) { score += z.type === "bucket" ? 80 : z.type === "cone" ? 50 : 30; kills += 1; zombies.splice(i, 1); continue; }
+      if (z.x < 36) { defeat(); return; }
+    }
+    syncHud();
+  }
+
+  function drawLawn() {
+    const g = grid();
+    ctx.fillStyle = "#87c4ef";
+    ctx.fillRect(0, 0, w, h);
+    const sky = ctx.createLinearGradient(0, 0, 0, g.top);
+    sky.addColorStop(0, "#7ec8f8");
+    sky.addColorStop(1, "#d9f1c4");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, g.top);
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        ctx.fillStyle = (r + c) % 2 ? "#3f9a32" : "#57b13d";
+        ctx.fillRect(g.left + c * g.cellW, g.top + r * g.cellH, g.cellW - 2, g.cellH - 2);
+      }
+      ctx.fillStyle = "#8d8a86";
+      ctx.fillRect(18, g.top + r * g.cellH + 8, 70, g.cellH - 16);
+      ctx.fillStyle = "#6e4b32";
+      ctx.fillRect(28, g.top + r * g.cellH + 18, 48, 18);
+      if (!mowers[r]) {
+        const y = g.top + (r + 0.35) * g.cellH;
+        ctx.fillStyle = "#c23b3b";
+        ctx.fillRect(g.left - 46, y, 28, 16);
+        ctx.fillStyle = "#222";
+        ctx.beginPath(); ctx.arc(g.left - 40, y + 18, 6, 0, Math.PI * 2); ctx.arc(g.left - 22, y + 18, 6, 0, Math.PI * 2); ctx.fill();
+      } else if (mowers[r].x) {
+        ctx.fillStyle = "#e04b4b";
+        ctx.fillRect(mowers[r].x, g.top + (r + 0.35) * g.cellH, 30, 16);
+      }
+    }
+  }
+  function drawPlant(p, c, r) {
+    const at = cellCenter(c, r);
+    ctx.save();
+    ctx.translate(at.x, at.y);
+    if (p.type === "wallnut") {
+      ctx.fillStyle = "#c9843a";
+      ctx.beginPath(); ctx.ellipse(0, -8, 22, 26, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#3a2414";
+      ctx.fillRect(-8, -14, 4, 4); ctx.fillRect(6, -14, 4, 4);
+    } else if (p.type === "cherry") {
+      ctx.strokeStyle = "#2f7a32"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, -6); ctx.quadraticCurveTo(4, -24, 0, -32); ctx.stroke();
+      ctx.fillStyle = "#d4232a";
+      ctx.beginPath(); ctx.arc(-8, -4, 10, 0, Math.PI * 2); ctx.arc(8, -2, 10, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = "#2f8d32";
+      ctx.fillRect(-3, -6, 6, 18);
+      ctx.beginPath(); ctx.ellipse(-10, -2, 8, 4, -0.5, 0, Math.PI * 2); ctx.ellipse(10, -2, 8, 4, 0.5, 0, Math.PI * 2); ctx.fill();
+      if (p.type === "sunflower") {
+        ctx.fillStyle = "#f2c14e";
+        ctx.beginPath(); ctx.arc(0, -22, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#6b3d12";
+        ctx.beginPath(); ctx.arc(0, -22, 6, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = p.type === "snowpea" ? "#7fd0e6" : "#67c24a";
+        ctx.beginPath(); ctx.arc(0, -20, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#173214";
+        ctx.fillRect(6, -23, 12, 6);
+      }
+    }
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    ctx.fillRect(-16, 16, 32, 4);
+    ctx.fillStyle = "#d9f1c4";
+    ctx.fillRect(-16, 16, 32 * Math.max(0, p.hp / p.max), 4);
+    ctx.restore();
+  }
+  function drawZombie(z) {
+    if (z.delay > 0) return;
+    const y = cellCenter(0, z.row).y;
+    ctx.save();
+    ctx.translate(z.x, y);
+    ctx.fillStyle = z.slow > 0 ? "#9fd8ea" : "#8fad78";
+    ctx.fillRect(-12, -36, 24, 30);
+    ctx.fillStyle = "#6d8a58";
+    ctx.fillRect(-16, -18, 10, 8);
+    ctx.fillStyle = "#d7c2a3";
+    ctx.beginPath(); ctx.arc(0, -46, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#222";
+    ctx.fillRect(-6, -49, 3, 3); ctx.fillRect(3, -49, 3, 3);
+    if (z.type === "cone") { ctx.fillStyle = "#ef8a2a"; ctx.beginPath(); ctx.moveTo(-10, -54); ctx.lineTo(10, -54); ctx.lineTo(0, -74); ctx.fill(); }
+    if (z.type === "bucket") { ctx.fillStyle = "#b9b9b9"; ctx.fillRect(-11, -66, 22, 16); }
+    ctx.fillStyle = "#314628";
+    ctx.fillRect(-10, -6, 8, 16); ctx.fillRect(3, -6, 8, 16);
+    ctx.restore();
+  }
+  function frame(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+    if (state === "play") update(dt);
+    drawLawn();
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (plants[r][c]) drawPlant(plants[r][c], c, r);
+    shots.forEach((s) => {
+      const y = cellCenter(0, s.row).y - 24;
+      ctx.fillStyle = s.snow ? "#dff6ff" : "#8ee06a";
+      ctx.beginPath(); ctx.arc(s.x, y, 6, 0, Math.PI * 2); ctx.fill();
+    });
+    zombies.forEach(drawZombie);
+    suns.forEach((s) => {
+      ctx.fillStyle = "#f2c14e";
+      ctx.beginPath(); ctx.arc(s.x, s.y, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#6b3d12";
+      ctx.font = "12px Trebuchet MS";
+      ctx.fillText("25", s.x - 7, s.y + 4);
+    });
+    if (banner > 0 && state === "play") {
+      ctx.fillStyle = "rgba(20,40,16,.8)";
+      ctx.fillRect(w / 2 - 120, h * 0.42, 240, 46);
+      ctx.fillStyle = "#f4ffe8";
+      ctx.font = "24px Trebuchet MS";
+      ctx.fillText("Wave " + wave, w / 2 - 42, h * 0.42 + 30);
+    }
+    if (state === "pause") {
+      ctx.fillStyle = "rgba(0,0,0,.45)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "white";
+      ctx.font = "42px Trebuchet MS";
+      ctx.fillText("Paused", w / 2 - 70, h / 2);
+    }
+    requestAnimationFrame(frame);
+  }
+  renderBoard();
+  reset();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
