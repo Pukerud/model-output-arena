@@ -1,0 +1,13 @@
+{
+    "provider":  "openai",
+    "provider_display":  "OpenAI",
+    "model":  "gpt-6-sol",
+    "model_display":  "GPT-6 Sol",
+    "test_id":  "03-threejs-thriller",
+    "prompt_hash":  "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+    "generated_at":  "2026-09-24T13:37:45Z",
+    "runner":  "GPT-6 Sol via OpenClaw Codex harness",
+    "notes":  "Single-pass raw output",
+    "hosting":  "api",
+    "weights":  "closed"
+}
