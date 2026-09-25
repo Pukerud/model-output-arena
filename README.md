@@ -155,6 +155,7 @@ Two independent axes are labelled:
 | DeepSeek | DeepSeek V4.1 Flash | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/deepseek/deepseek-flash`](./providers/deepseek/deepseek-flash) |
 | OpenAI | GPT-6 Sol | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6-sol`](./providers/openai/gpt-6-sol) |
 | xAI | Grok 4.7 | ☁️ API | 🔒 Proprietary | [`providers/xai/grok-4.7`](./providers/xai/grok-4.7) |
+| OpenCode | Space Bunny Free | ☁️ API | 🔒 Proprietary | [`providers/opencode/space-bunny-free`](./providers/opencode/space-bunny-free) |
 
 ## How outputs were generated
 

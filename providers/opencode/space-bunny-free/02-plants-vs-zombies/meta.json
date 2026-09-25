@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "space-bunny-free",
+  "model_display": "Space Bunny Free",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-09-25T16:52:00Z",
+  "runner": "space-bunny-free via the opencode agent",
+  "notes": "Single file, no assets: all art is drawn with canvas paths and all audio is synthesised with the Web Audio API. Title screen with an attract-mode lawn, a four-plant loadout picker, a how-to-play screen that lists the build plan, settings, pause, results and a localStorage leaderboard. 5x9 grid, sun economy (sky drops plus sunflowers), six plants (sunflower, peashooter, wall-nut, snow pea, cherry bomb, repeater) with per-seed cost and recharge, five zombie types with breakable armour, flag waves and big waves, one single-use lawn mower per row as the fail state, a shovel, fast-forward, screen shake and particles. Played through in headless Chromium with real DOM and canvas clicks: planting, waves, mower triggers, scoring, saving a score and rendering the leaderboard all work with no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

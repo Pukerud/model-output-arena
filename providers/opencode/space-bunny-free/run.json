@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "opencode",
+  "model": "space-bunny-free",
+  "scope": "three-prompt-run",
+  "test_ids": [
+    "01-car-parallax",
+    "02-plants-vs-zombies",
+    "03-threejs-thriller"
+  ],
+  "status": "completed",
+  "started_at": "2026-09-25T16:33:22.499Z",
+  "completed_at": "2026-09-25T17:23:19.230Z",
+  "duration_ms": 2996731,
+  "usage": {
+    "coverage": "partial",
+    "source": "opencode session store (SQLite): sum of per-step 'step-finish' token records for this one dedicated session, restricted to steps timestamped at or after run.json started_at. input = input + cache read + cache write; output = output + reasoning, each counted once.",
+    "reason": "Partial, not complete: this is a live snapshot of the session's usage counters taken while the run was still in progress, so the final generation and verification steps that happen after this snapshot are not included. Counts are not estimated and nothing is inferred from text length.",
+    "input_tokens": 24759249,
+    "output_tokens": 171697,
+    "total_tokens": 24930946
+  }
+}

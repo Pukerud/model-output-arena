@@ -882,6 +882,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/xai/grok-4.7/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "opencode",
+      provider_display: "OpenCode",
+      model: "space-bunny-free",
+      model_display: "Space Bunny Free",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/opencode/space-bunny-free",
+      added: "2026-09-25",
+      outputs: {
+        "01-car-parallax":      "providers/opencode/space-bunny-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/opencode/space-bunny-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/opencode/space-bunny-free/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Golden Hour — Parallax Drive</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #140b18;
+    overflow: hidden;
+  }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #title {
+    position: fixed; left: 0; right: 0; top: 20px; text-align: center;
+    color: rgba(255, 238, 220, .34);
+    font: 300 11px/1.5 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: .44em; text-transform: uppercase; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="title">Golden Hour</div>
+<script>
+"use strict";
+(function () {
+
+  /* ==================================================================== *
+   *  GOLDEN HOUR                                                          *
+   *  A calm side-on tracking shot of a car driving into the sunset.       *
+   *  Pure canvas 2D, zero dependencies.                                   *
+   *                                                                      *
+   *  Everything is a pure function of `distance`, so when a layer wraps    *
+   *  it lands exactly where it started: the loop is seamless by           *
+   *  construction rather than by a special case.                          *
+   *                                                                      *
+   *  Back-to-front:  sky / sun / clouds                                   *
+   *                  mountains  ×2                                        *
+   *                  hills + town lights                                   *
+   *                  treeline                                              *
+   *                  fields, poles + wires, big trees, guardrail           *
+   *                  road (asphalt, markings, aggregate)                   *
+   *                  the car                                                *
+   *                  out-of-focus foreground strip                        *
+   * ==================================================================== */
+
+  var cvs = document.getElementById("scene");
+  var ctx = cvs.getContext("2d", { alpha: false });
+
+  var W = 0, H = 0, DPR = 1;
+  var distance = 0;          // world px travelled
+  var SPEED = 300;           // px per second
+  var last = 0;
+  var paused = false;
+
+  /* ------------------------------------------------------------- helpers */
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function smooth(t) { return t * t * (3 - 2 * t); }
+
+  // Deterministic index -> [0,1). Every prop comes from its index, so the
+  // scenery repeats byte-for-byte and never pops.
+  function hash(n) {
+    var x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
+    return x - Math.floor(x);
+  }
+  function hash2(a, b) { return hash(a * 1.6180339 + b * 0.73205); }
+
+  function noise1(x) {
+    var i = Math.floor(x), f = x - i, u = smooth(f);
+    return lerp(hash(i * 1.31 + 0.7), hash((i + 1) * 1.31 + 0.7), u);
+  }
+  function fbm1(x) {
+    return noise1(x) * 0.56 + noise1(x * 2.17 + 7.3) * 0.28 + noise1(x * 4.63 + 19.7) * 0.16;
+  }
+
+  // Wrap a world x into view space for a layer moving at `par`.
+  function wrapX(worldX, par, pad) {
+    var span = W + pad * 2;
+    var x = (worldX - distance * par) % span;
+    if (x < 0) x += span;
+    return x - pad;
+  }
+
+  /* ------------------------------------------------------------- layout */
+
+  var horizonY, hillBase, vergeY, roadTop, roadBot, groundY;
+  var carX, wheelR, wb, carS;
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cvs.width = Math.round(W * DPR);
+    cvs.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layout();
+    buildSky();
+    buildScenery();
+    vig = null;
+  }
+
+  function layout() {
+    horizonY = Math.round(H * 0.500);
+    hillBase = Math.round(H * 0.585);
+    vergeY  = Math.round(H * 0.655);
+    roadTop  = Math.round(H * 0.672);
+    roadBot  = Math.round(H * 0.930);
+    groundY  = Math.round(H * 0.868);
+    carX     = Math.round(W * 0.30);
+    carS     = Math.min(W * 0.34, H * 0.44);   // car length, the unit for all car geometry
+    wheelR   = carS * 0.075;                  // ~1/13 of the body: real coupe proportions
+    wb       = carS * 0.62;                   // wheelbase
+  }
+
+  /* --------------------------------------------------------- static sky */
+
+  var sky = null, vig = null, scenery = null;
+
+  function buildSky() {
+    sky = document.createElement("canvas");
+    sky.width = Math.max(1, Math.round(W * DPR));
+    sky.height = Math.max(1, Math.round(H * DPR));
+    var g = sky.getContext("2d");
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    var sx = W * 0.755, sy = horizonY - H * 0.075, sr = Math.max(26, H * 0.045);
+
+    // Dusk gradient — deep violet zenith down to a hot amber horizon.
+    var grad = g.createLinearGradient(0, 0, 0, horizonY + 4);
+    grad.addColorStop(0.00, "#1b1035");
+    grad.addColorStop(0.22, "#2f1647");
+    grad.addColorStop(0.44, "#5c2450");
+    grad.addColorStop(0.64, "#96374b");
+    grad.addColorStop(0.80, "#cc5b3c");
+    grad.addColorStop(0.92, "#e8813a");
+    grad.addColorStop(1.00, "#f7ad4f");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, W, horizonY + 4);
+
+    // Ground base below the horizon. Without it the transparent lower half of
+    // this cache would composite onto the opaque black canvas backing and any
+    // gap between land layers would read as a void.
+    g.fillStyle = "#1b1020";
+    g.fillRect(0, horizonY + 3, W, H - horizonY - 3);
+
+    // Sun bloom.
+    g.globalCompositeOperation = "lighter";
+    var bloom = g.createRadialGradient(sx, sy, sr * 0.15, sx, sy, sr * 9);
+    bloom.addColorStop(0.00, "rgba(255,226,168,0.55)");
+    bloom.addColorStop(0.14, "rgba(255,180,110,0.30)");
+    bloom.addColorStop(0.40, "rgba(236,120,80,0.12)");
+    bloom.addColorStop(1.00, "rgba(140,50,70,0)");
+    g.fillStyle = bloom;
+    g.fillRect(0, 0, W, horizonY + 4);
+
+    var core = g.createRadialGradient(sx, sy, 0, sx, sy, sr * 1.35);
+    core.addColorStop(0.00, "rgba(255,252,240,0.99)");
+    core.addColorStop(0.40, "rgba(255,226,164,0.95)");
+    core.addColorStop(0.72, "rgba(255,176,96,0.60)");
+    core.addColorStop(1.00, "rgba(255,150,80,0)");
+    g.fillStyle = core;
+    g.beginPath();
+    g.arc(sx, sy, sr * 1.4, 0, Math.PI * 2);
+    g.fill();
+
+    // Long thin cirrus, lit from below.
+    g.globalCompositeOperation = "source-over";
+    for (var i = 0; i < 12; i++) {
+      var t = i / 11;
+      var y = horizonY * (0.13 + 0.62 * t) + hash2(i, 3) * 6;
+      var w = W * (0.30 + 0.55 * hash2(i, 5));
+      var x = hash2(i, 7) * W * 1.1 - W * 0.05;
+      var h = Math.max(1.2, H * 0.0022) * (0.5 + 1.5 * hash2(i, 9));
+      var lit = clamp(1.25 - t * 1.15, 0, 1);
+      g.globalAlpha = 0.05 + 0.16 * hash2(i, 11) * lit;
+      g.fillStyle = "rgb(" + Math.round(226 + 29 * lit) + "," + Math.round(150 + 70 * lit) + "," + Math.round(150 + 30 * lit) + ")";
+      g.beginPath();
+      g.ellipse(x, y, w * 0.5, h, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+
+    // Haze pooling on the horizon so distant layers sink into the light.
+    var haze = g.createLinearGradient(0, horizonY - H * 0.13, 0, horizonY + 4);
+    haze.addColorStop(0, "rgba(255,178,110,0)");
+    haze.addColorStop(1, "rgba(255,186,124,0.30)");
+    g.fillStyle = haze;
+    g.fillRect(0, horizonY - H * 0.13, W, H * 0.13 + 4);
+  }
+
+  /* ---------------------------------------------------------- scenery db */
+
+  function buildScenery() {
+    scenery = { trees: [], poles: [], tufts: [], refl: [] };
+
+    // Each layer is tiled across exactly one wrap cell, so `n` items are
+    // spread evenly over (W + 2*pad) and item n lands exactly where item 0
+    // does. Parallax is constant per layer — items that slid at different
+    // rates would visibly overtake each other.
+    function tile(arr, spacing, pad, par, make) {
+      var span = W + pad * 2;
+      var n = Math.max(1, Math.round(span / spacing));
+      var cell = span / n;
+      for (var i = 0; i < n; i++) {
+        arr.push(make(i, i * cell + (hash2(i, 3) - 0.5) * cell * 0.85, par));
+      }
+    }
+
+    // Roadside trees, standing in the field behind the guardrail.
+    tile(scenery.trees, 350, 340, 0.68, function (i, x, par) {
+      return {
+        x: x, par: par,
+        s: 0.45 + hash2(i, 4) * 0.70,
+        seed: i,
+        kind: hash2(i, 5) > 0.70 ? "pine" : "round"
+      };
+    });
+    // Telephone poles, further back.
+    tile(scenery.poles, 430, 430, 0.42, function (i, x, par) { return { x: x, par: par, seed: i }; });
+    // Grass tufts hugging the verge.
+    tile(scenery.tufts, 70, 70, 0.98, function (i, x, par) {
+      return { x: x, par: par, s: 0.5 + hash2(i, 9) * 1.1, seed: i };
+    });
+    // Delineator posts on the near shoulder, closest and fastest.
+    tile(scenery.refl, 330, 200, 1.45, function (i, x, par) { return { x: x, par: par, seed: i }; });
+  }
+
+  /* --------------------------------------------------------------- loop */
+
+  function frame(now) {
+    if (!last) last = now;
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!paused) distance += SPEED * dt;
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  /* ================================================================ draw */
+
+  function render() {
+    ctx.drawImage(sky, 0, 0, W, H);
+    drawClouds();
+    drawRidge(0.045, horizonY + H * 0.055, H * 0.130, "#7b3a58", 0.45);
+    drawRidge(0.075, horizonY + H * 0.090, H * 0.100, "#4c2347", 0.30);
+    drawHills();
+    drawTown();
+    drawTreeline();
+    drawField();
+    drawPoles();
+    drawTrees();
+    drawGuardrail();
+    drawTufts();
+    drawRoad();
+    drawCar();
+    drawForeground();
+    drawVignette();
+  }
+
+  /* ------------------------------------------------------------- clouds */
+
+  function drawClouds() {
+    var pad = W * 0.30;
+    for (var i = 0; i < 8; i++) {
+      var y = horizonY * (0.30 + 0.52 * hash2(i, 12));
+      var k = 0.6 + 0.9 * hash2(i, 13);
+      var w = W * 0.20 * k, h = Math.max(5, H * 0.018) * k;
+      var x = wrapX(hash2(i, 14) * (W + pad * 2), 0.018, pad);
+      if (x < -w * 1.3 || x > W + w * 1.3) continue;
+      var lit = clamp(1 - (y / horizonY) * 0.55, 0.2, 1);
+
+      // Soft radial blobs instead of hard circles: overlapping gradients have
+      // no visible rim, so the union reads as one cloud.
+      var lobes = 6;
+      for (var m = 0; m < lobes; m++) {
+        var t = m / (lobes - 1);
+        var taper = Math.pow(Math.sin(t * Math.PI), 0.5);
+        var r = h * (0.5 + 1.7 * taper) * (0.78 + 0.44 * hash2(i, m));
+        var bx = x - w * 0.5 + w * t;
+        var by = y - h * 0.34 * taper;
+        var g = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+        g.addColorStop(0, "rgba(" + Math.round(120 + 100 * lit) + "," + Math.round(66 + 92 * lit) + "," + Math.round(96 + 74 * lit) + ",0.30)");
+        g.addColorStop(0.55, "rgba(" + Math.round(110 + 110 * lit) + "," + Math.round(60 + 96 * lit) + "," + Math.round(90 + 70 * lit) + ",0.18)");
+        g.addColorStop(1, "rgba(90,52,84,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // lit crown
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (var c = 0; c < 3; c++) {
+        var ct = 0.28 + 0.22 * c;
+        var cr = h * (0.5 + 0.9 * Math.sin(ct * Math.PI)) * 0.8;
+        var cx = x - w * 0.5 + w * ct;
+        var cy = y - h * 0.5;
+        var cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+        cg.addColorStop(0, "rgba(255," + Math.round(178 + 56 * lit) + "," + Math.round(130 + 66 * lit) + ",0.22)");
+        cg.addColorStop(1, "rgba(255,150,110,0)");
+        ctx.fillStyle = cg;
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ---------------------------------------------------------- mountains */
+
+  function drawRidge(par, baseY, amp, color, rimAmt) {
+    var pad = 60, step = 7;
+    ctx.beginPath();
+    ctx.moveTo(-pad, H + 4);
+    for (var x = -pad; x <= W + pad; x += step) {
+      var w = (x + distance * par) * 0.0011;
+      var h = (fbm1(w) * 0.75 + 0.25) * amp;
+      h *= 0.80 + 0.35 * Math.sin(x * 0.0009 + 1.2);
+      ctx.lineTo(x, baseY - h);
+    }
+    ctx.lineTo(W + pad, H + 4);
+    ctx.closePath();
+
+    var g = ctx.createLinearGradient(0, baseY - amp * 1.5, 0, horizonY + H * 0.09);
+    g.addColorStop(0, color);
+    g.addColorStop(0.45, "rgba(58,28,60,0.96)");
+    g.addColorStop(1, "rgba(32,17,38,1)");
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // warm rim on the sun side
+    ctx.save();
+    ctx.clip();
+    ctx.globalCompositeOperation = "lighter";
+    var rg = ctx.createLinearGradient(W * 0.42, 0, W, 0);
+    rg.addColorStop(0, "rgba(255,150,90,0)");
+    rg.addColorStop(1, "rgba(255,164,96," + rimAmt + ")");
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, baseY - amp * 2, W, amp * 3);
+    ctx.restore();
+  }
+
+  /* -------------------------------------------------------------- hills */
+
+  function drawHills() {
+    var baseY = hillBase;
+    ctx.beginPath();
+    ctx.moveTo(-4, H + 4);
+    for (var x = -4; x <= W + 4; x += 5) {
+      var w = (x + distance * 0.11) * 0.0021;
+      var h = (fbm1(w) * 0.55 + 0.45) * H * 0.055;
+      ctx.lineTo(x, baseY - h);
+    }
+    ctx.lineTo(W + 4, H + 4);
+    ctx.closePath();
+    var g = ctx.createLinearGradient(0, baseY - H * 0.06, 0, baseY + H * 0.06);
+    g.addColorStop(0, "#331d33");
+    g.addColorStop(0.5, "#241629");
+    g.addColorStop(1, "#1d1120");
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+    ctx.globalCompositeOperation = "lighter";
+    // crest light: purely vertical, fading downward (a diagonal gradient here
+    // would render as a hard-edged bar across the hill)
+    var cg = ctx.createLinearGradient(0, baseY - H * 0.060, 0, baseY - H * 0.018);
+    cg.addColorStop(0, "rgba(255,140,80,0.26)");
+    cg.addColorStop(1, "rgba(255,140,80,0)");
+    ctx.fillStyle = cg;
+    ctx.fillRect(0, baseY - H * 0.065, W, H * 0.05);
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------- town lights */
+
+  function drawTown() {
+    var par = 0.15, spacing = 30, pad = 40, baseY = horizonY + 3;
+    var n = Math.ceil((W + pad * 2) / spacing) + 1;
+    for (var i = 0; i < n; i++) {
+      var x = wrapX(i * spacing + hash2(i, 16) * 10, par, pad);
+      if (x < -20 || x > W + 20) continue;
+      var h = 2 + 8 * hash2(i, 17);
+      var w = 4 + 10 * hash2(i, 18);
+      var lit = hash2(i, 19) > 0.48;
+      ctx.fillStyle = "rgba(28,14,28,0.9)";
+      ctx.fillRect(x - w * 0.5, baseY - h, w, h + 2);
+      if (lit) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        var g = ctx.createRadialGradient(x, baseY - h * 0.5, 0, x, baseY - h * 0.5, 9);
+        g.addColorStop(0, "rgba(255,196,132,0.55)");
+        g.addColorStop(1, "rgba(255,170,110,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(x - 10, baseY - h - 8, 20, h + 12);
+        ctx.restore();
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------ treeline */
+
+  function drawTreeline() {
+    var par = 0.20, spacing = 17, pad = 34, baseY = horizonY + 2;
+    var n = Math.ceil((W + pad * 2) / spacing) + 1;
+    for (var i = 0; i < n; i++) {
+      var x = wrapX(i * spacing + hash2(i, 20) * 11, par, pad);
+      if (x < -10 || x > W + 10) continue;
+      var h = H * (0.010 + 0.026 * hash2(i, 21));
+      ctx.fillStyle = "rgba(26,14,28,0.9)";
+      ctx.beginPath();
+      ctx.moveTo(x, baseY);
+      ctx.lineTo(x - h * 0.26, baseY);
+      ctx.lineTo(x - h * 0.12, baseY - h * 0.68);
+      ctx.lineTo(x - h * 0.26, baseY - h * 0.68);
+      ctx.lineTo(x, baseY - h);
+      ctx.lineTo(x + h * 0.26, baseY - h * 0.68);
+      ctx.lineTo(x + h * 0.12, baseY - h * 0.68);
+      ctx.lineTo(x + h * 0.26, baseY);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  /* --------------------------------------------------------------- field */
+
+  function drawField() {
+    // A band of dry grass between the hills and the road shoulder, with
+    // crop rows catching the last of the light.
+    var top = hillBase + 4, bot = vergeY + 3;
+    var g = ctx.createLinearGradient(0, top, 0, bot);
+    g.addColorStop(0, "#241627");
+    g.addColorStop(0.55, "#2b1a1e");
+    g.addColorStop(1, "#3a241c");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, top, W, bot - top);
+
+    // furrows: horizontal streaks that drift slowly
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, top, W, bot - top);
+    ctx.clip();
+    for (var i = 0; i < 90; i++) {
+      var t = i / 89;
+      var y = top + Math.pow(t, 1.5) * (bot - top);
+      var len = 30 + 190 * hash2(i, 22);
+      var x = wrapX(i * len * 0.9, 0.52 + t * 0.5, 200);
+      if (x < -len || x > W + len) continue;
+      ctx.fillStyle = (i % 2 ? "rgba(255,190,120,0.055)" : "rgba(0,0,0,0.16)");
+      ctx.fillRect(x, y, len, 1 + t * 3);
+    }
+    ctx.restore();
+
+    // warm wash from the low sun
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var wash = ctx.createLinearGradient(W * 0.4, 0, W, 0);
+    wash.addColorStop(0, "rgba(255,140,80,0)");
+    wash.addColorStop(1, "rgba(255,150,84,0.13)");
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, top, W, bot - top);
+    ctx.restore();
+  }
+
+  /* -------------------------------------------------------------- poles */
+
+  function drawPoles() {
+    var par = 0.42, spacing = 430, pad = spacing;
+    var n = Math.ceil((W + pad * 2) / spacing) + 2;
+    var top = hillBase - H * 0.175;
+    var xs = [];
+    for (var i = 0; i < n; i++) xs.push(wrapX(i * spacing, par, pad));
+
+    // wires first
+    for (var w = 0; w < xs.length - 1; w++) {
+      var x0 = xs[w], x1 = xs[w + 1];
+      if (x1 < x0) continue;                     // skip the wrap seam
+      for (var c = 0; c < 3; c++) {
+        var y = top + 3 + c * H * 0.012;
+        ctx.beginPath();
+        ctx.moveTo(x0 - 6, y);
+        ctx.quadraticCurveTo((x0 + x1) * 0.5, y + H * 0.026, x1 + 6, y);
+        ctx.strokeStyle = "rgba(22,12,22,0.55)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+    for (var p = 0; p < xs.length; p++) {
+      var px = xs[p];
+      if (px < -14 || px > W + 14) continue;
+      ctx.fillStyle = "#180e1a";
+      ctx.fillRect(px - 1.5, top, 3, H * 0.215);
+      ctx.fillRect(px - 12, top + 2, 24, 2.6);
+      ctx.fillStyle = "rgba(255,164,104,0.28)";
+      ctx.fillRect(px + 1.5, top, 0.9, H * 0.215);
+    }
+  }
+
+  /* -------------------------------------------------------------- trees */
+
+  function drawTrees() {
+    var baseY = vergeY - 2, pad = 340;
+    for (var i = 0; i < scenery.trees.length; i++) {
+      var o = scenery.trees[i];
+      var x = wrapX(o.x, o.par, pad);
+      if (x < -260 || x > W + 260) continue;
+      drawTree(x, baseY + (o.par - 0.6) * 8, H * 0.155 * o.s, o.seed, o.kind);
+    }
+  }
+
+  function drawTree(x, baseY, size, seed, kind) {
+    // ground shadow
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = "#0c070f";
+    ctx.beginPath();
+    ctx.ellipse(x + size * 0.16, baseY + 1, size * 0.34, size * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    var lean = (hash2(seed, 23) - 0.5) * size * 0.10;
+
+    if (kind === "pine") {
+      ctx.fillStyle = "#150c16";
+      ctx.fillRect(x - size * 0.030, baseY - size * 0.55, size * 0.060, size * 0.55);
+      for (var i = 0; i < 5; i++) {
+        var t = i / 4;
+        var y = baseY - size * (0.30 + 0.62 * t);
+        var w = size * (0.34 - 0.26 * t);
+        ctx.beginPath();
+        ctx.moveTo(x + lean * t, y - size * 0.22);
+        ctx.lineTo(x - w, y + size * 0.06);
+        ctx.lineTo(x + w, y + size * 0.06);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else {
+      // trunk + limbs
+      ctx.strokeStyle = "#150c16";
+      ctx.lineCap = "round";
+      ctx.lineWidth = size * 0.062;
+      ctx.beginPath();
+      ctx.moveTo(x, baseY);
+      ctx.quadraticCurveTo(x + lean * 0.35, baseY - size * 0.40, x + lean, baseY - size * 0.66);
+      ctx.stroke();
+      ctx.lineWidth = size * 0.038;
+      for (var b = 0; b < 3; b++) {
+        var tb = 0.42 + b * 0.15;
+        var bx = lerp(x, x + lean, tb), by = baseY - size * 0.66 * tb;
+        var dir = b % 2 ? 1 : -1;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + dir * size * 0.11, by - size * 0.05, bx + dir * size * 0.18, by - size * 0.12);
+        ctx.stroke();
+      }
+      // canopy
+      var cy = baseY - size * 0.80;
+      for (var k = 0; k < 8; k++) {
+        var a = (k / 8) * Math.PI * 2 + hash2(seed, k) * 1.2;
+        var rr = size * (0.11 + 0.075 * hash2(seed, k + 7));
+        var bx2 = x + lean + Math.cos(a) * size * 0.20 * (0.55 + 0.7 * hash2(seed, k + 3));
+        var by2 = cy + Math.sin(a) * size * 0.155;
+        ctx.fillStyle = "rgba(24,13,25,0.95)";
+        ctx.beginPath();
+        ctx.arc(bx2, by2, rr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // sun-side rim light: a thin highlight hugging the canopy edge, not a
+    // glowing ball in the middle of the foliage
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var cy2 = baseY - size * 0.80;
+    for (var m = 0; m < 3; m++) {
+      var a2 = -0.55 + m * 0.30;
+      var rx = x + lean + Math.cos(a2) * size * 0.20;
+      var ry = cy2 + Math.sin(a2) * size * 0.17;
+      var rr2 = size * 0.115;
+      var g = ctx.createRadialGradient(rx, ry, rr2 * 0.25, rx, ry, rr2);
+      g.addColorStop(0, "rgba(255,152,86,0.16)");
+      g.addColorStop(1, "rgba(255,110,80,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(rx, ry, rr2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ---------------------------------------------------------- guardrail */
+
+  function drawGuardrail() {
+    var par = 0.86, spacing = 96, pad = 120;
+    var y = vergeY + 6, h = H * 0.030;
+    var n = Math.ceil((W + pad * 2) / spacing) + 2;
+    var xs = [];
+    for (var i = 0; i < n; i++) xs.push(wrapX(i * spacing, par, pad));
+
+    // rail
+    ctx.beginPath();
+    for (var i2 = 0; i2 < xs.length; i2++) {
+      if (i2 === 0) ctx.moveTo(xs[i2], y); else ctx.lineTo(xs[i2], y);
+    }
+    ctx.lineWidth = Math.max(2, h * 0.20);
+    var railGrad = ctx.createLinearGradient(0, y - h * 0.6, 0, y + h * 0.5);
+    railGrad.addColorStop(0, "rgba(226,220,210,0.55)");
+    railGrad.addColorStop(0.5, "rgba(150,140,132,0.45)");
+    railGrad.addColorStop(1, "rgba(60,40,50,0.5)");
+    ctx.strokeStyle = railGrad;
+    ctx.stroke();
+
+    // posts
+    for (var p = 0; p < xs.length; p++) {
+      if (xs[p] < -10 || xs[p] > W + 10) continue;
+      ctx.fillStyle = "rgba(28,16,26,0.9)";
+      ctx.fillRect(xs[p] - 1.6, y, 3.2, h + 2);
+      ctx.fillStyle = "rgba(255,190,140,0.16)";
+      ctx.fillRect(xs[p] + 1.4, y, 0.8, h + 2);
+    }
+  }
+
+  /* -------------------------------------------------------------- tufts */
+
+  function drawTufts() {
+    var baseY = vergeY + 4, pad = 40;
+    for (var i = 0; i < scenery.tufts.length; i++) {
+      var o = scenery.tufts[i];
+      var x = wrapX(o.x, o.par, pad);
+      if (x < -30 || x > W + 30) continue;
+      var h = H * 0.020 * o.s, w = h * 0.9;
+      ctx.strokeStyle = "rgba(22,13,22,0.85)";
+      ctx.lineWidth = Math.max(0.8, h * 0.09);
+      ctx.lineCap = "round";
+      for (var b = 0; b < 4; b++) {
+        var a = (b / 3 - 0.5) * 1.5 + (hash2(o.seed, b) - 0.5) * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, baseY);
+        ctx.quadraticCurveTo(x + Math.sin(a) * w * 0.5, baseY - h * 0.6, x + Math.sin(a) * w, baseY - h);
+        ctx.stroke();
+      }
+    }
+  }
+
+  /* --------------------------------------------------------------- road */
+
+  // A gentle shear makes horizontal lines converge toward a vanishing point
+  // far off to the left — enough to imply a road receding, without turning
+  // the shot into a one-point-perspective road game.
+  function shear(y) { return (y - (roadTop + roadBot) * 0.5) * -0.13; }
+
+  function drawRoad() {
+    // shoulder
+    var sh = ctx.createLinearGradient(0, vergeY, 0, roadTop + 3);
+    sh.addColorStop(0, "#3b2419");
+    sh.addColorStop(1, "#4a2c1c");
+    ctx.fillStyle = sh;
+    ctx.fillRect(0, vergeY, W, roadTop - vergeY + 3);
+
+    var h = roadBot - roadTop;
+    var g = ctx.createLinearGradient(0, roadTop, 0, roadBot);
+    g.addColorStop(0.00, "#2e2733");
+    g.addColorStop(0.10, "#221d28");
+    g.addColorStop(0.45, "#191521");
+    g.addColorStop(1.00, "#0e0b12");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, roadTop, W, h);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, roadTop, W, h);
+    ctx.clip();
+
+    drawAggregate();
+    drawMarkings();
+
+    // sun sheen on the tarmac
+    ctx.globalCompositeOperation = "lighter";
+    var sheen = ctx.createLinearGradient(W * 0.45, 0, W, 0);
+    sheen.addColorStop(0, "rgba(255,140,80,0)");
+    sheen.addColorStop(1, "rgba(255,156,88,0.10)");
+    ctx.fillStyle = sheen;
+    ctx.fillRect(0, roadTop, W, h);
+    ctx.globalCompositeOperation = "source-over";
+
+    // darkening where the shoulder meets the asphalt
+    var edge = ctx.createLinearGradient(0, roadTop, 0, roadTop + h * 0.16);
+    edge.addColorStop(0, "rgba(0,0,0,0.55)");
+    edge.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, roadTop, W, h * 0.16);
+
+    ctx.restore();
+  }
+
+  // Aggregate + tar seams. Each band scrolls at its own rate, nearer bands
+  // faster, which is what actually sells the ground plane.
+  function drawAggregate() {
+    var bands = 34;
+    for (var b = 0; b < bands; b++) {
+      var t = b / (bands - 1);
+      var y = roadTop + Math.pow(t, 1.55) * (roadBot - roadTop);
+      var th = Math.max(1, (roadBot - roadTop) * (Math.pow((b + 1) / (bands - 1), 1.55) - Math.pow(t, 1.55)) * 0.85);
+      var par = 0.75 + t * 1.35;
+      var sc = 0.5 + t * 2.0;
+      var stepX = 9 * sc;
+      var count = Math.ceil((W + 60) / stepX) + 1;
+      for (var i = 0; i < count; i++) {
+        var seed = b * 977 + i * 13;
+        var x = wrapX(i * stepX + hash2(seed, 24) * stepX * 0.9, par, 30);
+        if (x < -20 || x > W + 20) continue;
+        var v = hash2(seed, 25);
+        ctx.fillStyle = v > 0.80 ? "rgba(255,225,205,0.030)"
+                   : v > 0.46 ? "rgba(0,0,0,0.13)"
+                              : "rgba(255,186,146,0.022)";
+        var w2 = (1.5 + 7 * hash2(seed, 26)) * sc;
+        ctx.fillRect(x, y, w2, Math.max(0.6, th * 0.42));
+      }
+    }
+
+    // long tar repair seams
+    for (var s = 0; s < 7; s++) {
+      var tt = hash2(s, 27);
+      var yy = roadTop + (0.12 + 0.80 * tt) * (roadBot - roadTop);
+      var ww = W * (0.2 + 0.5 * hash2(s, 28));
+      var xx = wrapX(hash2(s, 29) * (W + 300), 0.9 + tt * 0.8, 150);
+      ctx.fillStyle = "rgba(0,0,0,0.14)";
+      ctx.fillRect(xx, yy, ww, 1 + tt * 4);
+    }
+  }
+
+  function drawMarkings() {
+    var h = roadBot - roadTop;
+
+    // The car runs in the far lane, so the dashed lane divider belongs near
+    // the bottom of frame and the far edge line sits just under the shoulder.
+    var lines = [
+      { f: 0.09, dash: 0, wid: 0.9 },
+      { f: 0.80, dash: 1, wid: 1.1 }
+    ];
+    var period = 340;                    // world px per dash cycle
+    var cycle = period * 0.42;           // dash length
+
+    for (var li = 0; li < lines.length; li++) {
+      var L = lines[li];
+      var y = roadTop + L.f * h;
+      var thick = Math.max(1.4, h * 0.026 * L.wid);
+      var par = 0.9 + L.f * 0.7;
+      var alpha = 0.26 + 0.40 * L.f;
+
+      if (!L.dash) {
+        ctx.fillStyle = "rgba(246,238,222," + alpha.toFixed(2) + ")";
+        ctx.beginPath();
+        ctx.moveTo(-30, y);
+        ctx.lineTo(W + 30, y);
+        ctx.lineTo(W + 30, y + thick);
+        ctx.lineTo(-30, y + thick);
+        ctx.closePath();
+        ctx.fill();
+        continue;
+      }
+
+      // dashes, plus a soft worn shadow under each
+      var n = Math.ceil((W + 300) / period) + 2;
+      for (var i = 0; i < n; i++) {
+        var x = wrapX(i * period, par, 150);
+        if (x > W + 30 || x + cycle < -30) continue;
+        ctx.fillStyle = "rgba(246,238,222," + alpha.toFixed(2) + ")";
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + cycle, y);
+        ctx.lineTo(x + cycle, y + thick);
+        ctx.lineTo(x, y + thick);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // faint tyre-polished tracks
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    [0.30, 0.40, 0.60, 0.70].forEach(function (f) {
+      var y = roadTop + f * h;
+      var th = Math.max(1, h * 0.05);
+      var g = ctx.createLinearGradient(0, y, 0, y + th);
+      g.addColorStop(0, "rgba(255,220,200,0)");
+      g.addColorStop(0.5, "rgba(255,220,200,0.045)");
+      g.addColorStop(1, "rgba(255,220,200,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-20, y);
+      ctx.lineTo(W + 20, y);
+      ctx.lineTo(W + 20, y + th);
+      ctx.lineTo(-20, y + th);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  /* ==================================================================== *
+   *  CAR                                                                 *
+   * ==================================================================== */
+
+  // The road profile the suspension reacts to: layered sine "surface
+  // texture" plus a periodic expansion joint, sampled at two points.
+  function roadProfile(w) {
+    var r = Math.sin(w * 0.0125) * 0.55
+          + Math.sin(w * 0.0073 + 1.7) * 0.30
+          + Math.sin(w * 0.0291 + 0.4) * 0.14;
+    var p = w % 1250;
+    if (p < 150) {
+      var t = p / 150;
+      r += Math.sin(t * Math.PI * 2) * 1.0 * (1 - t * 0.3);
+    }
+    return r;
+  }
+
+  function drawCar() {
+    var S = carS, R = wheelR, L = carS;      // S = overall length, the design unit
+    var x0 = carX;
+    var u = function (v) { return v * S; };  // design units -> px
+
+    var front = roadProfile(distance) - 0.5;
+    var rear  = roadProfile(distance - wb) - 0.5;
+    var heave = (front + rear) * 0.5 * R * 0.10;
+    var pitch = Math.atan2((front - rear) * R * 0.10, wb) * 0.9;
+    var roll  = Math.sin(distance * 0.0039 + 0.9) * 0.007;
+    var ang   = distance / R;
+
+    ctx.save();
+
+    /* contact shadow on the tarmac */
+    ctx.save();
+    var scx = x0 + wb * 0.08, scy = groundY + R * 0.10;
+    var shg = ctx.createRadialGradient(scx, scy, 2, scx, scy, S * 0.60);
+    shg.addColorStop(0, "rgba(0,0,0,0.70)");
+    shg.addColorStop(0.5, "rgba(0,0,0,0.20)");
+    shg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = shg;
+    ctx.beginPath();
+    ctx.ellipse(scx, scy, S * 0.58, S * 0.075, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    /* headlight pool on the tarmac — a soft ellipse reads far better than a
+       hard-edged cone */
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var px = x0 + L * 0.62, py = groundY + R * 0.55;
+    var pg = ctx.createRadialGradient(px, py, 0, px, py, S * 0.55);
+    pg.addColorStop(0, "rgba(255,214,152,0.10)");
+    pg.addColorStop(0.45, "rgba(255,196,128,0.045)");
+    pg.addColorStop(1, "rgba(255,180,110,0)");
+    ctx.fillStyle = pg;
+    ctx.beginPath();
+    ctx.ellipse(px, py, S * 0.55, S * 0.13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.translate(x0, groundY);
+    ctx.rotate(roll);
+    ctx.translate(0, heave);
+    ctx.rotate(pitch);
+
+    var sill = -0.115 * S, belt = -0.285 * S, roof = -0.462 * S;
+
+    /* wheels first — centre sits one radius up, so the tyre meets the road */
+    drawWheel(wb * 0.5, -R, R, ang);
+    drawWheel(-wb * 0.5, -R, R, ang);
+
+    /* ---- body: fastback coupe, one closed silhouette with real arches ---- */
+    bodyPath(ctx, S, u);
+    var bg = ctx.createLinearGradient(0, roof, 0, u(-0.10));
+    bg.addColorStop(0.00, "#d4633f");
+    bg.addColorStop(0.13, "#c2503c");
+    bg.addColorStop(0.30, "#9c3634");
+    bg.addColorStop(0.55, "#6d2330");
+    bg.addColorStop(0.80, "#431724");
+    bg.addColorStop(1.00, "#240e16");
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    // paint effects, clipped to the body
+    ctx.save();
+    ctx.clip();
+    var sp = ctx.createLinearGradient(0, roof, 0, roof + S * 0.13);
+    sp.addColorStop(0, "rgba(255,228,182,0.55)");
+    sp.addColorStop(1, "rgba(255,170,120,0)");
+    ctx.fillStyle = sp;
+    ctx.fillRect(-L, roof - 4, L * 2, S * 0.15);
+    ctx.globalCompositeOperation = "lighter";
+    var refl = ctx.createLinearGradient(0, belt, 0, sill);
+    refl.addColorStop(0, "rgba(255,140,90,0)");
+    refl.addColorStop(0.6, "rgba(255,150,96,0.15)");
+    refl.addColorStop(1, "rgba(120,50,70,0)");
+    ctx.fillStyle = refl;
+    ctx.fillRect(-L, belt, L * 2, S * 0.3);
+    ctx.globalCompositeOperation = "source-over";
+    for (var k = 0; k < 6; k++) {                                        // speed smear
+      var yy = sill - S * (0.015 + 0.022 * k);
+      ctx.fillStyle = "rgba(255,200,160,0.028)";
+      ctx.fillRect(-L, yy, L * 2, S * 0.008);
+    }
+    ctx.restore();
+
+    /* dark inside the arches */
+    [[0.310, 1], [-0.310, 1]].forEach(function (a) {
+      var g = ctx.createRadialGradient(u(a[0]), -R * 0.05, R * 0.45, u(a[0]), -R * 0.05, u(0.125));
+      g.addColorStop(0, "rgba(0,0,0,0.5)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(u(a[0]), -R * 0.05, u(0.125), 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    /* chrome beltline, rocker trim, door line, handle, mirror */
+    ctx.strokeStyle = "rgba(255,222,180,0.50)";
+    ctx.lineWidth = Math.max(1, S * 0.009);
+    ctx.beginPath();
+    ctx.moveTo(u(-0.470), u(-0.285));
+    ctx.lineTo(u(0.470), u(-0.288));
+    ctx.stroke();
+    ctx.fillStyle = "rgba(240,232,220,0.16)";
+    ctx.fillRect(u(-0.478), u(-0.130), u(0.952), S * 0.008);
+    ctx.strokeStyle = "rgba(24,10,16,0.38)";
+    ctx.lineWidth = Math.max(0.7, S * 0.0045);
+    ctx.beginPath();
+    ctx.moveTo(u(-0.170), u(-0.410));
+    ctx.lineTo(u(-0.170), u(-0.283));
+    ctx.moveTo(u(0.128), u(-0.452));
+    ctx.lineTo(u(0.128), u(-0.284));
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,214,164,0.45)";
+    ctx.fillRect(u(-0.145), u(-0.302), u(0.050), S * 0.010);
+    ctx.fillStyle = "#2b131a";
+    ctx.beginPath();
+    ctx.ellipse(u(0.150), u(-0.300), u(0.019), u(0.012), -0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* ---- greenhouse, clipped to the body so glass never floats ---- */
+    ctx.save();
+    bodyPath(ctx, S, u);
+    ctx.clip();
+    quadGlass(u(-0.318), u(-0.348), u(-0.140), u(-0.440), u(-0.140), u(-0.288), u(-0.318), u(-0.288), S, 0.85);
+    quadGlass(u(-0.150), u(-0.448), u(0.108), u(-0.448), u(0.108), u(-0.288), u(-0.150), u(-0.288), S, 1.0);
+    quadGlass(u(0.128), u(-0.452), u(0.300), u(-0.340), u(0.300), u(-0.290), u(0.128), u(-0.290), S, 0.82);
+    drawDriver(u(0.005), u(-0.286), S, front);
+    ctx.restore();
+
+    /* ---- lamps and trim ---- */
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var hg = ctx.createRadialGradient(u(0.470), u(-0.250), 0, u(0.470), u(-0.250), u(0.075));
+    hg.addColorStop(0, "rgba(255,246,220,0.85)");
+    hg.addColorStop(0.42, "rgba(255,206,140,0.30)");
+    hg.addColorStop(1, "rgba(255,180,110,0)");
+    ctx.fillStyle = hg;
+    ctx.beginPath();
+    ctx.arc(u(0.470), u(-0.250), u(0.075), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,250,232,0.95)";
+    ctx.beginPath();
+    ctx.ellipse(u(0.478), u(-0.248), u(0.030), u(0.019), -0.14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,220,170,0.45)";
+    ctx.lineWidth = Math.max(0.6, S * 0.0035);
+    ctx.stroke();
+
+    // grille + chrome bumper
+    ctx.fillStyle = "rgba(26,18,22,0.85)";
+    ctx.fillRect(u(0.468), u(-0.215), u(0.036), u(0.042));
+    ctx.fillStyle = "rgba(236,230,218,0.34)";
+    for (var gi = 0; gi < 4; gi++) ctx.fillRect(u(0.468), u(-0.212) + gi * u(0.011), u(0.036), u(0.004));
+    ctx.fillStyle = "rgba(248,240,226,0.30)";
+    ctx.fillRect(u(0.412), u(-0.166), u(0.094), u(0.011));
+
+    // tail light
+    ctx.fillStyle = "rgba(255,84,72,0.95)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(u(-0.497), u(-0.272), u(0.020), u(0.075), u(0.010));
+    else ctx.rect(u(-0.497), u(-0.272), u(0.020), u(0.075));
+    ctx.fill();
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    var tg = ctx.createRadialGradient(u(-0.487), u(-0.234), 0, u(-0.487), u(-0.234), u(0.10));
+    tg.addColorStop(0, "rgba(255,60,50,0.35)");
+    tg.addColorStop(1, "rgba(255,40,40,0)");
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.arc(u(-0.487), u(-0.234), u(0.10), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "rgba(230,224,208,0.16)";
+    ctx.fillRect(u(-0.462), u(-0.202), u(0.066), u(0.024));   // plate
+    ctx.fillStyle = "rgba(248,240,226,0.22)";
+    ctx.fillRect(u(-0.510), u(-0.166), u(0.090), u(0.010));
+
+    // exhaust
+    ctx.fillStyle = "rgba(196,190,182,0.40)";
+    ctx.fillRect(u(-0.512), u(-0.112), u(0.030), u(0.011));
+
+    ctx.restore();
+
+    emitExhaust(front, rear);
+  }
+
+  function bodyPath(g, S, u) {
+    var sill = -0.115 * S;
+    g.beginPath();
+    g.moveTo(u(-0.500), u(-0.238));                                   // tail panel top
+    g.quadraticCurveTo(u(-0.492), u(-0.288), u(-0.452), u(-0.302));    // boot lid
+    g.lineTo(u(-0.340), u(-0.318));
+    g.quadraticCurveTo(u(-0.205), u(-0.408), u(-0.115), u(-0.452));    // fastback slope
+    g.lineTo(u(0.115), u(-0.462));                                    // roof
+    g.quadraticCurveTo(u(0.205), u(-0.450), u(0.300), u(-0.336));      // windscreen
+    g.quadraticCurveTo(u(0.400), u(-0.322), u(0.487), u(-0.300));      // bonnet
+    g.quadraticCurveTo(u(0.514), u(-0.280), u(0.506), u(-0.228));      // nose
+    g.lineTo(u(0.497), u(-0.168));
+    g.lineTo(u(0.408), sill);                                          // sill, front
+    g.arc(u(0.310), sill, u(0.098), Math.PI, 0, false);               // front arch
+    g.lineTo(u(-0.212), sill);
+    g.arc(u(-0.310), sill, u(0.098), Math.PI, 0, false);              // rear arch
+    g.lineTo(u(-0.472), u(-0.118));
+    g.closePath();
+  }
+
+  // Four-corner glass pane: fill, sunset reflection sliding across it, and
+  // a thin frame.
+  function quadGlass(x0, y0, x1, y1, x2, y2, x3, y3, S, alpha) {
+    var minX = Math.min(x0, x1, x2, x3), maxX = Math.max(x0, x1, x2, x3);
+    var minY = Math.min(y0, y1, y2, y3), maxY = Math.max(y0, y1, y2, y3);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.clip();
+
+    var g = ctx.createLinearGradient(minX, minY, maxX, maxY);
+    g.addColorStop(0, "rgba(64,46,80,0.97)");
+    g.addColorStop(0.45, "rgba(26,18,36,0.97)");
+    g.addColorStop(1, "rgba(80,48,58,0.95)");
+    ctx.fillStyle = g;
+    ctx.fillRect(minX - 6, minY - 6, maxX - minX + 12, maxY - minY + 12);
+
+    var span = (maxX - minX) + S * 0.20;
+    var shift = -((distance * 0.09) % span);
+    ctx.globalCompositeOperation = "lighter";
+    var rg = ctx.createLinearGradient(minX + shift, minY, minX + shift + span * 0.8, maxY);
+    rg.addColorStop(0, "rgba(255,150,90,0)");
+    rg.addColorStop(0.38, "rgba(255,178,118,0.32)");
+    rg.addColorStop(0.60, "rgba(255,204,156,0.14)");
+    rg.addColorStop(1, "rgba(255,150,90,0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(minX - 6, minY - 6, maxX - minX + 12, maxY - minY + 12);
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,222,186,0.26)";
+    ctx.lineWidth = Math.max(0.6, S * 0.004);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawDriver(x, floorY, S, bump) {
+    var hy = floorY - S * 0.048 + bump * S * 0.006;
+    ctx.save();
+    ctx.fillStyle = "rgba(10,7,12,0.9)";
+    ctx.beginPath();
+    ctx.arc(x, hy, S * 0.030, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - S * 0.046, floorY + 2);
+    ctx.quadraticCurveTo(x - S * 0.040, hy + S * 0.030, x - S * 0.008, hy + S * 0.026);
+    ctx.lineTo(x + S * 0.028, hy + S * 0.029);
+    ctx.quadraticCurveTo(x + S * 0.050, hy + S * 0.052, x + S * 0.050, floorY + 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(10,7,12,0.92)";
+    ctx.lineWidth = S * 0.013;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x + S * 0.020, hy + S * 0.043);
+    ctx.lineTo(x + S * 0.070, hy + S * 0.046);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawWheel(cx, cy, R, ang) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    var tg = ctx.createRadialGradient(-R * 0.32, -R * 0.36, R * 0.08, 0, 0, R);
+    tg.addColorStop(0, "#3d3640");
+    tg.addColorStop(0.55, "#231e28");
+    tg.addColorStop(1, "#0e0b11");
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // tread, rotating with travel
+    ctx.save();
+    ctx.rotate(ang);
+    var blocks = 24;
+    for (var i = 0; i < blocks; i++) {
+      ctx.save();
+      ctx.rotate((i / blocks) * Math.PI * 2);
+      ctx.fillStyle = i % 2 ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.30)";
+      ctx.fillRect(R * 0.79, -R * 0.11, R * 0.23, R * 0.22);
+      ctx.restore();
+    }
+    ctx.strokeStyle = "rgba(255,222,190,0.10)";
+    ctx.lineWidth = R * 0.045;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.70, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // brake disc behind the spokes
+    ctx.fillStyle = "rgba(70,62,66,0.55)";
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.50, 0, Math.PI * 2);
+    ctx.fill();
+
+    // rim
+    var rg = ctx.createRadialGradient(-R * 0.16, -R * 0.20, 0, 0, 0, R * 0.62);
+    rg.addColorStop(0, "#f6f0e4");
+    rg.addColorStop(0.5, "#b9afa1");
+    rg.addColorStop(1, "#655c51");
+    ctx.fillStyle = rg;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.60, 0, Math.PI * 2);
+    ctx.fill();
+
+    // spokes
+    ctx.save();
+    ctx.rotate(ang);
+    for (var s = 0; s < 5; s++) {
+      ctx.save();
+      ctx.rotate((s / 5) * Math.PI * 2);
+      var sg = ctx.createLinearGradient(0, 0, 0, -R * 0.58);
+      sg.addColorStop(0, "rgba(78,72,66,1)");
+      sg.addColorStop(0.45, "rgba(232,226,214,1)");
+      sg.addColorStop(1, "rgba(150,142,132,1)");
+      ctx.fillStyle = sg;
+      ctx.beginPath();
+      ctx.moveTo(-R * 0.10, 0);
+      ctx.lineTo(-R * 0.055, -R * 0.56);
+      ctx.lineTo(R * 0.055, -R * 0.56);
+      ctx.lineTo(R * 0.10, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // hub
+    var hg = ctx.createRadialGradient(-R * 0.06, -R * 0.08, 0, 0, 0, R * 0.20);
+    hg.addColorStop(0, "#fff8ea");
+    hg.addColorStop(1, "#7d7264");
+    ctx.fillStyle = hg;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.185, 0, Math.PI * 2);
+    ctx.fill();
+
+    // speed blur on the rim face
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = "#fff2dc";
+    ctx.lineWidth = R * 0.13;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.45, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // contact patch
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(0, R * 0.90, R * 0.70, R * 0.13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------ particles */
+
+  var puffs = [], lastEmit = 0;
+
+  function emitExhaust(front, rear) {
+    var idx = Math.floor(distance / 34);
+    while (lastEmit < idx) {
+      lastEmit++;
+      var prof = roadProfile(lastEmit * 34);
+      if (Math.random() > 0.52) continue;                    // mostly calm cruise
+      var big = Math.random() < 0.25 + Math.max(0, prof) * 0.3;
+      puffs.push({
+        x: carX - wb - wheelR * 0.05,
+        y: groundY - wheelR * 0.12,
+        vx: -(28 + Math.random() * 55) - (big ? 40 : 0),
+        vy: -(4 + Math.random() * (big ? 16 : 7)),
+        r: wheelR * (big ? 0.26 : 0.13) * (0.7 + Math.random() * 0.6),
+        life: 1,
+        decay: big ? 0.85 : 1.5
+      });
+    }
+    for (var i = puffs.length - 1; i >= 0; i--) {
+      var p = puffs[i];
+      p.x += p.vx / 60;
+      p.y += p.vy / 60;
+      p.r *= 1.022;
+      p.life -= p.decay / 60;
+      if (p.life <= 0) { puffs.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.life) * 0.20;
+      var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+      g.addColorStop(0, "rgba(196,182,196,0.9)");
+      g.addColorStop(1, "rgba(150,138,158,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    if (puffs.length > 160) puffs.splice(0, puffs.length - 160);
+  }
+
+  /* --------------------------------------------------------- foreground */
+
+  // Fast-moving, out-of-focus elements: the depth cue that makes the
+  // foreground feel like it's right in front of the lens.
+  function drawForeground() {
+    var baseY = roadBot + (H - roadBot) * 0.34;
+
+    // delineator posts on the near shoulder — sparse and dim, they are a
+    // depth cue, not a subject
+    for (var i = 0; i < scenery.refl.length; i++) {
+      var o = scenery.refl[i];
+      var x = wrapX(o.x, o.par, 200);
+      if (x < -20 || x > W + 20) continue;
+      var h = H * 0.048;
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      ctx.fillStyle = "#100a12";
+      ctx.fillRect(x - 2, baseY - h, 4, h);
+      ctx.fillStyle = "rgba(255,120,80,0.6)";
+      ctx.fillRect(x - 3, baseY - h * 0.80, 6, h * 0.09);
+      ctx.restore();
+    }
+
+    // blurred grass strip along the very bottom
+    var g = ctx.createLinearGradient(0, H - (H - roadBot) * 0.7, 0, H);
+    g.addColorStop(0, "rgba(14,9,16,0)");
+    g.addColorStop(1, "rgba(12,8,14,0.80)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, H - (H - roadBot) * 0.7, W, (H - roadBot) * 0.7 + 2);
+
+    for (var k = 0; k < 40; k++) {
+      var x2 = wrapX(k * 150 + hash2(k, 30) * 110, 1.85, 150);
+      if (x2 < -60 || x2 > W + 60) continue;
+      var hh = H * (0.026 + 0.030 * hash2(k, 31));
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = "rgba(10,7,12,0.9)";
+      ctx.lineWidth = Math.max(1.2, hh * 0.09);
+      ctx.lineCap = "round";
+      for (var b = 0; b < 5; b++) {
+        var a = (b / 4 - 0.5) * 1.35 + (hash2(k, b) - 0.5) * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(x2, H + 4);
+        ctx.quadraticCurveTo(x2 + Math.sin(a) * hh * 0.5, H - hh * 0.6, x2 + Math.sin(a) * hh * 1.1, H - hh);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ------------------------------------------------------------ vignette */
+
+  function drawVignette() {
+    if (!vig) {
+      vig = document.createElement("canvas");
+      vig.width = cvs.width; vig.height = cvs.height;
+      var g = vig.getContext("2d");
+      g.setTransform(DPR, 0, 0, DPR, 0, 0);
+      var rg = g.createRadialGradient(W * 0.5, H * 0.5, Math.min(W, H) * 0.34, W * 0.5, H * 0.52, Math.max(W, H) * 0.80);
+      rg.addColorStop(0, "rgba(0,0,0,0)");
+      rg.addColorStop(0.65, "rgba(10,5,14,0.14)");
+      rg.addColorStop(1, "rgba(8,4,12,0.52)");
+      g.fillStyle = rg;
+      g.fillRect(0, 0, W, H);
+    }
+    ctx.drawImage(vig, 0, 0, W, H);
+  }
+
+  /* ---------------------------------------------------------------- boot */
+
+  window.addEventListener("resize", resize);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) last = 0; });
+  window.addEventListener("keydown", function (e) { if (e.key === " ") paused = !paused; });
+
+  resize();
+  requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>

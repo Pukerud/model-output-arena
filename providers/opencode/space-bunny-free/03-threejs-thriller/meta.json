@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "space-bunny-free",
+  "model_display": "Space Bunny Free",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-25T17:12:00Z",
+  "runner": "space-bunny-free via the opencode agent",
+  "notes": "Three.js r160 from unpkg via an import map. The four dancers are deliberately stylised cartoon figures built from primitives (capsule limbs, sphere heads, costume props: fedora, sequins, one white glove, frog eye bulges, swept hair, glasses, tie) rather than likeness renders; they are labelled in the on-screen cast list. A shared keyframe rig animates a 32-beat loop at 120 BPM: zombie arms, moonwalk (a backward glide with a shuffling foot cycle and a leaned-back torso), kicks, a hat toss, a crouch and a spin, with per-dancer stagger and a per-beat bounce on top. Scene work: gradient sky shader, moon disc with a soft sprite glow, stars, exponential fog, moon key light with shadows plus a front fill, three beat-synced sweeping spotlights, wet-road sheen, centre-line dashes, pavement, tombstones, bare trees, a picket fence, a parked car, fireflies, drifting leaves and layered ground mist. The camera runs an eased keyframe path with mouse look-around. Verified in headless Chromium at several beats: no console errors, four rigs animating.",
+  "hosting": "api",
+  "weights": "closed"
+}
