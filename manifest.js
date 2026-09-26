@@ -897,6 +897,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/opencode/space-bunny-free/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl",
+      model_display: "Swift 1.5 Qwen3.8 27B Uncensored (Dynamic MTP UD Q8_K_XL)",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl",
+      added: "2026-09-26",
+      outputs: {
+        "01-car-parallax":      "providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl",
+  "model_display": "Swift 1.5 Qwen3.8 27B Uncensored (Dynamic MTP UD Q8_K_XL)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-09-26T13:45:40Z",
+  "runner": "Swift 1.5 Qwen3.8 27B Uncensored (Dynamic MTP UD Q8_K_XL) via OpenClaw session + llama.cpp server",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF Q8_K_XL (UD)",
+    "variant": "Dynamic MTP UD",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

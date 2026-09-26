@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller — MJ, Pepe, Trump &amp; Elon</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #05060e; }
+  canvas { display: block; }
+  #ui {
+    position: absolute; top: 18px; left: 0; right: 0; text-align: center;
+    font-family: "Georgia", serif; color: #e8e2d0; pointer-events: none;
+    text-shadow: 0 2px 12px rgba(0,0,0,.9);
+  }
+  #ui h1 { margin: 0; font-size: 34px; letter-spacing: 10px; color: #c8102e; text-shadow: 0 0 24px rgba(200,16,46,.8), 0 2px 12px #000; }
+  #ui p { margin: 4px 0 0; font-size: 14px; letter-spacing: 4px; color: #9aa0b8; }
+  #phase {
+    position: absolute; bottom: 22px; left: 0; right: 0; text-align: center;
+    font-family: "Georgia", serif; font-size: 16px; letter-spacing: 6px; color: #7d84a0;
+    pointer-events: none; text-shadow: 0 2px 10px #000;
+  }
+  #vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.55) 100%);
+  }
+</style>
+</head>
+<body>
+<div id="ui"><h1>THRILLER</h1><p>THE MODEL OUTPUT ARENA REMIX</p></div>
+<div id="phase">ZOMBIE WALK</div>
+<div id="vignette"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+"use strict";
+
+// ---------- renderer / scene ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070a16);
+scene.fog = new THREE.Fog(0x070a16, 10, 34);
+
+const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 100);
+
+// ---------- environment ----------
+// street
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(30, 48),
+  new THREE.MeshStandardMaterial({ color: 0x11141d, roughness: 0.95, metalness: 0.05 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// painted lane markings (subtle)
+const lineMat = new THREE.MeshBasicMaterial({ color: 0x2a2f42 });
+for (let i = -3; i <= 3; i++) {
+  const line = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 40), lineMat);
+  line.rotation.x = -Math.PI / 2;
+  line.position.set(i * 5, 0.01, 0);
+  scene.add(line);
+}
+
+// moon
+const moon = new THREE.Mesh(
+  new THREE.SphereGeometry(2.4, 24, 24),
+  new THREE.MeshBasicMaterial({ color: 0xdfe6ff })
+);
+moon.position.set(-14, 12, -20);
+scene.add(moon);
+const moonGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(3.4, 24, 24),
+  new THREE.MeshBasicMaterial({ color: 0x8fa0d8, transparent: true, opacity: 0.18 })
+);
+moonGlow.position.copy(moon.position);
+scene.add(moonGlow);
+
+// stars
+(function () {
+  const n = 500, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 26 + Math.random() * 10;
+    pos[i * 3] = Math.cos(a) * r;
+    pos[i * 3 + 1] = 6 + Math.random() * 22;
+    pos[i * 3 + 2] = Math.sin(a) * r;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xbcc8ff, size: 0.12 })));
+})();
+
+// tombstones for mood
+const stoneMat = new THREE.MeshStandardMaterial({ color: 0x3a4054, roughness: 1 });
+[[-8, -4, -6], [8.5, -3.5, -7], [-6.5, -2, 8], [7.5, -2.5, 7.5], [-10, 2, -2], [10, 1.5, -1]].forEach(([x, z, rot]) => {
+  const s = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.4, 0.3), stoneMat);
+  s.position.set(x, 0.7, z);
+  s.rotation.y = rot * 0.13;
+  s.rotation.z = (Math.random() - 0.5) * 0.12;
+  s.castShadow = true; s.receiveShadow = true;
+  scene.add(s);
+});
+
+// ---------- lights (cinematic) ----------
+scene.add(new THREE.AmbientLight(0x223, 0.9));
+const key = new THREE.SpotLight(0xfff2dd, 1.5, 60, Math.PI / 5, 0.45, 1.2);
+key.position.set(4, 12, 7);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+scene.add(key);
+scene.add(key.target);
+const rim = new THREE.SpotLight(0xff2244, 1.1, 60, Math.PI / 4.5, 0.6, 1.2);
+rim.position.set(-7, 8, -9);
+scene.add(rim); scene.add(rim.target);
+const fill = new THREE.PointLight(0x3355ff, 0.55, 30);
+fill.position.set(0, 4, -6);
+scene.add(fill);
+
+// ---------- character builders ----------
+function mat(color, opts) {
+  return new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.7, metalness: 0.08 }, opts || {}));
+}
+function box(w, h, d, m) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.castShadow = true; return b; }
+function ball(r, m, ws, hs) { const b = new THREE.Mesh(new THREE.SphereGeometry(r, ws || 20, hs || 16), m); b.castShadow = true; return b; }
+
+// Rig: returns group with parts for animation
+function makeRig(opts) {
+  const root = new THREE.Group();
+  const hips = new THREE.Group(); hips.position.y = opts.hipY;
+  root.add(hips);
+
+  const torso = new THREE.Group(); torso.position.y = 0;
+  hips.add(torso);
+
+  const head = new THREE.Group(); head.position.y = opts.torsoH + 0.05;
+  torso.add(head);
+
+  function limb(name, x, y, len, w) {
+    const g = new THREE.Group();
+    g.position.set(x, y, 0);
+    const seg = box(w, len, w, opts.skinM);
+    seg.position.y = -len / 2;
+    g.add(seg);
+    if (opts.handM) {
+      const h = ball(w * 0.62, opts.handM, 12, 10);
+      h.position.y = -len - w * 0.3;
+      g.add(h);
+    }
+    torso.add(g);
+    return g;
+  }
+  const armL = limb('armL', -opts.shoulderW, opts.torsoH * 0.88, opts.armLen, opts.armW);
+  const armR = limb('armR', opts.shoulderW, opts.torsoH * 0.88, opts.armLen, opts.armW);
+
+  function leg(x) {
+    const g = new THREE.Group();
+    g.position.set(x, 0, 0);
+    const seg = box(opts.legW, opts.legLen, opts.legW, opts.legM);
+    seg.position.y = -opts.legLen / 2;
+    g.add(seg);
+    const foot = box(opts.legW * 1.2, 0.12, opts.legW * 2.1, opts.footM);
+    foot.position.set(0, -opts.legLen - 0.04, opts.legW * 0.5);
+    g.add(foot);
+    hips.add(g);
+    return g;
+  }
+  const legL = leg(-opts.legX);
+  const legR = leg(opts.legX);
+
+  return { root, hips, torso, head, armL, armR, legL, legR };
+}
+
+function buildMJ() {
+  const skin = mat(0xc68863), jacket = mat(0xb01220, { roughness: 0.55 }), pants = mat(0x14141a),
+        shirt = mat(0xf2f2f2), glove = mat(0xd81428, { roughness: 0.4 }), hat = mat(0x101014, { roughness: 0.5 });
+  const rig = makeRig({ hipY: 0.98, torsoH: 0.62, shoulderW: 0.34, armLen: 0.52, armW: 0.13, legLen: 0.92, legW: 0.15, legX: 0.15, skinM: jacket, handM: glove, legM: pants, footM: pants });
+
+  // torso: jacket with open white shirt
+  const t = box(0.56, 0.66, 0.3, jacket); t.position.y = 0.33; rig.torso.add(t);
+  const sh = box(0.2, 0.5, 0.06, shirt); sh.position.set(0, 0.36, 0.15); rig.torso.add(sh);
+  const lapelL = box(0.12, 0.5, 0.05, jacket); lapelL.position.set(-0.13, 0.36, 0.16); lapelL.rotation.z = 0.28; rig.torso.add(lapelL);
+  const lapelR = box(0.12, 0.5, 0.05, jacket); lapelR.position.set(0.13, 0.36, 0.16); lapelR.rotation.z = -0.28; rig.torso.add(lapelR);
+  // belt
+  const belt = box(0.58, 0.07, 0.32, hat); belt.position.y = 0.02; rig.torso.add(belt);
+
+  // head
+  const skull = ball(0.21, skin); skull.position.y = 0.1; rig.head.add(skull);
+  // eyes
+  const eyeM = mat(0x1a1a1a);
+  const e1 = ball(0.028, eyeM, 8, 6); e1.position.set(-0.07, 0.13, 0.18); rig.head.add(e1);
+  const e2 = ball(0.028, eyeM, 8, 6); e2.position.set(0.07, 0.13, 0.18); rig.head.add(e2);
+  // fedora
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.04, 20), hat); brim.position.y = 0.26; brim.castShadow = true; rig.head.add(brim);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.22, 0.18, 20), hat); crown.position.y = 0.36; crown.castShadow = true; rig.head.add(crown);
+  return rig;
+}
+
+function buildPepe() {
+  const green = mat(0x5fae3e, { roughness: 0.6 }), orange = mat(0xe89020), white = mat(0xffffff), pupil = mat(0x141414), mouth = mat(0x7a3b1e);
+  const rig = makeRig({ hipY: 0.42, torsoH: 0.24, shoulderW: 0.2, armLen: 0.26, armW: 0.09, legLen: 0.4, legW: 0.12, legX: 0.12, skinM: green, handM: green, legM: orange, footM: orange });
+
+  // small body
+  const t = box(0.4, 0.3, 0.26, green); t.position.y = 0.15; rig.torso.add(t);
+
+  // BIG head
+  const headBall = ball(0.52, green, 28, 22); headBall.position.y = 0.62; headBall.scale.set(1.15, 0.92, 1.0); rig.head.add(headBall);
+  // eye sockets (white bulges on top)
+  const eyeL = ball(0.19, white, 18, 14); eyeL.position.set(-0.2, 0.95, 0.28); eyeL.scale.y = 0.8; rig.head.add(eyeL);
+  const eyeR = ball(0.19, white, 18, 14); eyeR.position.set(0.2, 0.95, 0.28); eyeR.scale.y = 0.8; rig.head.add(eyeR);
+  const p1 = ball(0.07, pupil, 10, 8); p1.position.set(-0.2, 0.93, 0.44); rig.head.add(p1);
+  const p2 = ball(0.07, pupil, 10, 8); p2.position.set(0.2, 0.93, 0.44); rig.head.add(p2);
+  // big smile (torus arc)
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.045, 10, 24, Math.PI), mouth);
+  smile.position.set(0, 0.5, 0.42); smile.rotation.z = Math.PI; rig.head.add(smile);
+  // nostrils
+  const n1 = ball(0.03, pupil, 8, 6); n1.position.set(-0.07, 0.62, 0.52); rig.head.add(n1);
+  const n2 = ball(0.03, pupil, 8, 6); n2.position.set(0.07, 0.62, 0.52); rig.head.add(n2);
+  return rig;
+}
+
+function buildTrump() {
+  const skin = mat(0xe8b88a), suit = mat(0x1c2f6e, { roughness: 0.5 }), shirt = mat(0xf5f5f5), tie = mat(0xf08018, { roughness: 0.4 }), hair = mat(0xf0d060, { roughness: 0.35 });
+  const rig = makeRig({ hipY: 1.0, torsoH: 0.64, shoulderW: 0.36, armLen: 0.5, armW: 0.13, legLen: 0.95, legW: 0.16, legX: 0.16, skinM: suit, handM: skin, legM: suit, footM: mat(0x0c0c10) });
+
+  const t = box(0.6, 0.68, 0.32, suit); t.position.y = 0.34; rig.torso.add(t);
+  const sh = box(0.22, 0.52, 0.06, shirt); sh.position.set(0, 0.38, 0.16); rig.torso.add(sh);
+  const tieTop = box(0.14, 0.14, 0.05, tie); tieTop.position.set(0, 0.62, 0.17); rig.torso.add(tieTop);
+  const tieBody = box(0.18, 0.55, 0.04, tie); tieBody.position.set(0, 0.34, 0.17); rig.torso.add(tieBody);
+  const lapelL = box(0.13, 0.52, 0.05, suit); lapelL.position.set(-0.15, 0.4, 0.17); lapelL.rotation.z = 0.25; rig.torso.add(lapelL);
+  const lapelR = box(0.13, 0.52, 0.05, suit); lapelR.position.set(0.15, 0.4, 0.17); lapelR.rotation.z = -0.25; rig.torso.add(lapelR);
+
+  const skull = ball(0.22, skin); skull.position.y = 0.1; rig.head.add(skull);
+  const eyeM = mat(0x2a3a5a);
+  const e1 = ball(0.026, eyeM, 8, 6); e1.position.set(-0.075, 0.13, 0.19); rig.head.add(e1);
+  const e2 = ball(0.026, eyeM, 8, 6); e2.position.set(0.075, 0.13, 0.19); rig.head.add(e2);
+  // signature hair: swoosh
+  const swoosh = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), hair);
+  swoosh.position.set(0, 0.27, -0.02); swoosh.scale.set(1.12, 0.62, 1.1); swoosh.castShadow = true; rig.head.add(swoosh);
+  const fringe = box(0.44, 0.09, 0.12, hair); fringe.position.set(0, 0.3, 0.16); fringe.rotation.z = 0.12; rig.head.add(fringe);
+  return rig;
+}
+
+function buildElon() {
+  const skin = mat(0xe8c0a0), hoodie = mat(0x18181e, { roughness: 0.8 }), pants = mat(0x2e3238), hood = mat(0x141418);
+  const rig = makeRig({ hipY: 0.98, torsoH: 0.62, shoulderW: 0.33, armLen: 0.5, armW: 0.13, legLen: 0.93, legW: 0.15, legX: 0.15, skinM: hoodie, handM: skin, legM: pants, footM: mat(0xdddddd) });
+
+  const t = box(0.58, 0.66, 0.34, hoodie); t.position.y = 0.33; rig.torso.add(t);
+  // zipper
+  const zip = box(0.03, 0.55, 0.02, mat(0x555a60)); zip.position.set(0, 0.35, 0.18); rig.torso.add(zip);
+  // hood (bunched at neck)
+  const hoodM = ball(0.2, hood, 14, 10); hoodM.position.set(0, 0.66, -0.1); hoodM.scale.set(1.2, 0.6, 1.0); rig.torso.add(hoodM);
+
+  const skull = ball(0.2, skin); skull.position.y = 0.08; rig.head.add(skull);
+  const eyeM = mat(0x20242a);
+  const e1 = ball(0.026, eyeM, 8, 6); e1.position.set(-0.07, 0.11, 0.17); rig.head.add(e1);
+  const e2 = ball(0.026, eyeM, 8, 6); e2.position.set(0.07, 0.11, 0.17); rig.head.add(e2);
+  // short dark hair
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.205, 16, 10), mat(0x2a2018));
+  hair.position.set(0, 0.13, -0.015); hair.scale.set(1.02, 0.72, 1.02); hair.castShadow = true; rig.head.add(hair);
+  return rig;
+}
+
+// ---------- stage the cast ----------
+const cast = [
+  { rig: buildMJ(),    x: -2.4, rot: 0.5,  label: 'Michael Jackson' },
+  { rig: buildPepe(),  x: -0.8, rot: 0.15, label: 'Pepe' },
+  { rig: buildTrump(), x: 0.8,  rot: -0.15, label: 'Donald Trump' },
+  { rig: buildElon(),  x: 2.4,  rot: -0.5, label: 'Elon Musk' }
+];
+const stage = new THREE.Group();
+for (const c of cast) {
+  c.rig.root.position.set(c.x, 0, 0);
+  c.rig.root.rotation.y = c.rot;
+  stage.add(c.rig.root);
+}
+scene.add(stage);
+
+// ---------- choreography: THE THRILLER ----------
+// 16-second loop, 8 beats of 2s
+const PHASES = [
+  [0, 4, 'ZOMBIE WALK'],
+  [4, 6, 'HIP SWAY'],
+  [6, 8, 'THE SPIN'],
+  [8, 12, 'SHIMMY'],
+  [12, 16, 'FINAL POSE']
+];
+const phaseEl = document.getElementById('phase');
+let shownPhase = '';
+
+function smoothstep(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+
+// pose(t) -> shared choreography values
+function pose(t) {
+  const T = t % 16;
+  const beat = Math.floor((t % 2) / 2 * 8) / 8; // 0..1 within a 2s beat (4 sub-beats)
+  const pulse = Math.pow(1 - ((t * 4) % 1), 2); // sharp hit on each half-beat
+  const p = {
+    armLFwd: 0, armRFwd: 0, armLUp: 0, armRUp: 0, armLSide: 0, armRSide: 0,
+    hipL: 0, hipR: 0, lean: 0, bob: 0, twist: 0, kneeL: 0, kneeR: 0, headTilt: 0, stepL: 0, stepR: 0, spin: 0
+  };
+
+  if (T < 4) {
+    // zombie walk: stiff arms forward, shuffling
+    const s = Math.sin(t * 3.2);
+    p.armLFwd = 1.35 + Math.sin(t * 3.2 + 1.2) * 0.08;
+    p.armRFwd = 1.35 + Math.sin(t * 3.2) * 0.08;
+    p.stepL = s * 0.5; p.stepR = -s * 0.5;
+    p.bob = Math.abs(Math.sin(t * 3.2)) * 0.045;
+    p.lean = 0.14;
+    p.headTilt = Math.sin(t * 1.1) * 0.08;
+    p.twist = s * 0.05;
+  } else if (T < 6) {
+    // hip sway
+    const w = Math.sin((T - 4) * 2.6);
+    p.hipL = w * 0.55; p.hipR = w * 0.55;
+    p.armLSide = 0.25; p.armRSide = 0.25;
+    p.armLFwd = 0.15; p.armRFwd = 0.15;
+    p.lean = -w * 0.08;
+    p.bob = Math.abs(w) * 0.05;
+    p.kneeL = Math.max(0, w) * 0.35; p.kneeR = Math.max(0, -w) * 0.35;
+  } else if (T < 8) {
+    // the spin
+    const k = (T - 6) / 2;
+    p.spin = k * Math.PI * 2;
+    p.armLSide = 0.9; p.armRSide = 0.9;
+    p.armLFwd = 0.3; p.armRFwd = 0.3;
+    p.bob = 0.03 + pulse * 0.05;
+  } else if (T < 12) {
+    // shimmy: fast shuffles, arms up waving
+    const s = Math.sin(t * 9);
+    p.stepL = s * 0.35; p.stepR = -s * 0.35;
+    p.bob = Math.abs(s) * 0.07 + pulse * 0.05;
+    p.armLUp = 1.9 + s * 0.18; p.armRUp = 1.9 - s * 0.18;
+    p.armLSide = 0.35; p.armRSide = 0.35;
+    p.hipL = s * 0.2; p.hipR = s * 0.2;
+    p.lean = 0.06;
+    p.headTilt = s * 0.1;
+  } else {
+    // final pose: arms out, chest out, hold with beat
+    p.armLSide = 1.25; p.armRSide = 1.25;
+    p.armLFwd = 0.15; p.armRFwd = 0.15;
+    p.lean = -0.12 - pulse * 0.04;
+    p.bob = pulse * 0.04;
+    p.headTilt = 0.12;
+  }
+  // cross-fade between phases (0.25s)
+  return p;
+}
+
+function applyPose(c, p, t) {
+  const r = c.rig;
+  const off = c.x * 0.35; // slight stagger for organic feel
+  const pp = pose(t + off * 0.12);
+
+  r.hips.position.y = c.rigHipY + pp.bob;
+  r.hips.rotation.z = pp.hipL * 0.6;
+  r.hips.rotation.y = pp.twist;
+  r.torso.rotation.x = pp.lean;
+  r.torso.rotation.z = -pp.hipL * 0.35;
+  r.head.rotation.z = pp.headTilt;
+  r.head.rotation.x = pp.lean * 0.5 - 0.05;
+
+  r.armL.rotation.x = -pp.armLFwd;
+  r.armR.rotation.x = -pp.armRFwd;
+  r.armL.rotation.z = 0.18 + pp.armLSide;
+  r.armR.rotation.z = -0.18 - pp.armRSide;
+  r.armL.rotation.y = pp.armLUp;
+  r.armR.rotation.y = -pp.armRUp;
+
+  r.legL.rotation.x = pp.stepL + pp.kneeL * 0.5;
+  r.legR.rotation.x = pp.stepR + pp.kneeR * 0.5;
+
+  r.root.rotation.y = c.rot + pp.spin;
+}
+
+// ---------- animate ----------
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  for (const c of cast) applyPose(c, null, t);
+
+  // stage subtle beat bounce
+  stage.position.y = Math.pow(1 - ((t * 4) % 1), 3) * 0.02;
+
+  // cinematic camera orbit
+  const ang = t * 0.14;
+  const rad = 10.5 + Math.sin(t * 0.31) * 1.4;
+  camera.position.set(Math.sin(ang) * rad, 3.1 + Math.sin(t * 0.23) * 0.5, Math.cos(ang) * rad);
+  camera.lookAt(0, 1.4, 0);
+
+  // lighting drama
+  rim.intensity = 0.9 + Math.pow(1 - ((t * 2) % 1), 3) * 0.7;
+  key.intensity = 1.45 + Math.sin(t * 0.7) * 0.1;
+
+  // phase label
+  const T = t % 16;
+  for (const [a, b, name] of PHASES) {
+    if (T >= a && T < b && name !== shownPhase) { phaseEl.textContent = name; shownPhase = name; }
+  }
+
+  renderer.render(scene, camera);
+}
+
+// store hipY baseline per character BEFORE the first frame: animate() runs its
+// body synchronously on the first call, so rigHipY must exist by then
+for (const c of cast) c.rigHipY = c.rig.hips.position.y;
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+})();
+</script>
+</body>
+</html>
