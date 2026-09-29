@@ -1,0 +1,8 @@
+{
+  "coverage": "complete",
+  "source": "Pi harness authoritative JSONL per-call usage; sum of 24 distinct main-session assistant calls after the exact pre-run event baseline through the completed verification boundary. Input = uncached input + cacheRead + cacheWrite; output includes reasoning (the separate reasoning subset is not added). All measured generation, tools, verification and test-harness retries included. Pre-run scout/setup, the final metric-export call, index finalization, commit/push and reporting are excluded. No delegated generation or other run workers.",
+  "reason": "",
+  "input_tokens": 2354241,
+  "output_tokens": 66054,
+  "total_tokens": 2420295
+}

@@ -912,6 +912,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-6.1-sol",
+      model_display: "GPT-6.1 Sol",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-6.1-sol",
+      added: "2026-09-29",
+      outputs: {
+        "01-car-parallax": "providers/openai/gpt-6.1-sol/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-6.1-sol/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller": "providers/openai/gpt-6.1-sol/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

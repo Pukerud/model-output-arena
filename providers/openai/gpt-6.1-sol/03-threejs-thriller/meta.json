@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-6.1-sol",
+  "model_display": "GPT-6.1 Sol",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:31196370d2defc794d3d07f4c4418522c696de35aadee54e0a59d6de15ca4084",
+  "generated_at": "2026-09-29T19:59:15Z",
+  "runner": "GPT-6.1 Sol via pi agent (openai-codex; reasoning max)",
+  "notes": "One-shot raw output. Procedural stylized likenesses, articulated fingers and limbs, 64-count Thriller-inspired choreography, graveyard set, shadows, bloom and film grading. Pinned Three.js 0.170.0 CDN modules; optional original synthesized percussion, not song audio. Generated sequentially in the current session, without delegated generation or post-editing.",
+  "hosting": "api",
+  "weights": "closed"
+}

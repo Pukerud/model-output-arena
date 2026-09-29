@@ -157,6 +157,7 @@ Two independent axes are labelled:
 | xAI | Grok 4.7 | ☁️ API | 🔒 Proprietary | [`providers/xai/grok-4.7`](./providers/xai/grok-4.7) |
 | OpenCode | Space Bunny Free | ☁️ API | 🔒 Proprietary | [`providers/opencode/space-bunny-free`](./providers/opencode/space-bunny-free) |
 | Local (llama.cpp) | Swift 1.5 Qwen3.8 27B Uncensored (Dynamic MTP UD Q8_K_XL) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl`](./providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl) |
+| OpenAI | GPT-6.1 Sol | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6.1-sol`](./providers/openai/gpt-6.1-sol) |
 
 ## How outputs were generated
 

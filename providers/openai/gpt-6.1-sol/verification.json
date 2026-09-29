@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "model": "openai/gpt-6.1-sol",
+  "verified_at": "2026-09-29T20:11:16Z",
+  "raw_outputs_unchanged": true,
+  "outputs_sha256": {
+    "01-car-parallax": "beb26eff9ab82c586e0f5ca2c28f3d7c85083b26b62de95be212c0b58df334d6",
+    "02-plants-vs-zombies": "12cd62a1b9ff2d08cbe2d78c44a0f60fd780d6f72edb9bafbc99136cac8652c3",
+    "03-threejs-thriller": "21427028e594806ec1427495da93b1792ad5e130f500c400f2afe5a3f69f54bb"
+  },
+  "static_checks": [
+    "All inline JavaScript parses with Node.js",
+    "Canonical prompt copies are byte-identical and SHA-256 metadata matches",
+    "Metadata identity, HTML completeness and manifest syntax verified",
+    "git diff --check passed"
+  ],
+  "repository_tests": {
+    "python_tests_passed": 15,
+    "node_tests_passed": 6
+  },
+  "browser": {
+    "tool": "Playwright",
+    "engine": "Microsoft Edge headless",
+    "webgl": "SwiftShader software rendering",
+    "desktop_viewport": [
+      1440,
+      900
+    ],
+    "mobile_viewport": [
+      390,
+      844
+    ],
+    "file_protocol_comparison": true,
+    "checks": [
+      {
+        "name": "Car advances, pauses exactly, resumes and changes speed",
+        "detail": {
+          "time": 0.34649999999999975,
+          "distance": 51.836399999999976
+        }
+      },
+      {
+        "name": "Car full-page canvas at mobile width"
+      },
+      {
+        "name": "Garden menu, guide, real planting, occupied beds, pause, shovel refund and return"
+      },
+      {
+        "name": "All five plants, slowing, blocking, area damage, sun, mower, waves and loss",
+        "detail": {
+          "peaKills": true,
+          "frostSlows": true,
+          "nutBlocks": true,
+          "flowerProduces": true,
+          "autoCollect": true,
+          "cherryArea": true,
+          "mower": true,
+          "waveReward": true,
+          "loss": true
+        }
+      },
+      {
+        "name": "Name entry and leaderboard survive reload"
+      },
+      {
+        "name": "Optional generated audio can be toggled"
+      },
+      {
+        "name": "Garden mobile layout fits viewport"
+      },
+      {
+        "name": "Three.js boots with real CDN modules and all eight choreography phrases",
+        "detail": [
+          "01 / THE ZOMBIE WALK",
+          "02 / SIDE / SLIDE",
+          "03 / THE CLAWS",
+          "04 / SHOULDER HIT",
+          "05 / TURN TO THE NIGHT",
+          "06 / REACH / SNAP",
+          "07 / THE KICK",
+          "08 / MIDNIGHT POSE"
+        ]
+      },
+      {
+        "name": "Three.js pause, scrub, camera, sound, information and resume controls"
+      },
+      {
+        "name": "Three.js responsive two-row portrait formation"
+      },
+      {
+        "name": "file:// comparison discovers GPT-6.1 Sol and switches all three output paths",
+        "detail": {
+          "family": "GPT-6.1",
+          "variant": "gpt-6.1-sol"
+        }
+      },
+      {
+        "name": "No page errors or browser console errors"
+      }
+    ],
+    "page_and_console_errors": 0,
+    "network_failures": 0
+  },
+  "notes": "Browser interactions and deterministic simulation fixtures exercised the original unmodified outputs. Test-harness retries for Windows UTF-8 decoding, selector disambiguation, software-renderer cadence and range-value normalization are included in the measured workload. The Three.js cast is stylized and rear dancers can overlap in narrow portrait viewports.",
+  "metrics_validation": {
+    "new_run": "Strict validation passed against exact canonical Git LF prompt bytes.",
+    "standard_global_check": "Blocked by a reproduced pre-existing LF/CRLF prompt-hash mismatch in four older run records. No historical folder or record was changed.",
+    "snapshot_generation": "Standard run_metrics.index_text helper validated each source run in an isolated scratch view. For legacy runs only, recording-time CRLF prompt bytes were restored in that view and verified against the original SHA-256. The generated records were merged deterministically; all historical snapshot entries are byte-equivalent JSON data.",
+    "affected_legacy_models": [
+      "providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl",
+      "providers/openai/gpt-6-sol",
+      "providers/opencode/space-bunny-free",
+      "providers/xai/grok-4.7"
+    ]
+  }
+}

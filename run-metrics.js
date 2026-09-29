@@ -46,6 +46,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": null
     }
   },
+  "providers/openai/gpt-6.1-sol": {
+    "schema_version": 1,
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-09-29T19:34:31.573Z",
+    "completed_at": "2026-09-29T20:13:43.908Z",
+    "duration_ms": 2352335,
+    "usage": {
+      "coverage": "complete",
+      "source": "Pi harness authoritative JSONL per-call usage; sum of 24 distinct main-session assistant calls after the exact pre-run event baseline through the completed verification boundary. Input = uncached input + cacheRead + cacheWrite; output includes reasoning (the separate reasoning subset is not added). All measured generation, tools, verification and test-harness retries included. Pre-run scout/setup, the final metric-export call, index finalization, commit/push and reporting are excluded. No delegated generation or other run workers.",
+      "reason": "",
+      "input_tokens": 2354241,
+      "output_tokens": 66054,
+      "total_tokens": 2420295
+    }
+  },
   "providers/opencode/space-bunny-free": {
     "schema_version": 1,
     "provider": "opencode",

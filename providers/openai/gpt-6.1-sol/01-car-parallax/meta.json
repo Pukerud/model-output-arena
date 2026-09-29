@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-6.1-sol",
+  "model_display": "GPT-6.1 Sol",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:395fed74330cb35cf75dd70537f3c446f9bdf071fa398f05b6081db5da2d0a5d",
+  "generated_at": "2026-09-29T19:39:09Z",
+  "runner": "GPT-6.1 Sol via pi agent (openai-codex; reasoning max)",
+  "notes": "One-shot raw output. Procedural vanilla Canvas 2D coastal dusk drive; all scenery and vehicle details are drawn in code. Generated sequentially in the current session, without delegated generation or post-editing.",
+  "hosting": "api",
+  "weights": "closed"
+}
