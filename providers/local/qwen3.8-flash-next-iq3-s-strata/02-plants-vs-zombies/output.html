@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Little Lawn Defenders</title>
+<!--
+PLAN (the prompt asked for one; this build follows it)
+1. One file, zero external assets: procedural canvas art, procedural WebAudio.
+2. Screen flow: title menu -> how to play / leaderboard / run -> win or lose ->
+   name entry -> leaderboard with the new score highlighted.
+3. Core loop: sun economy -> plant on a 9x5 lawn -> plants attack automatically ->
+   zombies walk left and eat plants -> lose when a zombie reaches the house.
+4. Plants: Sunflower 50, Peashooter 100, Wall-nut 50, Snow Pea 175; per-seed
+   cooldowns, sun cost gating, and a shovel for removal.
+5. Zombies: Basic, Cone-head, Bucket-head over 10 waves with a difficulty ramp,
+   inter-wave breathing room, and wave banners.
+6. Scoring: kills, waves cleared, sun collected, plants left standing on a win;
+   persisted top-10 leaderboard in localStorage.
+7. Polish: hover + selected states, radial cooldowns, particles, damage flashes,
+   ghost preview, pause, mute, keyboard shortcuts, responsive canvas scaling.
+8. Verify: Chromium load, click through menu -> play, plant, collect sun, die,
+   submit a score; assert no console errors.
+-->
+<style>
+  :root {
+    --sky1: #6fc6f5;
+    --sky2: #cdeeff;
+    --lawn1: #7ab648;
+    --lawn2: #8fc75c;
+    --soil: #6b4b2c;
+    --card: #fff8e0;
+    --ink: #2b2416;
+    --edge: #6d5a32;
+    --accent: #f2b632;
+    --danger: #c0413a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #1d2a1a;
+    font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+  }
+  #stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #frame {
+    position: relative;
+    width: 1000px;
+    height: 660px;
+    transform-origin: center center;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+  #lawn {
+    position: absolute;
+    left: 0;
+    top: 60px;
+    width: 1000px;
+    height: 600px;
+    display: block;
+  }
+  /* ---------- HUD ---------- */
+  #hud {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1000px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: linear-gradient(#4a3a1e, #35290f);
+    border-bottom: 3px solid #241b08;
+    z-index: 4;
+  }
+  #sunBox {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 84px;
+    padding: 5px 10px;
+    border-radius: 9px;
+    background: var(--card);
+    border: 2px solid var(--edge);
+    font-weight: bold;
+    font-size: 17px;
+  }
+  #sunBox span.dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 32%, #fff6bf, #ffcf33 55%, #e39a10);
+    box-shadow: 0 0 8px #ffd35a;
+  }
+  .packet {
+    position: relative;
+    width: 62px;
+    height: 48px;
+    border-radius: 8px;
+    border: 2px solid var(--edge);
+    background: linear-gradient(#fffdf0, #efe1b8);
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    user-select: none;
+  }
+  .packet canvas { width: 40px; height: 30px; display: block; }
+  .packet b { font-size: 11px; line-height: 1; }
+  .packet .cost {
+    font-size: 11px;
+    font-weight: bold;
+    color: #5c4a1c;
+  }
+  .packet:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
+  .packet.sel { outline: 3px solid var(--accent); box-shadow: 0 0 12px #ffd35a; }
+  .packet.poor { filter: grayscale(0.8) brightness(0.75); cursor: not-allowed; }
+  .packet .cool {
+    position: absolute;
+    inset: 0;
+    background: rgba(30, 30, 40, 0.62);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+  }
+  .packet.cooling .cool { display: flex; }
+  .packet .key {
+    position: absolute;
+    left: 3px;
+    top: 2px;
+    font-size: 9px;
+    color: #7b6534;
+  }
+  #shovel {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+    border: 2px solid var(--edge);
+    background: linear-gradient(#fffdf0, #e8d8a8);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+  }
+  #shovel.sel { outline: 3px solid var(--danger); }
+  .spacer { flex: 1; }
+  .stat {
+    color: #f7ecd0;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .stat b { color: #ffd35a; }
+  .btn {
+    border: 2px solid var(--edge);
+    background: linear-gradient(#ffe9a8, #f2c65a);
+    color: #3a2c10;
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.07); }
+  .btn:active { transform: translateY(1px); }
+  .btn.ghost { background: linear-gradient(#f4f0e0, #ddd6c0); }
+  .btn.big { font-size: 20px; padding: 12px 28px; }
+  /* ---------- screens ---------- */
+  #screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(18, 24, 14, 0.72);
+    z-index: 10;
+    padding: 20px;
+  }
+  #screen.on { display: flex; }
+  .card {
+    width: 640px;
+    max-width: 96%;
+    max-height: 92%;
+    overflow: auto;
+    background: var(--card);
+    border: 3px solid var(--edge);
+    border-radius: 14px;
+    padding: 22px 26px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+    text-align: center;
+  }
+  .card h1 {
+    margin: 0 0 4px;
+    font-size: 40px;
+    letter-spacing: 0.5px;
+    color: #2f5d1e;
+    text-shadow: 2px 2px 0 #ffe9a8, 3px 3px 0 rgba(0, 0, 0, 0.18);
+  }
+  .card h2 { margin: 0 0 14px; font-size: 17px; color: #6a5a34; font-weight: normal; }
+  .card h3 { margin: 16px 0 6px; font-size: 18px; color: #2f5d1e; }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  .how {
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.55;
+    background: #ffefc4;
+    border: 2px dashed #c8ae74;
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .how ul { margin: 6px 0 0; padding-left: 20px; }
+  .how code { background: #f0e2b8; padding: 1px 5px; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  th, td { padding: 7px 8px; border-bottom: 1px solid #e0cfa0; text-align: left; }
+  th { color: #6a5a34; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.me td { background: #ffe9a8; font-weight: bold; }
+  #nameIn {
+    font-family: inherit;
+    font-size: 16px;
+    padding: 8px 10px;
+    border: 2px solid var(--edge);
+    border-radius: 8px;
+    width: 220px;
+    text-align: center;
+  }
+  .empty { color: #8a7a52; font-style: italic; }
+  #banner {
+    position: absolute;
+    left: 50%;
+    top: 150px;
+    transform: translateX(-50%);
+    padding: 10px 26px;
+    border-radius: 10px;
+    background: rgba(40, 26, 8, 0.82);
+    color: #ffe28a;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    z-index: 6;
+    display: none;
+    pointer-events: none;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+  }
+  #banner.on { display: block; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="frame">
+    <div id="hud">
+      <div id="sunBox"><span class="dot"></span><span id="sunCount">0</span></div>
+      <div id="packets"></div>
+      <button id="shovel" title="Shovel (S)">&#128584;</button>
+      <div class="spacer"></div>
+      <div class="stat">Wave <b id="waveTxt">0/10</b></div>
+      <div class="stat">Score <b id="scoreTxt">0</b></div>
+      <button class="btn ghost" id="muteBtn" title="Mute (M)">Sound: on</button>
+      <button class="btn ghost" id="pauseBtn" title="Pause (P)">Pause</button>
+    </div>
+    <canvas id="lawn" width="1000" height="600"></canvas>
+    <div id="banner"></div>
+    <div id="screen" class="on"></div>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+
+  var COLS = 9, ROWS = 5, CELL = 88;
+  var GX = 132, GY = 96;
+  var W = 1000, H = 600;
+  var TOTAL_WAVES = 10;
+  var BOARD_KEY = 'llittle_lawn_defenders_board_v1';
+
+  var canvas = document.getElementById('lawn');
+  var ctx = canvas.getContext('2d');
+  var screenEl = document.getElementById('screen');
+  var bannerEl = document.getElementById('banner');
+  var sunCountEl = document.getElementById('sunCount');
+  var waveTxtEl = document.getElementById('waveTxt');
+  var scoreTxtEl = document.getElementById('scoreTxt');
+  var packetsEl = document.getElementById('packets');
+
+  var PLANTS = {
+    sunflower: { name: 'Sunflower', cost: 50, hp: 90, cool: 5, prod: 8, key: '1' },
+    peashooter: { name: 'Peashooter', cost: 100, hp: 110, cool: 5, fire: 1.5, dmg: 22, key: '2' },
+    wallnut: { name: 'Wall-nut', cost: 50, hp: 340, cool: 13, key: '3' },
+    snowpea: { name: 'Snow Pea', cost: 175, hp: 120, cool: 7, fire: 1.6, dmg: 20, slow: 1, key: '4' }
+  };
+  var ORDER = ['sunflower', 'peashooter', 'wallnut', 'snowpea'];
+
+  var ZTYPES = {
+    basic: { hp: 110, speed: 21 },
+    cone: { hp: 210, speed: 20 },
+    bucket: { hp: 350, speed: 19 }
+  };
+
+  var S = null;
+
+  function freshState() {
+    return {
+      mode: 'menu',
+      sun: 175,
+      score: 0,
+      kills: 0,
+      sunCollected: 0,
+      wave: 0,
+      inter: 12,
+      waveClock: 0,
+      queue: [],
+      plants: [],
+      zombies: [],
+      peas: [],
+      suns: [],
+      parts: [],
+      cool: { sunflower: 0, peashooter: 0, wallnut: 0, snowpea: 0 },
+      sel: null,
+      shovel: false,
+      hover: null,
+      sunDrop: 8.5,
+      banner: null,
+      bannerT: 0,
+      result: null,
+      t: 0
+    };
+  }
+
+  // ---------- audio ----------
+
+  var actx = null;
+  var muted = false;
+
+  function audio() {
+    if (!actx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) actx = new AC();
+    }
+    if (actx && actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+
+  function tone(freq, dur, type, vol, slideTo) {
+    if (muted) return;
+    var a = audio();
+    if (!a) return;
+    var o = a.createOscillator();
+    var g = a.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(freq, a.currentTime);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, a.currentTime + dur);
+    g.gain.setValueAtTime(0.0001, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol || 0.05, a.currentTime + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g);
+    g.connect(a.destination);
+    o.start();
+    o.stop(a.currentTime + dur + 0.02);
+  }
+
+  function sfx(kind) {
+    switch (kind) {
+      case 'plant': tone(300, 0.14, 'square', 0.05, 180); break;
+      case 'shoot': tone(720, 0.06, 'square', 0.028, 900); break;
+      case 'hit': tone(210, 0.05, 'triangle', 0.03, 140); break;
+      case 'sun': tone(880, 0.1, 'sine', 0.05, 1320); break;
+      case 'nom': tone(140, 0.09, 'sawtooth', 0.035, 90); break;
+      case 'groan': tone(96, 0.5, 'sawtooth', 0.04, 70); break;
+      case 'wave': tone(420, 0.3, 'triangle', 0.05, 260); break;
+      case 'die': tone(150, 0.9, 'sawtooth', 0.07, 45); break;
+      case 'win':
+        [523, 659, 784, 1047].forEach(function (f, i) {
+          window.setTimeout(function () { tone(f, 0.22, 'square', 0.05); }, i * 150);
+        });
+        break;
+      case 'deny': tone(180, 0.12, 'square', 0.035, 120); break;
+    }
+  }
+
+  // ---------- leaderboard ----------
+
+  function loadBoard() {
+    try {
+      var raw = window.localStorage.getItem(BOARD_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveBoard(list) {
+    try {
+      window.localStorage.setItem(BOARD_KEY, JSON.stringify(list.slice(0, 10)));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function boardRows(meIdx) {
+    var list = loadBoard();
+    if (!list.length) return '<p class="empty">No runs recorded yet. Be the first.</p>';
+    var html = '<table><tr><th>#</th><th>Runner</th><th class="num">Score</th><th class="num">Wave</th><th class="num">Kills</th><th>Date</th></tr>';
+    list.forEach(function (r, i) {
+      html += '<tr' + (i === meIdx ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(r.name) +
+        '</td><td class="num">' + r.score + '</td><td class="num">' + r.wave + '</td><td class="num">' +
+        r.kills + '</td><td>' + esc(r.date) + '</td></tr>';
+    });
+    return html + '</table>';
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ---------- screens ----------
+
+  function show(html) {
+    screenEl.innerHTML = html;
+    screenEl.classList.add('on');
+  }
+
+  function hide() {
+    screenEl.classList.remove('on');
+    screenEl.innerHTML = '';
+  }
+
+  function menuScreen() {
+    S.mode = 'menu';
+    show('<div class="card">' +
+      '<h1>Little Lawn Defenders</h1>' +
+      '<h2>Grow sun, hold the lawn, survive ten waves.</h2>' +
+      '<div class="row">' +
+      '<button class="btn big" data-a="play">Play</button>' +
+      '<button class="btn" data-a="help">How to play</button>' +
+      '<button class="btn" data-a="board">Leaderboard</button>' +
+      '</div>' +
+      '<p style="margin-top:18px;font-size:13px;color:#6a5a34">Best score: <b>' + bestScore() + '</b></p>' +
+      '</div>');
+  }
+
+  function bestScore() {
+    var list = loadBoard();
+    var best = 0;
+    for (var i = 0; i < list.length; i++) best = Math.max(best, list[i].score || 0);
+    return best;
+  }
+
+  function helpScreen() {
+    show('<div class="card"><h1>How to play</h1><div class="how"><ul>' +
+      '<li>Click <b>Play</b>, then click a seed packet and click a lawn tile to plant. Sun is the only currency.</li>' +
+      '<li>Sun falls from the sky and Sunflowers make more. Click it to bank it.</li>' +
+      '<li>Peashooters and Snow Peas fire down their row. Snow Peas chill zombies, slowing them.</li>' +
+      '<li>Wall-nuts buy time. Shovel (<code>S</code>) digs a plant back up.</li>' +
+      '<li>Keys <code>1</code>&ndash;<code>4</code> pick seeds, <code>Esc</code> cancels, <code>P</code> pauses, <code>M</code> mutes.</li>' +
+      '<li>A zombie that reaches the house ends the run. Clear all 10 waves to win.</li>' +
+      '</ul></div><div class="row"><button class="btn" data-a="menu">Back</button></div></div>');
+  }
+
+  function boardScreen(me) {
+    show('<div class="card"><h1>Leaderboard</h1><h2>Top ten lawn defenses on this browser</h2>' +
+      boardRows(me) +
+      '<div class="row"><button class="btn" data-a="menu">Back</button></div></div>');
+  }
+
+  function pauseScreen() {
+    S.mode = 'paused';
+    show('<div class="card"><h1>Paused</h1><h2>The lawn waits.</h2><div class="row">' +
+      '<button class="btn big" data-a="resume">Resume</button>' +
+      '<button class="btn" data-a="restart">Restart run</button>' +
+      '<button class="btn ghost" data-a="menu">Quit to menu</button></div></div>');
+  }
+
+  function endScreen(result) {
+    S.mode = 'ended';
+    S.result = result;
+    show('<div class="card"><h1>' + (result === 'win' ? 'Lawn held!' : 'The house got eaten') + '</h1>' +
+      '<h2>' + (result === 'win' ? 'All ' + TOTAL_WAVES + ' waves cleared.' : 'Overrun on wave ' + S.wave + '.') + '</h2>' +
+      '<div class="how"><ul>' +
+      '<li>Score <b>' + S.score + '</b></li>' +
+      '<li>Waves cleared <b>' + (result === 'win' ? TOTAL_WAVES : Math.max(0, S.wave - 1)) + '</b></li>' +
+      '<li>Zombies down <b>' + S.kills + '</b></li>' +
+      '<li>Sun banked <b>' + S.sunCollected + '</b></li>' +
+      '</ul></div>' +
+      '<h3>Sign the leaderboard</h3>' +
+      '<input id="nameIn" maxlength="12" value="Gardener" />' +
+      '<div class="row"><button class="btn big" data-a="submit" data-entry="1">Submit score</button>' +
+      '<button class="btn" data-a="restart">Play again</button>' +
+      '<button class="btn ghost" data-a="menu">Menu</button></div></div>');
+  }
+
+  function submitScore() {
+    var input = document.getElementById('nameIn');
+    var name = (input && input.value.trim()) || 'Nameless';
+    var list = loadBoard();
+    var entry = {
+      name: name.slice(0, 12),
+      score: S.score,
+      wave: S.wave,
+      kills: S.kills,
+      date: new Date().toISOString().slice(0, 10)
+    };
+    list.push(entry);
+    list.sort(function (a, b) { return b.score - a.score; });
+    var rank = list.indexOf(entry);
+    if (rank < 0 || rank > 9) rank = -1;
+    var ok = saveBoard(list);
+    if (!ok) {
+      show('<div class="card"><h1>Could not save</h1><h2>This browser blocked local storage, so the score stayed in memory.</h2>' +
+        boardRows(rank) +
+        '<div class="row"><button class="btn" data-a="menu">Menu</button></div></div>');
+      return;
+    }
+    boardScreen(rank);
+  }
+
+  // ---------- run control ----------
+
+  function startRun() {
+    S = freshState();
+    S.mode = 'playing';
+    hide();
+    setBanner('Get ready', 1.6);
+    buildPackets();
+    syncHud();
+  }
+
+  function buildWave(n) {
+    var q = [];
+    var count = 2 + Math.round(n * 1.7);
+    var t = 0;
+    for (var i = 0; i < count; i++) {
+      var type = 'basic';
+      if (n >= 3 && i % 3 === 1) type = 'cone';
+      if (n >= 6 && i % 4 === 2) type = 'bucket';
+      q.push({ type: type, t: t });
+      t += Math.max(2.4, 8 - n * 0.5) * (0.7 + Math.random() * 0.6);
+    }
+    return q;
+  }
+
+  function nextWave() {
+    S.wave++;
+    S.queue = buildWave(S.wave);
+    S.waveClock = 0;
+    sfx('wave');
+    setBanner(S.wave === TOTAL_WAVES ? 'FINAL WAVE' : 'Wave ' + S.wave, 2);
+  }
+
+  function setBanner(text, secs) {
+    bannerEl.textContent = text;
+    bannerEl.classList.add('on');
+    S.bannerT = secs;
+  }
+
+  function spawnZombie(type) {
+    var z = ZTYPES[type];
+    var row = Math.floor(Math.random() * ROWS);
+    S.zombies.push({
+      type: type,
+      row: row,
+      x: W + 30 + Math.random() * 40,
+      hp: z.hp,
+      maxHp: z.hp,
+      speed: z.speed,
+      slow: 0,
+      phase: Math.random() * 6,
+      eating: false,
+      hurt: 0
+    });
+    if (Math.random() < 0.35) sfx('groan');
+  }
+
+  function endRun(result) {
+    if (S.mode !== 'playing') return;
+    S.mode = 'ending';
+    if (result === 'win') {
+      S.score += S.plants.length * 8;
+      sfx('win');
+    } else {
+      sfx('die');
+    }
+    window.setTimeout(function () { endScreen(result); }, 650);
+  }
+
+  // ---------- planting ----------
+
+  function plantAt(col, row, type) {
+    var def = PLANTS[type];
+    if (S.sun < def.cost) { sfx('deny'); return false; }
+    if (S.cool[type] > 0) { sfx('deny'); return false; }
+    if (findPlant(col, row)) { sfx('deny'); return false; }
+    S.sun -= def.cost;
+    S.cool[type] = def.cool;
+    S.plants.push({
+      type: type,
+      col: col,
+      row: row,
+      hp: def.hp,
+      maxHp: def.hp,
+      cd: type === 'sunflower' ? def.prod * 0.6 : 0.4,
+      phase: Math.random() * 6,
+      hurt: 0
+    });
+    sfx('plant');
+    puff(plantX(col), plantY(row), '#c8e28a', 8);
+    return true;
+  }
+
+  function findPlant(col, row) {
+    for (var i = 0; i < S.plants.length; i++) {
+      if (S.plants[i].col === col && S.plants[i].row === row) return S.plants[i];
+    }
+    return null;
+  }
+
+  function plantX(col) { return GX + col * CELL + CELL / 2; }
+  function plantY(row) { return GY + row * CELL + CELL / 2; }
+
+  // ---------- particles ----------
+
+  function puff(x, y, color, n) {
+    for (var i = 0; i < n; i++) {
+      S.parts.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 130,
+        vy: -Math.random() * 120 - 20,
+        life: 0.5 + Math.random() * 0.4,
+        max: 0.9,
+        size: 2 + Math.random() * 4,
+        color: color
+      });
+    }
+  }
+
+  // ---------- update ----------
+
+  function update(dt) {
+    S.t += dt;
+
+    if (S.bannerT > 0) {
+      S.bannerT -= dt;
+      if (S.bannerT <= 0) bannerEl.classList.remove('on');
+    }
+
+    for (var k in S.cool) if (S.cool[k] > 0) S.cool[k] = Math.max(0, S.cool[k] - dt);
+
+    // waves
+    if (S.queue.length === 0 && S.zombies.length === 0) {
+      if (S.wave >= TOTAL_WAVES) { endRun('win'); return; }
+      S.inter -= dt;
+      if (S.inter <= 0) {
+        S.inter = Math.max(9, 15 - S.wave);
+        nextWave();
+      }
+    } else if (S.queue.length) {
+      S.waveClock += dt;
+      while (S.queue.length && S.queue[0].t <= S.waveClock) {
+        spawnZombie(S.queue.shift().type);
+      }
+    }
+
+    // falling sun
+    S.sunDrop -= dt;
+    if (S.sunDrop <= 0) {
+      S.sunDrop = 8 + Math.random() * 3;
+      var tx = GX + Math.random() * (COLS * CELL - 40) + 20;
+      S.suns.push({ x: tx, y: -24, ty: 130 + Math.random() * 380, val: 25, t: 0, life: 13 });
+    }
+    for (var i = S.suns.length - 1; i >= 0; i--) {
+      var su = S.suns[i];
+      su.t += dt;
+      if (su.y < su.ty) su.y = Math.min(su.ty, su.y + 62 * dt);
+      su.x += Math.sin(su.t * 1.6) * 6 * dt;
+      if (su.t > su.life) S.suns.splice(i, 1);
+    }
+
+    // plants
+    for (var p = S.plants.length - 1; p >= 0; p--) {
+      var pl = S.plants[p];
+      pl.phase += dt;
+      if (pl.hurt > 0) pl.hurt -= dt;
+      var def = PLANTS[pl.type];
+      pl.cd -= dt;
+      if (pl.cd <= 0) {
+        if (pl.type === 'sunflower') {
+          pl.cd = def.prod;
+          S.suns.push({ x: plantX(pl.col) + (Math.random() - 0.5) * 30, y: plantY(pl.row) - 12, ty: plantY(pl.row) + 14, val: 25, t: 0, life: 11 });
+          puff(plantX(pl.col), plantY(pl.row) - 22, '#ffe27a', 4);
+        } else if (def.fire) {
+          pl.cd = def.fire;
+          if (zombieAhead(pl.row, plantX(pl.col))) {
+            S.peas.push({ x: plantX(pl.col) + 26, row: pl.row, dmg: def.dmg, snow: !!def.slow, t: 0 });
+            sfx('shoot');
+          } else {
+            pl.cd = 0.25;
+          }
+        }
+      }
+      if (pl.hp <= 0) {
+        puff(plantX(pl.col), plantY(pl.row), '#9ec95f', 14);
+        S.plants.splice(p, 1);
+      }
+    }
+
+    // peas
+    for (var e = S.peas.length - 1; e >= 0; e--) {
+      var pe = S.peas[e];
+      pe.t += dt;
+      pe.x += 430 * dt;
+      var hit = null;
+      for (var z = 0; z < S.zombies.length; z++) {
+        var zo = S.zombies[z];
+        if (zo.row !== pe.row) continue;
+        if (pe.x + 10 >= zo.x - 16 && pe.x <= zo.x + 18) { hit = zo; break; }
+      }
+      if (hit) {
+        hit.hp -= pe.dmg;
+        hit.hurt = 0.12;
+        if (pe.snow) hit.slow = 4;
+        puff(pe.x, plantY(pe.row) - 16, pe.snow ? '#bfe8ff' : '#cfe89a', 4);
+        sfx('hit');
+        S.peas.splice(e, 1);
+      } else if (pe.x > W + 20) {
+        S.peas.splice(e, 1);
+      }
+    }
+
+    // zombies
+    for (var q = S.zombies.length - 1; q >= 0; q--) {
+      var zb = S.zombies[q];
+      zb.phase += dt;
+      if (zb.hurt > 0) zb.hurt -= dt;
+      if (zb.slow > 0) zb.slow -= dt;
+
+      var col = Math.floor((zb.x - 20 - GX) / CELL);
+      var target = (col >= 0 && col < COLS) ? findPlant(col, zb.row) : null;
+      if (target) {
+        zb.eating = true;
+        target.hp -= 26 * dt;
+        target.hurt = 0.15;
+        if (Math.random() < dt * 6) sfx('nom');
+      } else {
+        zb.eating = false;
+        zb.x -= zb.speed * (zb.slow > 0 ? 0.45 : 1) * dt;
+      }
+
+      if (zb.hp <= 0) {
+        puff(zb.x, plantY(zb.row) - 10, '#8e9a7a', 16);
+        S.zombies.splice(q, 1);
+        S.kills++;
+        S.score += 12;
+        continue;
+      }
+      if (zb.x < GX - 34) { endRun('lose'); return; }
+    }
+
+    // particles
+    for (var m = S.parts.length - 1; m >= 0; m--) {
+      var pa = S.parts[m];
+      pa.life -= dt;
+      pa.x += pa.vx * dt;
+      pa.y += pa.vy * dt;
+      pa.vy += 240 * dt;
+      if (pa.life <= 0) S.parts.splice(m, 1);
+    }
+
+    syncHud();
+  }
+
+  function zombieAhead(row, fromX) {
+    for (var i = 0; i < S.zombies.length; i++) {
+      if (S.zombies[i].row === row && S.zombies[i].x > fromX - 10 && S.zombies[i].x < W + 40) return true;
+    }
+    return false;
+  }
+
+  // ---------- HUD ----------
+
+  function buildPackets() {
+    packetsEl.innerHTML = '';
+    packetsEl.style.display = 'flex';
+    packetsEl.style.gap = '6px';
+    ORDER.forEach(function (type) {
+      var def = PLANTS[type];
+      var el = document.createElement('div');
+      el.className = 'packet';
+      el.dataset.type = type;
+      el.title = def.name + ' - ' + def.cost + ' sun';
+      var c = document.createElement('canvas');
+      c.width = 80;
+      c.height = 60;
+      drawPacketArt(c.getContext('2d'), type);
+      el.appendChild(c);
+      var cost = document.createElement('span');
+      cost.className = 'cost';
+      cost.textContent = def.cost;
+      el.appendChild(cost);
+      var key = document.createElement('span');
+      key.className = 'key';
+      key.textContent = def.key;
+      el.appendChild(key);
+      var cool = document.createElement('div');
+      cool.className = 'cool';
+      el.appendChild(cool);
+      el.addEventListener('click', function () { selectSeed(type); });
+      packetsEl.appendChild(el);
+    });
+  }
+
+  function drawPacketArt(c, type) {
+    c.save();
+    c.scale(0.9, 0.9);
+    c.translate(44, 34);
+    if (type === 'sunflower') drawSunflower(c, 0, 0, 0.72, 0);
+    else if (type === 'peashooter') drawPeashooter(c, 0, 0, 0.7, 0);
+    else if (type === 'wallnut') drawWallnut(c, 0, 0, 0.66, 1);
+    else drawSnowpea(c, 0, 0, 0.7, 0);
+    c.restore();
+  }
+
+  function selectSeed(type) {
+    if (S.mode !== 'playing') return;
+    if (S.cool[type] > 0 || S.sun < PLANTS[type].cost) { sfx('deny'); return; }
+    S.sel = S.sel === type ? null : type;
+    S.shovel = false;
+    syncHud();
+  }
+
+  function syncHud() {
+    sunCountEl.textContent = S.sun;
+    scoreTxtEl.textContent = S.score;
+    waveTxtEl.textContent = S.wave + '/' + TOTAL_WAVES;
+    var kids = packetsEl.children;
+    for (var i = 0; i < kids.length; i++) {
+      var el = kids[i];
+      var type = el.dataset.type;
+      if (!type) continue;
+      var cooling = S.cool[type] > 0;
+      var poor = S.sun < PLANTS[type].cost;
+      el.classList.toggle('cooling', cooling);
+      el.classList.toggle('poor', poor && !cooling);
+      el.classList.toggle('sel', S.sel === type);
+      if (cooling) el.querySelector('.cool').textContent = Math.ceil(S.cool[type]) + 's';
+    }
+    document.getElementById('shovel').classList.toggle('sel', S.shovel);
+  }
+
+  // ---------- drawing ----------
+
+  function drawLawn() {
+    ctx.clearRect(0, 0, W, H);
+
+    var sky = ctx.createLinearGradient(0, 0, 0, 200);
+    sky.addColorStop(0, '#6fc6f5');
+    sky.addColorStop(1, '#d8f1ff');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, GY + 10);
+
+    // house on the left edge
+    ctx.fillStyle = '#7d5230';
+    ctx.fillRect(4, 70, 118, H - 70);
+    var siding = ctx.createLinearGradient(4, 0, 122, 0);
+    siding.addColorStop(0, 'rgba(0,0,0,0.2)');
+    siding.addColorStop(0.42, 'rgba(255,255,255,0.07)');
+    siding.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = siding;
+    ctx.fillRect(4, 70, 118, H - 70);
+    ctx.strokeStyle = 'rgba(58,36,16,0.5)';
+    ctx.lineWidth = 1.5;
+    for (var sd = 0; sd < 19; sd++) {
+      ctx.beginPath();
+      ctx.moveTo(4, 94 + sd * 26);
+      ctx.lineTo(122, 94 + sd * 26);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#5f3d20';
+    ctx.beginPath();
+    ctx.moveTo(-6, 76);
+    ctx.lineTo(62, 22);
+    ctx.lineTo(130, 76);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#6d4526';
+    ctx.fillRect(-6, 76, 136, 9);
+    ctx.fillStyle = '#f7e3a8';
+    ctx.fillRect(26, 150, 46, 56);
+    ctx.fillRect(26, 300, 46, 56);
+    ctx.strokeStyle = '#5f3d20';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(26, 150, 46, 56);
+    ctx.strokeRect(26, 300, 46, 56);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(49, 150);
+    ctx.lineTo(49, 206);
+    ctx.moveTo(26, 178);
+    ctx.lineTo(72, 178);
+    ctx.moveTo(49, 300);
+    ctx.lineTo(49, 356);
+    ctx.moveTo(26, 328);
+    ctx.lineTo(72, 328);
+    ctx.stroke();
+    ctx.fillStyle = '#43301b';
+    ctx.fillRect(40, 438, 50, H - 438);
+    ctx.fillStyle = '#d8b04a';
+    ctx.beginPath();
+    ctx.arc(82, 498, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // lawn tiles
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        ctx.fillStyle = (r + c) % 2 === 0 ? '#87c257' : '#77b34a';
+        ctx.fillRect(GX + c * CELL, GY + r * CELL, CELL, CELL);
+      }
+    }
+    ctx.strokeStyle = 'rgba(40,70,25,0.28)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i <= COLS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(GX + i * CELL, GY);
+      ctx.lineTo(GX + i * CELL, GY + ROWS * CELL);
+      ctx.stroke();
+    }
+    for (var j = 0; j <= ROWS; j++) {
+      ctx.beginPath();
+      ctx.moveTo(GX, GY + j * CELL);
+      ctx.lineTo(GX + COLS * CELL, GY + j * CELL);
+      ctx.stroke();
+    }
+
+    // dirt strip at the right edge where zombies enter
+    ctx.fillStyle = '#5d4527';
+    ctx.fillRect(GX + COLS * CELL, GY, W - (GX + COLS * CELL), H - GY);
+    ctx.fillStyle = '#4b3720';
+    for (var d = 0; d < 17; d++) {
+      ctx.fillRect(GX + COLS * CELL + 6, GY + 10 + d * 31, 52, 6);
+    }
+
+    // grass apron under the lawn so the play area never meets bare frame
+    var apronY = GY + ROWS * CELL;
+    ctx.fillStyle = '#5d8c3a';
+    ctx.fillRect(122, apronY, GX + COLS * CELL - 122, H - apronY);
+    ctx.strokeStyle = 'rgba(38,66,24,0.55)';
+    ctx.lineWidth = 2;
+    for (var t = 0; t < 60; t++) {
+      var tx = 130 + ((t * 53) % (GX + COLS * CELL - 150));
+      var ty = apronY + 10 + ((t * 29) % Math.max(8, H - apronY - 16));
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx + 3, ty - 9);
+      ctx.moveTo(tx + 6, ty);
+      ctx.lineTo(tx + 9, ty - 7);
+      ctx.stroke();
+    }
+  }
+
+  function drawHover() {
+    if (!S.hover || S.hover.col === null || S.mode !== 'playing') return;
+    var col = S.hover.col, row = S.hover.row;
+    var x = GX + col * CELL, y = GY + row * CELL;
+    var occupied = !!findPlant(col, row);
+    if (S.shovel) {
+      ctx.fillStyle = occupied ? 'rgba(210,60,50,0.35)' : 'rgba(120,120,120,0.18)';
+      ctx.fillRect(x, y, CELL, CELL);
+      return;
+    }
+    if (!S.sel) return;
+    var ok = !occupied && S.sun >= PLANTS[S.sel].cost && S.cool[S.sel] <= 0;
+    ctx.fillStyle = ok ? 'rgba(255,255,255,0.28)' : 'rgba(210,60,50,0.3)';
+    ctx.fillRect(x, y, CELL, CELL);
+    if (ok) {
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      drawPlantSprite(ctx, S.sel, x + CELL / 2, y + CELL / 2 + 8, 0.9, S.t);
+      ctx.restore();
+    }
+  }
+
+  function drawPlantSprite(c, type, x, y, scale, phase) {
+    c.save();
+    c.translate(x, y);
+    c.scale(scale, scale);
+    if (type === 'sunflower') drawSunflower(c, 0, 0, 1, phase);
+    else if (type === 'peashooter') drawPeashooter(c, 0, 0, 1, phase);
+    else if (type === 'wallnut') drawWallnut(c, 0, 0, 1, phase);
+    else drawSnowpea(c, 0, 0, 1, phase);
+    c.restore();
+  }
+
+  function stem(c, sway) {
+    c.strokeStyle = '#3f7d33';
+    c.lineWidth = 7;
+    c.beginPath();
+    c.moveTo(0, 30);
+    c.quadraticCurveTo(sway * 0.6, 4, sway, -14);
+    c.stroke();
+    c.fillStyle = '#4e9139';
+    c.beginPath();
+    c.ellipse(-14, 20, 13, 7, -0.5, 0, Math.PI * 2);
+    c.fill();
+    c.beginPath();
+    c.ellipse(14, 22, 13, 7, 0.5, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  function face(c, x, y, r) {
+    c.fillStyle = '#2b2416';
+    c.beginPath();
+    c.arc(x - r * 0.34, y - r * 0.1, r * 0.12, 0, Math.PI * 2);
+    c.arc(x + r * 0.34, y - r * 0.1, r * 0.12, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = '#2b2416';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(x, y + r * 0.12, r * 0.32, 0.15 * Math.PI, 0.85 * Math.PI);
+    c.stroke();
+  }
+
+  function drawSunflower(c, x, y, sc, phase) {
+    c.save();
+    c.translate(x, y);
+    c.scale(sc, sc);
+    var sway = Math.sin(phase * 1.6) * 3;
+    stem(c, sway);
+    var hx = sway, hy = -26;
+    c.fillStyle = '#f5c326';
+    for (var i = 0; i < 12; i++) {
+      var a = (i / 12) * Math.PI * 2 + phase * 0.2;
+      c.save();
+      c.translate(hx, hy);
+      c.rotate(a);
+      c.beginPath();
+      c.ellipse(20, 0, 11, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+    c.fillStyle = '#8a5a1c';
+    c.beginPath();
+    c.arc(hx, hy, 15, 0, Math.PI * 2);
+    c.fill();
+    face(c, hx, hy, 15);
+    c.restore();
+  }
+
+  function peashooterBase(c, phase, headColor, muzzle) {
+    var sway = Math.sin(phase * 1.8) * 2.5;
+    stem(c, sway);
+    c.fillStyle = headColor;
+    c.beginPath();
+    c.arc(sway, -22, 19, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = muzzle;
+    c.beginPath();
+    c.roundRect ? c.roundRect(sway + 12, -28, 20, 13, 6) : c.rect(sway + 12, -28, 20, 13);
+    c.fill();
+    c.fillStyle = 'rgba(0,0,0,0.25)';
+    c.beginPath();
+    c.arc(sway + 30, -21.5, 4.5, 0, Math.PI * 2);
+    c.fill();
+    face(c, sway - 2, -24, 17);
+  }
+
+  function drawPeashooter(c, x, y, sc, phase) {
+    c.save();
+    c.translate(x, y);
+    c.scale(sc, sc);
+    peashooterBase(c, phase, '#5aa63f', '#4c8f34');
+    c.restore();
+  }
+
+  function drawSnowpea(c, x, y, sc, phase) {
+    c.save();
+    c.translate(x, y);
+    c.scale(sc, sc);
+    peashooterBase(c, phase, '#4f9fc0', '#3f88a8');
+    c.restore();
+  }
+
+  function drawWallnut(c, x, y, sc, phase) {
+    c.save();
+    c.translate(x, y);
+    c.scale(sc, sc);
+    var bob = Math.sin(phase * 1.2) * 1.4;
+    var g = c.createLinearGradient(-24, -34, 24, 34);
+    g.addColorStop(0, '#c98f4c');
+    g.addColorStop(1, '#8e5f2c');
+    c.fillStyle = g;
+    c.beginPath();
+    c.ellipse(0, bob, 26, 34, 0, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = 'rgba(90,55,20,0.6)';
+    c.lineWidth = 2;
+    c.stroke();
+    face(c, 0, bob - 4, 24);
+    c.restore();
+  }
+
+  function drawPlantHp(c, pl) {
+    if (pl.hp >= pl.maxHp) return;
+    var x = plantX(pl.col), y = plantY(pl.row);
+    var w = 40, frac = Math.max(0, pl.hp / pl.maxHp);
+    c.fillStyle = 'rgba(0,0,0,0.35)';
+    c.fillRect(x - w / 2, y - 46, w, 5);
+    c.fillStyle = frac > 0.5 ? '#7fd44a' : (frac > 0.25 ? '#e8b93b' : '#d9534a');
+    c.fillRect(x - w / 2, y - 46, w * frac, 5);
+    if (pl.type === 'wallnut' && frac < 0.6) {
+      c.strokeStyle = 'rgba(60,35,12,0.7)';
+      c.lineWidth = 1.6;
+      c.beginPath();
+      c.moveTo(x - 12, y - 22);
+      c.lineTo(x - 4, y - 8);
+      c.lineTo(x - 12, y + 4);
+      c.moveTo(x + 8, y - 18);
+      c.lineTo(x + 3, y + 2);
+      c.stroke();
+    }
+  }
+
+  function drawZombie(z) {
+    var y = plantY(z.row);
+    var step = Math.sin(z.phase * (z.eating ? 9 : 3.4));
+    var bob = z.eating ? Math.sin(z.phase * 12) * 1.2 : Math.abs(step) * 3;
+    var cold = z.slow > 0;
+
+    ctx.save();
+    ctx.translate(z.x, y + bob);
+    if (cold) {
+      ctx.fillStyle = 'rgba(150,210,255,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, -22, 26, 34, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    var skin = cold ? '#96c4d8' : '#a8b18f';
+    var cloth = cold ? '#4d6c7c' : '#5c6446';
+
+    // legs
+    ctx.strokeStyle = '#3b3a2e';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-2, 4);
+    ctx.lineTo(-10 - step * 9, 32);
+    ctx.moveTo(2, 4);
+    ctx.lineTo(10 + step * 9, 32);
+    ctx.stroke();
+
+    // body
+    ctx.fillStyle = cloth;
+    ctx.beginPath();
+    ctx.roundRect ? (ctx.beginPath(), ctx.roundRect(-13, -22, 26, 30, 6), ctx.fill()) : (ctx.fillRect(-13, -22, 26, 30));
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(-13, -4, 26, 4);
+
+    // arms reaching left
+    ctx.strokeStyle = skin;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-8, -14);
+    ctx.lineTo(-26, -12 + (z.eating ? Math.sin(z.phase * 14) * 4 : step * 3));
+    ctx.moveTo(-6, -8);
+    ctx.lineTo(-24, -4 + (z.eating ? Math.cos(z.phase * 14) * 4 : -step * 3));
+    ctx.stroke();
+
+    // head
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(-4, -34, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2b2416';
+    ctx.beginPath();
+    ctx.arc(-11, -36, 2.2, 0, Math.PI * 2);
+    ctx.arc(-2, -36, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#2b2416';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (z.eating) {
+      ctx.moveTo(-12, -27);
+      ctx.lineTo(0, -25 + Math.sin(z.phase * 14) * 3);
+    } else {
+      ctx.moveTo(-11, -27);
+      ctx.quadraticCurveTo(-4, -24, 2, -28);
+    }
+    ctx.stroke();
+
+    if (z.type === 'cone') {
+      ctx.fillStyle = '#d97a2b';
+      ctx.beginPath();
+      ctx.moveTo(-16, -44);
+      ctx.lineTo(8, -44);
+      ctx.lineTo(-4, -66);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(120,60,15,0.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (z.type === 'bucket') {
+      ctx.fillStyle = '#9aa3ab';
+      ctx.beginPath();
+      ctx.moveTo(-18, -46);
+      ctx.lineTo(10, -46);
+      ctx.lineTo(7, -66);
+      ctx.lineTo(-15, -66);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#6c747b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#7f878e';
+      ctx.fillRect(-19, -49, 30, 5);
+    }
+
+    if (z.hurt > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (z.hurt * 3).toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.ellipse(-2, -24, 22, 34, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // hp bar
+    var frac = Math.max(0, z.hp / z.maxHp);
+    if (frac < 1) {
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(-18, -78, 36, 5);
+      ctx.fillStyle = frac > 0.5 ? '#7fd44a' : (frac > 0.25 ? '#e8b93b' : '#d9534a');
+      ctx.fillRect(-18, -78, 36 * frac, 5);
+    }
+    ctx.restore();
+  }
+
+  function drawPea(pe) {
+    var y = plantY(pe.row) - 14;
+    ctx.fillStyle = pe.snow ? '#8fd6f2' : '#7cc24a';
+    ctx.beginPath();
+    ctx.arc(pe.x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.arc(pe.x - 2, y - 2, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawSunToken(su) {
+    var pulse = 1 + Math.sin(su.t * 4) * 0.06;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    var g = ctx.createRadialGradient(su.x, su.y, 2, su.x, su.y, 30 * pulse);
+    g.addColorStop(0, 'rgba(255,248,190,0.95)');
+    g.addColorStop(0.45, 'rgba(255,214,80,0.55)');
+    g.addColorStop(1, 'rgba(255,200,60,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(su.x, su.y, 30 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#ffd94a';
+    ctx.beginPath();
+    ctx.arc(su.x, su.y, 13 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(220,150,20,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var i = 0; i < 8; i++) {
+      var a = (i / 8) * Math.PI * 2 + su.t * 0.8;
+      ctx.moveTo(su.x + Math.cos(a) * 16, su.y + Math.sin(a) * 16);
+      ctx.lineTo(su.x + Math.cos(a) * 22, su.y + Math.sin(a) * 22);
+    }
+    ctx.stroke();
+    if (su.t > su.life - 3) {
+      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(su.t * 12);
+      ctx.fillStyle = '#fff2b0';
+      ctx.beginPath();
+      ctx.arc(su.x, su.y, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawParts() {
+    for (var i = 0; i < S.parts.length; i++) {
+      var p = S.parts[i];
+      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    drawLawn();
+    drawHover();
+    for (var i = 0; i < S.plants.length; i++) {
+      var pl = S.plants[i];
+      drawPlantSprite(ctx, pl.type, plantX(pl.col), plantY(pl.row) + 8, 1, pl.phase);
+      drawPlantHp(ctx, pl);
+    }
+    for (var j = 0; j < S.peas.length; j++) drawPea(S.peas[j]);
+    for (var k = 0; k < S.zombies.length; k++) drawZombie(S.zombies[k]);
+    for (var m = 0; m < S.suns.length; m++) drawSunToken(S.suns[m]);
+    drawParts();
+  }
+
+  // ---------- input ----------
+
+  function cellFromEvent(ev) {
+    var r = canvas.getBoundingClientRect();
+    var x = (ev.clientX - r.left) * (W / r.width);
+    var y = (ev.clientY - r.top) * (H / r.height);
+    // always report the point: sun drifts above the lawn and must stay clickable
+    var out = { x: x, y: y, col: null, row: null };
+    if (x < GX || y < GY) return out;
+    var col = Math.floor((x - GX) / CELL);
+    var row = Math.floor((y - GY) / CELL);
+    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return out;
+    out.col = col;
+    out.row = row;
+    return out;
+  }
+
+  canvas.addEventListener('mousemove', function (ev) {
+    if (!S) return;
+    S.hover = cellFromEvent(ev);
+    canvas.style.cursor = (S.hover && (S.sel || S.shovel)) ? 'crosshair' : 'default';
+  });
+
+  canvas.addEventListener('mouseleave', function () {
+    if (S) S.hover = null;
+  });
+
+  canvas.addEventListener('click', function (ev) {
+    if (!S || S.mode !== 'playing') return;
+    var hit = cellFromEvent(ev);
+    var x = hit.x;
+    var y = hit.y;
+
+    // sun pick-up always wins
+    for (var i = S.suns.length - 1; i >= 0; i--) {
+      var su = S.suns[i];
+      if (Math.abs(su.x - x) < 26 && Math.abs(su.y - y) < 26) {
+        S.sun += su.val;
+        S.sunCollected += su.val;
+        S.score += 5;
+        puff(su.x, su.y, '#ffd94a', 10);
+        S.suns.splice(i, 1);
+        sfx('sun');
+        syncHud();
+        return;
+      }
+    }
+    if (hit.col === null) return;
+
+    if (S.shovel) {
+      var p = findPlant(hit.col, hit.row);
+      if (p) {
+        S.plants.splice(S.plants.indexOf(p), 1);
+        puff(plantX(hit.col), plantY(hit.row), '#b58a52', 12);
+        sfx('plant');
+      }
+      S.shovel = false;
+      syncHud();
+      return;
+    }
+    if (S.sel) {
+      if (plantAt(hit.col, hit.row, S.sel)) S.sel = null;
+      syncHud();
+    }
+  });
+
+  document.getElementById('shovel').addEventListener('click', function () {
+    if (!S || S.mode !== 'playing') return;
+    S.shovel = !S.shovel;
+    S.sel = null;
+    syncHud();
+  });
+
+  document.getElementById('pauseBtn').addEventListener('click', function () {
+    if (!S) return;
+    if (S.mode === 'playing') pauseScreen();
+    else if (S.mode === 'paused') { S.mode = 'playing'; hide(); }
+  });
+
+  var muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', function () {
+    muted = !muted;
+    muteBtn.textContent = muted ? 'Sound: off' : 'Sound: on';
+  });
+
+  screenEl.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-a]');
+    if (!b) return;
+    var a = b.dataset.a;
+    audio();
+    if (a === 'play') startRun();
+    else if (a === 'help') helpScreen();
+    else if (a === 'board') boardScreen(null);
+    else if (a === 'menu') menuScreen();
+    else if (a === 'resume') { S.mode = 'playing'; hide(); }
+    else if (a === 'restart') startRun();
+    else if (a === 'submit') submitScore();
+  });
+
+  window.addEventListener('keydown', function (ev) {
+    if (!S || !ev.key) return;
+    var tag = ev.target && ev.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    var k = ev.key.toLowerCase();
+    if (k >= '1' && k <= '4') {
+      selectSeed(ORDER[parseInt(k, 10) - 1]);
+    } else if (k === 'escape') {
+      S.sel = null;
+      S.shovel = false;
+      syncHud();
+    } else if (k === 's') {
+      if (S.mode === 'playing') { S.shovel = !S.shovel; S.sel = null; syncHud(); }
+    } else if (k === 'p') {
+      if (S.mode === 'playing') pauseScreen();
+      else if (S.mode === 'paused') { S.mode = 'playing'; hide(); }
+    } else if (k === 'm') {
+      muteBtn.click();
+    }
+  });
+
+  // ---------- loop + scaling ----------
+
+  var last = 0;
+
+  function frame(now) {
+    if (!last) last = now;
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (S && S.mode === 'playing') {
+      update(dt);
+      draw();
+    } else if (S) {
+      draw();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function fitFrame() {
+    var frame = document.getElementById('frame');
+    var s = Math.min((window.innerWidth - 24) / 1000, (window.innerHeight - 24) / 660);
+    frame.style.transform = 'scale(' + Math.max(0.35, Math.min(1, s)) + ')';
+  }
+
+  window.addEventListener('resize', fitFrame, { passive: true });
+
+  S = freshState();
+  buildPackets();
+  syncHud();
+  fitFrame();
+  menuScreen();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

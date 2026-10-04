@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-iq3-s-strata",
+  "model_display": "Qwen3.8 Flash Next IQ3_S (Strata)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-04T13:32:27Z",
+  "runner": "Qwen3.8 Flash Next IQ3_S via Qwen Code session + Strata 0.1.38 (llama.cpp) server",
+  "notes": "Iterate-until-polished per repo-owner request (deviates from PLAN.md single-shot raw output). Verified in Chromium against a local http server: WebGL scene renders with no page or console errors, the beat/section readout advances through all eight choreography blocks, Free camera/Auto camera and Groove on/off both toggle, and orbit drag works in free-camera mode. Repaired during the pass: capsule limbs stacked so feet landed through the floor, per-frame light intensities left at non-physical values that blew out the whole frame, additive light-shaft cones reading as hard-edged sheets across the sky, an oversized moon halo that showed its quad edge, grazing-angle ground shimmer (no texture anisotropy), MJ's hat brim sitting at eye level, Trump's hair volume covering his face, and camera presets so far back the four figures read as thumbnails. A data-URI <link rel=\"icon\"> was added so the page logs no favicon 404 when served over http.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF IQ3_S (GSQ-RCO)",
+    "variant": "flash-next / Strata",
+    "engine": "Strata 0.1.38 (llama.cpp)",
+    "gpu": "4x NVIDIA RTX 3090"
+  }
+}

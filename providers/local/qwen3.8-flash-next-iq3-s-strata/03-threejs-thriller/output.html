@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>THRILLER — Graveyard Rehearsal</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #05070c;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: #e8eaf2;
+  }
+  #app { position: absolute; inset: 0; }
+  canvas { display: block; }
+
+  /* lens falloff: keeps the four-figure line reading as the subject */
+  #vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: radial-gradient(ellipse 74% 68% at 50% 47%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.46) 100%);
+  }
+
+  /* cinematic letterbox */
+  .bar {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 6.2vh;
+    background: #000;
+    z-index: 6;
+    pointer-events: none;
+  }
+  .bar.top { top: 0; }
+  .bar.bottom { bottom: 0; }
+
+  #title {
+    position: absolute;
+    left: 4vw;
+    bottom: 9vh;
+    z-index: 7;
+    pointer-events: none;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9);
+  }
+  #title b {
+    display: block;
+    font-size: clamp(26px, 5.4vw, 72px);
+    letter-spacing: 0.14em;
+    line-height: 1;
+    color: #f4e9d0;
+  }
+  #title span {
+    display: block;
+    margin-top: 6px;
+    font-size: clamp(11px, 1.3vw, 15px);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #9fb4d6;
+  }
+
+  #hud {
+    position: absolute;
+    right: 3vw;
+    bottom: 8.4vh;
+    z-index: 8;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  button {
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 13px;
+    color: #e8eaf2;
+    background: rgba(14, 20, 32, 0.62);
+    border: 1px solid rgba(150, 175, 215, 0.34);
+    border-radius: 3px;
+    cursor: pointer;
+    backdrop-filter: blur(3px);
+  }
+  button:hover { background: rgba(30, 44, 66, 0.78); }
+  #beat {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: #8fa6c8;
+    min-width: 122px;
+    text-align: right;
+  }
+  #err {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10vw;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #ffb4a8;
+    z-index: 9;
+  }
+  #note {
+    position: absolute;
+    left: 4vw;
+    top: 8vh;
+    z-index: 7;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: #7e90ad;
+    max-width: 30ch;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="vignette"></div>
+<div class="bar top"></div>
+<div class="bar bottom"></div>
+<div id="note">Stylized geometric caricatures for a choreography study &mdash; not likenesses or deepfakes. Groove is an original synthesized pattern, not the master recording.</div>
+<div id="title"><b>THRILLER</b><span>Graveyard rehearsal &mdash; four takes</span></div>
+<div id="hud">
+  <div id="beat">bar 1 &middot; take A</div>
+  <button id="camBtn">Free camera</button>
+  <button id="musBtn">Groove: off</button>
+</div>
+<div id="err"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script>
+  window.addEventListener('error', function (e) {
+    var box = document.getElementById('err');
+    if (!box || box.style.display === 'flex') return;
+    if (String(e.message || '').indexOf('import') >= 0 || String(e.message || '').indexOf('module') >= 0 ||
+        String(e.filename || '').indexOf('three') >= 0) {
+      box.style.display = 'flex';
+      box.textContent = 'Three.js could not be fetched from the CDN. This page needs network access to cdn.jsdelivr.net on first load.';
+    }
+  });
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+var BPM = 118;
+var BEAT = 60 / BPM;
+var app = document.getElementById('app');
+
+// ---------- renderer / scene / camera ----------
+
+var renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+app.appendChild(renderer.domElement);
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05070d);
+scene.fog = new THREE.FogExp2(0x060a12, 0.013);
+
+var camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 260);
+camera.position.set(0, 1.9, 11.5);
+
+var controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 2.5;
+controls.maxDistance = 40;
+controls.maxPolarAngle = Math.PI * 0.52;
+controls.enabled = false;
+
+var composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+var bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.3, 0.4, 1.15);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// ---------- textures ----------
+
+function canvasTexture(size, painter) {
+  var c = document.createElement('canvas');
+  c.width = c.height = size;
+  painter(c.getContext('2d'), size);
+  var t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  // without this the ground speckle shimmers into squares at grazing angles
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+var groundTex = canvasTexture(1024, function (g, s) {
+  g.fillStyle = '#1b2417';
+  g.fillRect(0, 0, s, s);
+  for (var i = 0; i < 5200; i++) {
+    var x = Math.random() * s, y = Math.random() * s;
+    var v = Math.random();
+    g.fillStyle = v < 0.45 ? 'rgba(38,52,30,0.75)' : (v < 0.8 ? 'rgba(24,34,22,0.7)' : 'rgba(58,70,44,0.55)');
+    g.fillRect(x, y, 2 + Math.random() * 7, 2 + Math.random() * 7);
+  }
+  for (var p = 0; p < 26; p++) {
+    g.strokeStyle = 'rgba(70,80,60,0.16)';
+    g.lineWidth = 1 + Math.random() * 2;
+    g.beginPath();
+    var px = Math.random() * s, py = Math.random() * s;
+    g.moveTo(px, py);
+    g.bezierCurveTo(px + 120, py + 60, px - 90, py + 150, px + 40, py + 220);
+    g.stroke();
+  }
+});
+groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+groundTex.repeat.set(7, 7);
+
+var softTex = canvasTexture(256, function (g, s) {
+  var r = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  r.addColorStop(0, 'rgba(255,255,255,0.9)');
+  r.addColorStop(0.45, 'rgba(255,255,255,0.28)');
+  r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, s, s);
+});
+
+var stoneTex = canvasTexture(512, function (g, s) {
+  g.fillStyle = '#6d7076';
+  g.fillRect(0, 0, s, s);
+  for (var i = 0; i < 2600; i++) {
+    var v = Math.random();
+    g.fillStyle = v < 0.5 ? 'rgba(96,99,104,0.6)' : 'rgba(52,55,60,0.5)';
+    g.fillRect(Math.random() * s, Math.random() * s, 2 + Math.random() * 6, 2 + Math.random() * 6);
+  }
+  g.fillStyle = 'rgba(40,60,40,0.32)';
+  for (var m = 0; m < 30; m++) {
+    g.beginPath();
+    g.ellipse(Math.random() * s, s * (0.6 + Math.random() * 0.4), 8 + Math.random() * 46, 5 + Math.random() * 16, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+});
+
+// ---------- lighting ----------
+
+scene.add(new THREE.HemisphereLight(0x35507a, 0x0b1108, 0.34));
+
+var moon = new THREE.DirectionalLight(0xa9c8ff, 1.0);
+moon.position.set(-14, 13, -34);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048, 2048);
+moon.shadow.camera.near = 1;
+moon.shadow.camera.far = 70;
+moon.shadow.camera.left = -20;
+moon.shadow.camera.right = 20;
+moon.shadow.camera.top = 20;
+moon.shadow.camera.bottom = -20;
+moon.shadow.bias = -0.0006;
+moon.shadow.normalBias = 0.02;
+scene.add(moon);
+
+// physical falloff: these are candela, so at ~11 m a few hundred is already bright
+var key = new THREE.SpotLight(0xffb673, 300, 46, 0.62, 0.72, 2);
+key.position.set(6.5, 9.5, 8.5);
+key.target.position.set(0, 1.1, 0);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.bias = -0.0008;
+key.shadow.normalBias = 0.02;
+scene.add(key, key.target);
+
+var rimA = new THREE.SpotLight(0x5f8dff, 190, 44, 0.7, 0.8, 2);
+rimA.position.set(-8.5, 7.5, -7.5);
+rimA.target.position.set(-1.5, 1.2, 0);
+scene.add(rimA, rimA.target);
+
+var rimB = new THREE.SpotLight(0xff5ea8, 170, 40, 0.75, 0.85, 2);
+rimB.position.set(9, 5.5, -8);
+rimB.target.position.set(2, 1.2, 0);
+scene.add(rimB, rimB.target);
+
+var groundGlow = new THREE.PointLight(0x2f6bff, 9, 9, 2);
+groundGlow.position.set(0, 0.32, 1.2);
+scene.add(groundGlow);
+
+// ---------- set ----------
+
+var floor = new THREE.Mesh(
+  new THREE.CircleGeometry(48, 64),
+  new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.96, metalness: 0.02 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+var stoneMat = new THREE.MeshStandardMaterial({ map: stoneTex, roughness: 0.92, metalness: 0.03 });
+
+function tombstone(x, z, scale, tilt) {
+  var g = new THREE.Group();
+  var slab = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.7, 0.26), stoneMat);
+  slab.position.y = 0.85;
+  var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.575, 0.575, 0.26, 24, 1, false, 0, Math.PI), stoneMat);
+  cap.rotation.x = -Math.PI / 2;
+  cap.position.y = 1.7;
+  var base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.2, 0.5), stoneMat);
+  base.position.y = 0.1;
+  g.add(slab, cap, base);
+  g.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  g.position.set(x, 0, z);
+  g.scale.setScalar(scale);
+  g.rotation.set(0, Math.random() * 0.7 - 0.35, tilt);
+  scene.add(g);
+  return g;
+}
+
+[
+  [-13.5, -6.5, 1.15, 0.05], [-10.5, -3.2, 0.9, -0.06], [-8.2, -8.4, 1.0, 0.03],
+  [8.6, -7.4, 1.1, -0.04], [12.4, -4.6, 0.95, 0.06], [10.2, -10.2, 1.2, 0.02],
+  [-16.4, -11.5, 1.3, -0.03], [3.2, -13.6, 1.05, 0.04], [-3.8, -14.8, 1.25, -0.05]
+].forEach(function (t) { tombstone(t[0], t[1], t[2], t[3]); });
+
+function bareTree(x, z, h) {
+  var g = new THREE.Group();
+  var bark = new THREE.MeshStandardMaterial({ color: 0x241d18, roughness: 0.95 });
+  function branch(len, r, depth) {
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r, len, 7), bark);
+    m.position.y = len / 2;
+    m.castShadow = true;
+    var node = new THREE.Group();
+    node.add(m);
+    if (depth > 0) {
+      for (var i = 0; i < 2 + (depth > 1 ? 1 : 0); i++) {
+        var child = branch(len * (0.58 + Math.random() * 0.22), r * 0.6, depth - 1);
+        child.position.y = len * (0.55 + Math.random() * 0.4);
+        child.rotation.z = (i % 2 ? -1 : 1) * (0.5 + Math.random() * 0.6);
+        child.rotation.x = (Math.random() - 0.5) * 0.9;
+        node.add(child);
+      }
+    }
+    return node;
+  }
+  var trunk = branch(h, 0.28, 3);
+  g.add(trunk);
+  g.position.set(x, 0, z);
+  g.rotation.y = Math.random() * Math.PI;
+  scene.add(g);
+}
+
+[[-20, -14, 6.4], [18, -17, 7.2], [-25, 4, 6.8], [24, -2, 6.0], [-6, -22, 7.6], [9, -24, 6.6]].forEach(function (t) {
+  bareTree(t[0], t[1], t[2]);
+});
+
+// chain-link fence band behind the action
+(function fence() {
+  var postMat = new THREE.MeshStandardMaterial({ color: 0x40464e, roughness: 0.6, metalness: 0.7 });
+  var meshMat = new THREE.MeshStandardMaterial({
+    color: 0x6a727c, roughness: 0.55, metalness: 0.6, transparent: true, opacity: 0.22,
+    side: THREE.DoubleSide
+  });
+  for (var i = -7; i <= 7; i++) {
+    var x = i * 3.4;
+    var post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.6, 8), postMat);
+    post.position.set(x, 1.3, -17);
+    post.castShadow = true;
+    scene.add(post);
+  }
+  var panel = new THREE.Mesh(new THREE.PlaneGeometry(48, 2.4, 1, 1), meshMat);
+  panel.position.set(0, 1.35, -17);
+  scene.add(panel);
+  var rail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 48, 8), postMat);
+  rail.rotation.z = Math.PI / 2;
+  rail.position.set(0, 2.55, -17);
+  scene.add(rail);
+})();
+
+// moon + stars
+(function sky() {
+  var disc = new THREE.Mesh(
+    new THREE.SphereGeometry(2.8, 32, 24),
+    new THREE.MeshBasicMaterial({ color: 0xd7e3ff, fog: false })
+  );
+  disc.position.set(-17, 14.5, -54);
+  scene.add(disc);
+  var halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: softTex, color: 0x9fc0ff, transparent: true, opacity: 0.45,
+    blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+  }));
+  halo.scale.set(13, 13, 1);
+  halo.position.copy(disc.position);
+  scene.add(halo);
+
+  var starGeo = new THREE.BufferGeometry();
+  var pts = [];
+  for (var i = 0; i < 1400; i++) {
+    var a = Math.random() * Math.PI * 2;
+    var r = 60 + Math.random() * 120;
+    pts.push(Math.cos(a) * r, 12 + Math.random() * 90, Math.sin(a) * r - 30);
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  var stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+    color: 0xcfe0ff, size: 0.42, sizeAttenuation: true, transparent: true, opacity: 0.72, fog: false
+  }));
+  scene.add(stars);
+})();
+
+// drifting ground mist
+var mist = [];
+(function makeMist() {
+  for (var i = 0; i < 16; i++) {
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: softTex, color: i % 3 === 0 ? 0x6f8fbf : 0x8fa8c8,
+      transparent: true, opacity: 0.045 + Math.random() * 0.04,
+      depthWrite: false, blending: THREE.NormalBlending
+    }));
+    var w = 7 + Math.random() * 10;
+    s.scale.set(w, w * 0.3, 1);
+    s.position.set(-26 + Math.random() * 52, 0.4 + Math.random() * 1.5, -20 + Math.random() * 26);
+    s.userData.vx = 0.16 + Math.random() * 0.3;
+    mist.push(s);
+    scene.add(s);
+  }
+})();
+
+// Light shafts were tried and removed: on a near-black sky even 2% additive
+// reads as a hard-edged sheet, and the fog + mist already carry the volume.
+
+// ---------- character rigs ----------
+
+function M(color, rough, metal) {
+  return new THREE.MeshStandardMaterial({ color: color, roughness: rough === undefined ? 0.7 : rough, metalness: metal || 0 });
+}
+
+function limb(mat, r, len) {
+  var m = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 6, 12), mat);
+  // joints sit at the ends of the cylinder span, so segment lengths add up to the
+  // hip height exactly and the feet land on the floor instead of through it
+  m.position.y = -len / 2;
+  m.castShadow = true;
+  return m;
+}
+
+function joint(parent, x, y, z) {
+  var g = new THREE.Group();
+  g.position.set(x, y, z);
+  parent.add(g);
+  return g;
+}
+
+function buildRig(p) {
+  var root = new THREE.Group();
+  var skin = M(p.skin, p.skinRough === undefined ? 0.62 : p.skinRough);
+  var suit = M(p.suit, 0.74);
+  var suit2 = M(p.suit2 || p.suit, 0.7);
+  var shirt = M(p.shirt, 0.66);
+  var hair = M(p.hair, 0.5);
+  var shoe = M(p.shoe, 0.55);
+
+  var pelvis = joint(root, 0, p.hip, 0);
+  var spine = joint(pelvis, 0, 0.12, 0);
+  var chest = joint(spine, 0, p.torso * 0.55, 0);
+  var neck = joint(chest, 0, p.torso * 0.42, 0);
+  var head = joint(neck, 0, p.neckLen, 0);
+
+  // torso
+  var belly = new THREE.Mesh(new THREE.CapsuleGeometry(p.torsoR, p.torso * 0.5, 8, 16), suit);
+  belly.position.y = p.torso * 0.28;
+  belly.castShadow = true;
+  spine.add(belly);
+  var upper = new THREE.Mesh(new THREE.CapsuleGeometry(p.torsoR * 1.06, p.torso * 0.42, 8, 16), suit);
+  upper.position.y = p.torso * 0.74;
+  upper.scale.z = 0.72;
+  upper.castShadow = true;
+  spine.add(upper);
+
+  // shirt V and tie
+  var v = new THREE.Mesh(new THREE.BoxGeometry(p.torsoR * 0.62, p.torso * 0.5, 0.05), shirt);
+  v.position.set(0, p.torso * 0.68, p.torsoR * 0.7);
+  spine.add(v);
+  if (p.tie) {
+    var tie = new THREE.Mesh(new THREE.BoxGeometry(0.11, p.torso * 0.52, 0.05), M(p.tie, 0.5));
+    tie.position.set(0, p.torso * 0.6, p.torsoR * 0.74);
+    spine.add(tie);
+    var knot = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.06), M(p.tie, 0.5));
+    knot.position.set(0, p.torso * 0.88, p.torsoR * 0.74);
+    spine.add(knot);
+  }
+
+  // head
+  var skull = new THREE.Mesh(new THREE.SphereGeometry(p.headR, 28, 22), skin);
+  skull.scale.set(0.92, 1.06, 0.96);
+  skull.castShadow = true;
+  head.add(skull);
+  var jaw = new THREE.Mesh(new THREE.SphereGeometry(p.headR * 0.78, 20, 16), skin);
+  jaw.position.set(0, -p.headR * 0.5, p.headR * 0.14);
+  jaw.scale.set(0.94, 0.72, 0.9);
+  head.add(jaw);
+  var nose = new THREE.Mesh(new THREE.ConeGeometry(p.headR * 0.2, p.headR * 0.44, 12), skin);
+  nose.rotation.x = Math.PI / 2;
+  nose.position.set(0, -p.headR * 0.1, p.headR * 0.95);
+  head.add(nose);
+
+  // eyes
+  var eyeW = new THREE.Mesh(new THREE.SphereGeometry(p.headR * 0.19, 16, 12), M(0xf3f0e8, 0.35));
+  var eyeW2 = eyeW.clone();
+  eyeW.position.set(-p.headR * 0.34, p.headR * 0.08, p.headR * 0.82);
+  eyeW2.position.set(p.headR * 0.34, p.headR * 0.08, p.headR * 0.82);
+  head.add(eyeW, eyeW2);
+  var pupil = new THREE.Mesh(new THREE.SphereGeometry(p.headR * 0.085, 12, 10), M(0x1a1a20, 0.3));
+  var pupil2 = pupil.clone();
+  pupil.position.set(-p.headR * 0.34, p.headR * 0.08, p.headR * 0.98);
+  pupil2.position.set(p.headR * 0.34, p.headR * 0.08, p.headR * 0.98);
+  head.add(pupil, pupil2);
+
+  if (p.mouth !== false) {
+    var mouth = new THREE.Mesh(new THREE.BoxGeometry(p.headR * 0.52, 0.035, 0.03), M(p.mouthColor || 0x2a1a1c, 0.5));
+    mouth.position.set(0, -p.headR * 0.42, p.headR * 0.88);
+    head.add(mouth);
+  }
+
+  // arms
+  var armL = joint(chest, -p.shoulderR, p.torso * 0.3, 0);
+  var armR = joint(chest, p.shoulderR, p.torso * 0.3, 0);
+  armL.add(limb(suit, p.armR, p.upperArm));
+  armR.add(limb(suit, p.armR, p.upperArm));
+  var foreL = joint(armL, 0, -p.upperArm, 0);
+  var foreR = joint(armR, 0, -p.upperArm, 0);
+  foreL.add(limb(suit2, p.armR * 0.86, p.foreArm));
+  foreR.add(limb(suit2, p.armR * 0.86, p.foreArm));
+  var handL = joint(foreL, 0, -p.foreArm, 0);
+  var handR = joint(foreR, 0, -p.foreArm, 0);
+  var glove = p.glove ? M(0xf6f3ea, 0.5) : skin;
+  var hL = new THREE.Mesh(new THREE.SphereGeometry(p.handR, 16, 12), glove);
+  var hR = new THREE.Mesh(new THREE.SphereGeometry(p.handR, 16, 12), skin);
+  hL.scale.set(0.86, 1.1, 0.7);
+  hR.scale.set(0.86, 1.1, 0.7);
+  hL.castShadow = true;
+  hR.castShadow = true;
+  handL.add(hL);
+  handR.add(hR);
+
+  // legs
+  var legL = joint(pelvis, -p.legR * 1.5, 0, 0);
+  var legR = joint(pelvis, p.legR * 1.5, 0, 0);
+  legL.add(limb(suit2, p.legR, p.thigh));
+  legR.add(limb(suit2, p.legR, p.thigh));
+  var shinL = joint(legL, 0, -p.thigh, 0);
+  var shinR = joint(legR, 0, -p.thigh, 0);
+  shinL.add(limb(suit2, p.legR * 0.84, p.shin));
+  shinR.add(limb(suit2, p.legR * 0.84, p.shin));
+  var footL = joint(shinL, 0, -p.shin, 0);
+  var footR = joint(shinR, 0, -p.shin, 0);
+  [footL, footR].forEach(function (f) {
+    var shoeMesh = new THREE.Mesh(new THREE.BoxGeometry(p.legR * 1.9, p.legR * 1.0, p.footLen), shoe);
+    shoeMesh.position.set(0, -p.legR * 0.5, p.footLen * 0.22);
+    shoeMesh.castShadow = true;
+    f.add(shoeMesh);
+  });
+
+  if (p.build) p.build(root, head, chest, { skin: skin, suit: suit, hair: hair, shirt: shirt });
+
+  root.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+
+  return {
+    root: root, pelvis: pelvis, spine: spine, chest: chest, neck: neck, head: head,
+    armL: armL, armR: armR, foreL: foreL, foreR: foreR, handL: handL, handR: handR,
+    legL: legL, legR: legR, shinL: shinL, shinR: shinR, footL: footL, footR: footR,
+    mats: { skin: skin, suit: suit, hair: hair }
+  };
+}
+
+// per-character silhouettes and signature details
+function makeMJ() {
+  var r = buildRig({
+    hip: 0.92, torso: 0.56, torsoR: 0.19, neckLen: 0.14, headR: 0.19,
+    shoulderR: 0.235, armR: 0.062, upperArm: 0.3, foreArm: 0.28, handR: 0.075,
+    legR: 0.078, thigh: 0.42, shin: 0.42, footLen: 0.26,
+    skin: 0x8d5f43, suit: 0xc0342b, suit2: 0x1c1c22, shirt: 0xf2eee4,
+    hair: 0x121013, shoe: 0x111114, tie: null, glove: true,
+    build: function (root, head, chest, m) {
+      // curly hair mass under a low crown: curls read below the brim
+      for (var i = 0; i < 16; i++) {
+        var a = (i / 16) * Math.PI * 2;
+        var puff = new THREE.Mesh(new THREE.SphereGeometry(0.07 + Math.random() * 0.04, 12, 10), m.hair);
+        puff.position.set(Math.cos(a) * 0.19, 0.04 + Math.sin(i * 2.1) * 0.04, Math.sin(a) * 0.18);
+        head.add(puff);
+      }
+      var cap = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), m.hair);
+      cap.position.y = 0.13;
+      head.add(cap);
+      var brim = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.028, 10, 26), M(0x15131a, 0.55));
+      brim.rotation.x = Math.PI / 2;
+      brim.position.y = 0.12;
+      head.add(brim);
+      // jacket lapel stripes
+      [-1, 1].forEach(function (s) {
+        var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.34, 0.03), M(0x14141a, 0.6));
+        stripe.position.set(s * 0.1, 0.42, 0.2);
+        stripe.rotation.z = s * 0.16;
+        chest.add(stripe);
+      });
+      var belt = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 8, 24), M(0x101014, 0.5));
+      belt.rotation.x = Math.PI / 2;
+      belt.position.y = 0.16;
+      chest.add(belt);
+    }
+  });
+  return r;
+}
+
+function makePepe() {
+  var r = buildRig({
+    hip: 0.78, torso: 0.5, torsoR: 0.22, neckLen: 0.1, headR: 0.24,
+    shoulderR: 0.26, armR: 0.07, upperArm: 0.28, foreArm: 0.26, handR: 0.09,
+    legR: 0.085, thigh: 0.34, shin: 0.34, footLen: 0.3,
+    skin: 0x74b944, suit: 0x24262c, suit2: 0x2d3038, shirt: 0xf3f0e6,
+    hair: 0x74b944, shoe: 0x14161a, tie: 0x9c2f2a, mouth: false,
+    build: function (root, head, chest, m) {
+      // frog head: wide lid, big grin, eyes on top
+      var lid = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.55), m.skin);
+      lid.position.y = 0.02;
+      lid.scale.set(1.1, 0.85, 1.02);
+      head.add(lid);
+      var grin = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.038, 12, 30, Math.PI), M(0x2b1416, 0.5));
+      grin.rotation.z = Math.PI;
+      grin.rotation.x = 0.12;
+      grin.position.set(0, -0.09, 0.2);
+      head.add(grin);
+      var lip = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 10, 26, Math.PI), M(0x4f8a34, 0.6));
+      lip.rotation.z = Math.PI;
+      lip.position.set(0, -0.02, 0.19);
+      head.add(lip);
+      [-1, 1].forEach(function (s) {
+        var bulge = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), M(0xf7f4ea, 0.4));
+        bulge.position.set(s * 0.14, 0.17, 0.14);
+        head.add(bulge);
+        var pup = new THREE.Mesh(new THREE.SphereGeometry(0.036, 12, 10), M(0x14141a, 0.3));
+        pup.position.set(s * 0.15, 0.17, 0.22);
+        head.add(pup);
+        // nostrils
+        var n = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 6), M(0x2f5626, 0.6));
+        n.position.set(s * 0.06, 0.02, 0.26);
+        head.add(n);
+      });
+      var throat = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), M(0x9fd163, 0.65));
+      throat.position.set(0, -0.16, 0.12);
+      throat.scale.set(1, 0.7, 0.9);
+      head.add(throat);
+    }
+  });
+  return r;
+}
+
+function makeTrump() {
+  var r = buildRig({
+    hip: 0.885, torso: 0.66, torsoR: 0.27, neckLen: 0.1, headR: 0.2,
+    shoulderR: 0.3, armR: 0.07, upperArm: 0.34, foreArm: 0.3, handR: 0.08,
+    legR: 0.085, thigh: 0.4, shin: 0.4, footLen: 0.27,
+    skin: 0xd9915f, skinRough: 0.72, suit: 0x1b2740, suit2: 0x1b2740, shirt: 0xf7f6f2,
+    hair: 0xe6c25a, shoe: 0x14161c, tie: 0xc4302b,
+    build: function (root, head, chest, m) {
+      // long swept hair volume, kept above the eye line so the face stays readable
+      var sweep = new THREE.Mesh(new THREE.SphereGeometry(0.22, 22, 16), m.hair);
+      sweep.scale.set(1.06, 0.5, 1.02);
+      sweep.position.set(0, 0.2, -0.06);
+      head.add(sweep);
+      var fringe = new THREE.Mesh(new THREE.TorusGeometry(0.195, 0.042, 12, 28), m.hair);
+      fringe.rotation.x = Math.PI / 2;
+      fringe.position.set(0, 0.185, 0);
+      head.add(fringe);
+      var tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 12), m.hair);
+      tail.scale.set(1.5, 0.7, 0.8);
+      tail.position.set(0, 0.1, -0.2);
+      head.add(tail);
+      // long torso read: broad lapels
+      [-1, 1].forEach(function (s) {
+        var lapel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.44, 0.04), M(0x15203a, 0.7));
+        lapel.position.set(s * 0.14, 0.4, 0.23);
+        lapel.rotation.z = s * 0.2;
+        chest.add(lapel);
+      });
+    }
+  });
+  return r;
+}
+
+function makeMusk() {
+  var r = buildRig({
+    hip: 0.93, torso: 0.6, torsoR: 0.26, neckLen: 0.12, headR: 0.195,
+    shoulderR: 0.31, armR: 0.075, upperArm: 0.32, foreArm: 0.3, handR: 0.085,
+    legR: 0.088, thigh: 0.42, shin: 0.42, footLen: 0.28,
+    skin: 0xd9a882, suit: 0x22242c, suit2: 0x22242c, shirt: 0xeae7de,
+    hair: 0x2c2119, shoe: 0x14161a, tie: 0x2c4f8f,
+    build: function (root, head, chest, m) {
+      var top = new THREE.Mesh(new THREE.SphereGeometry(0.205, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), m.hair);
+      top.position.y = 0.03;
+      top.scale.set(1.02, 0.9, 1.0);
+      head.add(top);
+      // glasses
+      var frameMat = M(0x101218, 0.35, 0.6);
+      [-1, 1].forEach(function (s) {
+        var ring = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.009, 8, 20), frameMat);
+        ring.position.set(s * 0.075, 0.03, 0.185);
+        head.add(ring);
+        var lens = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 10), new THREE.MeshStandardMaterial({
+          color: 0x9fc4e8, roughness: 0.15, metalness: 0.2, transparent: true, opacity: 0.34
+        }));
+        lens.position.set(s * 0.075, 0.03, 0.183);
+        lens.scale.z = 0.25;
+        head.add(lens);
+      });
+      var bridge = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.008, 0.008), frameMat);
+      bridge.position.set(0, 0.03, 0.185);
+      head.add(bridge);
+      // short beard
+      var beard = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 12), M(0x352a20, 0.72));
+      beard.scale.set(0.98, 0.62, 0.9);
+      beard.position.set(0, -0.11, 0.06);
+      head.add(beard);
+    }
+  });
+  return r;
+}
+
+var cast = [
+  { rig: makeMJ(), name: 'MJ', x: -3.3, phase: 0, bounce: 1.0, quirk: 'mj' },
+  { rig: makePepe(), name: 'Pepe', x: -1.1, phase: 0.25, bounce: 1.35, quirk: 'pepe' },
+  { rig: makeTrump(), name: 'Trump', x: 1.1, phase: -0.2, bounce: 0.8, quirk: 'trump' },
+  { rig: makeMusk(), name: 'Musk', x: 3.3, phase: 0.1, bounce: 0.95, quirk: 'musk' }
+];
+
+cast.forEach(function (c, i) {
+  c.rig.root.position.set(c.x, 0, i === 1 || i === 3 ? 0.5 : 0);
+  c.rig.root.rotation.y = 0.06 * (i - 1.5);
+  scene.add(c.rig.root);
+  c.base = c.rig.root.position.clone();
+  c.baseRot = c.rig.root.rotation.y;
+});
+
+// ---------- choreography ----------
+
+function rest(rig) {
+  return {
+    pelvisY: 0, pelvisX: 0, pelvisRotZ: 0, pelvisRotY: 0,
+    spineRotX: 0, spineRotZ: 0, chestRotY: 0,
+    headRotX: 0, headRotY: 0, headRotZ: 0,
+    armL: [0.12, 0, -0.14], armR: [0.12, 0, 0.14],
+    foreL: [-0.3, 0, 0], foreR: [-0.3, 0, 0],
+    legL: [0, 0, -0.03], legR: [0, 0, 0.03],
+    shinL: [0, 0, 0], shinR: [0, 0, 0]
+  };
+}
+
+var SECTIONS = [
+  {
+    // 1. the classic claw shuffle
+    name: 'claw shuffle',
+    pose: function (b, c) {
+      var p = rest();
+      var s = Math.sin(b * Math.PI);
+      p.pelvisRotZ = 0.12 * s;
+      p.pelvisX = 0.12 * s;
+      p.pelvisRotY = 0.3 * Math.sin(b * Math.PI * 0.5);
+      p.spineRotZ = -0.08 * s;
+      p.headRotY = 0.42 * Math.sin(b * Math.PI * 0.5 + 0.5);
+      p.armL = [-0.35 - 0.2 * s, -0.5 - 0.3 * s, -0.5];
+      p.armR = [-0.35 + 0.2 * s, 0.5 + 0.3 * s, 0.5];
+      p.foreL = [-1.25 - 0.3 * s, -0.35, 0];
+      p.foreR = [-1.25 + 0.3 * s, 0.35, 0];
+      p.legL = [-0.12 * s, 0, -0.04];
+      p.legR = [0.12 * s, 0, 0.04];
+      return p;
+    }
+  },
+  {
+    // 2. head rolls and side lunges
+    name: 'head rolls',
+    pose: function (b, c) {
+      var p = rest();
+      var s = Math.sin(b * Math.PI * 2);
+      p.pelvisY = -0.09 + 0.05 * Math.abs(s);
+      p.headRotZ = 0.5 * Math.sin(b * Math.PI);
+      p.headRotX = 0.25 * Math.cos(b * Math.PI);
+      p.chestRotY = 0.45 * s;
+      p.armL = [0.2, -0.9 - 0.4 * s, -1.5];
+      p.armR = [0.2, 0.9 - 0.4 * s, 1.5];
+      p.foreL = [-0.5, 0, 0.4];
+      p.foreR = [-0.5, 0, -0.4];
+      p.legL = [-0.5 * (0.5 + 0.5 * s), 0, -0.18];
+      p.legR = [-0.5 * (0.5 - 0.5 * s), 0, 0.18];
+      p.shinL = [0.4 * (0.5 + 0.5 * s), 0, 0];
+      return p;
+    }
+  },
+  {
+    // 3. step-touch with arm crosses
+    name: 'step touch',
+    pose: function (b, c) {
+      var p = rest();
+      var s = Math.sin(b * Math.PI);
+      p.pelvisX = 0.22 * s;
+      p.pelvisRotY = -0.22 * s;
+      p.spineRotX = 0.14;
+      p.headRotY = 0.2 * s;
+      p.armL = [-1.3 + 0.2 * s, 0.5 - 1.0 * s, -0.2];
+      p.armR = [-1.3 - 0.2 * s, -0.5 - 1.0 * s, 0.2];
+      p.foreL = [-0.9, 0, 0];
+      p.foreR = [-0.9, 0, 0];
+      p.legL = [-0.3 * (1 - s), 0, -0.14];
+      p.legR = [-0.3 * s, 0, 0.14];
+      return p;
+    }
+  },
+  {
+    // 4. knee kicks and shoulder isolations
+    name: 'knee kicks',
+    pose: function (b, c) {
+      var p = rest();
+      var k = Math.max(0, Math.sin(b * Math.PI * 2));
+      p.pelvisY = -0.06 - 0.06 * k;
+      p.pelvisRotZ = 0.1 * Math.sin(b * Math.PI);
+      p.chestRotZ = 0.22 * Math.sin(b * Math.PI * 2);
+      p.headRotZ = -0.18 * Math.sin(b * Math.PI * 2);
+      p.armL = [-1.5, -0.7, -0.9];
+      p.armR = [-1.5, 0.7, 0.9];
+      p.foreL = [-1.5, 0.4, 0];
+      p.foreR = [-1.5, -0.4, 0];
+      p.legL = [-1.1 * k, 0, -0.08];
+      p.shinL = [1.3 * k, 0, 0];
+      p.legR = [-0.2 * k, 0, 0.08];
+      return p;
+    }
+  },
+  {
+    // 5. full turn with arms wide
+    name: 'the turn',
+    pose: function (b, c) {
+      var p = rest();
+      var s = Math.sin(b * Math.PI * 2);
+      p.pelvisY = -0.05 + 0.05 * Math.abs(s);
+      p.armL = [0.1, -0.2, -1.62];
+      p.armR = [0.1, 0.2, 1.62];
+      p.foreL = [-0.25, 0, 0];
+      p.foreR = [-0.25, 0, 0];
+      p.headRotY = -0.4;
+      p.legL = [-0.35 * (0.5 + 0.5 * s), 0, -0.1];
+      p.legR = [-0.35 * (0.5 - 0.5 * s), 0, 0.1];
+      return p;
+    }
+  },
+  {
+    // 6. glide flourish: the whole line drifts right, arms lead
+    name: 'the glide',
+    pose: function (b, c) {
+      var p = rest();
+      var s = Math.sin(b * Math.PI);
+      p.pelvisX = 0.4 * Math.sin(b * Math.PI * 0.5);
+      p.pelvisRotY = 0.5 * Math.sin(b * Math.PI * 0.5);
+      p.spineRotX = 0.1;
+      p.headRotY = 0.5;
+      p.armL = [-1.1, -0.35 - 0.5 * s, -0.5];
+      p.armR = [-1.1, 0.35 - 0.5 * s, 0.5];
+      p.foreL = [-0.6, 0, 0.5];
+      p.foreR = [-0.6, 0, -0.5];
+      p.legL = [-0.7 * (0.5 + 0.5 * s), 0, -0.06];
+      p.legR = [-0.15, 0, 0.06];
+      p.shinL = [0.9 * (0.5 + 0.5 * s), 0, 0];
+      return p;
+    }
+  },
+  {
+    // 7. jump and freeze
+    name: 'jump and freeze',
+    pose: function (b, c) {
+      var p = rest();
+      var jump = Math.max(0, Math.sin(b * Math.PI));
+      p.pelvisY = 0.34 * jump;
+      p.armL = [-0.4, -0.5, -1.4 - 0.3 * jump];
+      p.armR = [-0.4, 0.5, 1.4 + 0.3 * jump];
+      p.foreL = [-0.7, 0, 0];
+      p.foreR = [-0.7, 0, 0];
+      p.legL = [-0.9 * jump, 0, -0.12];
+      p.legR = [-0.9 * jump, 0, 0.12];
+      p.shinL = [1.2 * jump, 0, 0];
+      p.shinR = [1.2 * jump, 0, 0];
+      p.headRotX = -0.2 * jump;
+      return p;
+    }
+  },
+  {
+    // 8. final pose and bow
+    name: 'final pose',
+    pose: function (b, c) {
+      var p = rest();
+      if (b < 0.5) {
+        p.armL = [-0.2, -0.4, -1.75];
+        p.armR = [-0.2, 0.4, 1.75];
+        p.pelvisY = 0.12;
+        p.headRotX = -0.3;
+      } else {
+        p.spineRotX = 0.55 * Math.min(1, (b - 0.5) * 3);
+        p.headRotX = 0.35 * Math.min(1, (b - 0.5) * 3);
+        p.armL = [0.5, -0.2, -0.3];
+        p.armR = [0.5, 0.2, 0.3];
+        p.foreL = [-0.6, 0, 0];
+        p.foreR = [-0.6, 0, 0];
+      }
+      return p;
+    }
+  }
+];
+
+function applyPose(rig, t, rate) {
+  function ease(obj, key, v) {
+    obj[key] = THREE.MathUtils.lerp(obj[key], v, rate);
+  }
+  rig.pelvis.position.y = THREE.MathUtils.lerp(rig.pelvis.position.y, t.pelvisY, rate);
+  rig.pelvis.position.x = THREE.MathUtils.lerp(rig.pelvis.position.x, t.pelvisX, rate);
+  ease(rig.pelvis, 'rotation.z', t.pelvisRotZ);
+  ease(rig.pelvis, 'rotation.y', t.pelvisRotY);
+  ease(rig.spine, 'rotation.x', t.spineRotX);
+  ease(rig.spine, 'rotation.z', t.spineRotZ);
+  ease(rig.chest, 'rotation.y', t.chestRotY);
+  ease(rig.head, 'rotation.x', t.headRotX);
+  ease(rig.head, 'rotation.y', t.headRotY);
+  ease(rig.head, 'rotation.z', t.headRotZ);
+
+  function trio(j, arr) {
+    j.rotation.x = THREE.MathUtils.lerp(j.rotation.x, arr[0], rate);
+    j.rotation.y = THREE.MathUtils.lerp(j.rotation.y, arr[1], rate);
+    j.rotation.z = THREE.MathUtils.lerp(j.rotation.z, arr[2], rate);
+  }
+  trio(rig.armL, t.armL);
+  trio(rig.armR, t.armR);
+  trio(rig.foreL, t.foreL);
+  trio(rig.foreR, t.foreR);
+  trio(rig.legL, t.legL);
+  trio(rig.legR, t.legR);
+  trio(rig.shinL, t.shinL);
+  trio(rig.shinR, t.shinR);
+}
+
+// ---------- camera choreography ----------
+
+var CAM = [
+  { pos: [0, 1.7, 6.6], look: [0, 1.05, 0], fov: 44 },
+  { pos: [-5.0, 1.3, 4.6], look: [-1.6, 1.05, 0], fov: 40 },
+  { pos: [4.4, 2.0, 4.0], look: [1.2, 1.1, 0], fov: 42 },
+  { pos: [-0.4, 1.35, 5.8], look: [0, 1.1, 0.2], fov: 44 },
+  { pos: [-2.8, 2.5, 6.2], look: [0, 0.95, -0.2], fov: 38 },
+  { pos: [3.8, 1.35, 4.2], look: [2.4, 1.15, 0.2], fov: 44 },
+  { pos: [0, 2.3, 8.4], look: [0, 0.9, -0.6], fov: 36 },
+  { pos: [0, 1.4, 5.0], look: [0, 1.1, 0], fov: 42 }
+];
+
+var camPos = new THREE.Vector3().fromArray(CAM[0].pos);
+var camLook = new THREE.Vector3().fromArray(CAM[0].look);
+var camFov = CAM[0].fov;
+var freeCam = false;
+
+// ---------- groove (original synthesized pattern) ----------
+
+var actx = null;
+var grooveOn = false;
+var nextNote = 0;
+
+function startGroove() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  actx = new AC();
+  var bus = actx.createGain();
+  bus.gain.value = 0.18;
+  bus.connect(actx.destination);
+
+  var bass = [41.2, 41.2, 61.7, 41.2, 49.0, 41.2, 55.0, 49.0];
+  function voice(freq, time, dur, type, vol) {
+    var o = actx.createOscillator();
+    var g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, time);
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(vol, time + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    o.connect(g);
+    g.connect(bus);
+    o.start(time);
+    o.stop(time + dur + 0.03);
+  }
+  function noiseHit(time, vol) {
+    var len = 0.09;
+    var buf = actx.createBuffer(1, actx.sampleRate * len, actx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    var src = actx.createBufferSource();
+    src.buffer = buf;
+    var g = actx.createGain();
+    g.gain.value = vol;
+    var f = actx.createBiquadFilter();
+    f.type = 'highpass';
+    f.frequency.value = 1800;
+    src.connect(f);
+    f.connect(g);
+    g.connect(bus);
+    src.start(time);
+  }
+  function schedule() {
+    if (!actx) return;
+    var beatIdx = Math.floor((actx.currentTime - startT) / BEAT);
+    while (nextNote < beatIdx + 2) {
+      var t = startT + nextNote * BEAT;
+      voice(bass[nextNote % 8], t, BEAT * 0.8, 'sawtooth', 0.5);
+      voice(bass[nextNote % 8] * 2, t + BEAT * 0.5, BEAT * 0.35, 'square', 0.14);
+      noiseHit(t, nextNote % 2 === 0 ? 0.3 : 0.16);
+      if (nextNote % 4 === 2) voice(330, t, 0.1, 'triangle', 0.1);
+      nextNote++;
+    }
+    window.setTimeout(schedule, 120);
+  }
+  var startT = actx.currentTime;
+  nextNote = 0;
+  schedule();
+}
+
+// ---------- UI ----------
+
+var beatEl = document.getElementById('beat');
+var camBtn = document.getElementById('camBtn');
+var musBtn = document.getElementById('musBtn');
+
+camBtn.addEventListener('click', function () {
+  freeCam = !freeCam;
+  controls.enabled = freeCam;
+  camBtn.textContent = freeCam ? 'Auto camera' : 'Free camera';
+  if (freeCam) controls.target.copy(camLook);
+});
+
+musBtn.addEventListener('click', function () {
+  grooveOn = !grooveOn;
+  musBtn.textContent = 'Groove: ' + (grooveOn ? 'on' : 'off');
+  if (grooveOn) startGroove();
+  else if (actx) { actx.close(); actx = null; }
+});
+
+// ---------- loop ----------
+
+var clock = new THREE.Clock();
+var t = 0;
+
+function frame() {
+  var dt = Math.min(clock.getDelta(), 0.05);
+  t += dt;
+
+  var beats = t / BEAT;
+  var sec = Math.floor(beats / 8) % SECTIONS.length;
+  var localBeat = (beats % 8) / 8;
+  var section = SECTIONS[sec];
+
+  for (var i = 0; i < cast.length; i++) {
+    var c = cast[i];
+    var b = ((beats + c.phase) % 8) / 8;
+    var target = section.pose(b, c);
+
+    // per-performer bounce and quirks
+    var hop = Math.abs(Math.sin((beats + c.phase) * Math.PI)) * 0.035 * c.bounce;
+    target.pelvisY += hop;
+    if (c.quirk === 'pepe') target.headRotZ += 0.12 * Math.sin(beats * Math.PI * 2);
+    if (c.quirk === 'trump') {
+      target.spineRotX += 0.16;
+      target.armL[1] += 0.25;
+      target.armR[1] -= 0.25;
+      target.legL[2] -= 0.1;
+      target.legR[2] += 0.1;
+    }
+    if (c.quirk === 'mj') {
+      target.headRotZ += 0.1 * Math.sin(beats * Math.PI * 4);
+      target.spineRotX -= 0.05;
+    }
+    if (c.quirk === 'musk') {
+      target.armL[0] -= 0.12;
+      target.headRotY += 0.14 * Math.sin(beats * Math.PI + 1.2);
+    }
+
+    applyPose(c.rig, target, 1 - Math.pow(0.0005, dt));
+
+    // lateral drift during the glide section
+    var drift = sec === 5 ? Math.sin(localBeat * Math.PI) * 0.9 : 0;
+    c.rig.root.position.x = THREE.MathUtils.lerp(c.rig.root.position.x, c.base.x + drift, 1 - Math.pow(0.02, dt));
+    c.rig.root.position.z = THREE.MathUtils.lerp(c.rig.root.position.z, c.base.z + (sec === 5 ? 0.4 : 0), 1 - Math.pow(0.05, dt));
+
+    // the turn winds continuously on the root: a pose-target spin would snap back
+    // to zero every time the section restarts
+    if (sec === 4) {
+      c.rig.root.rotation.y = c.baseRot + localBeat * Math.PI * 2;
+    } else {
+      c.rig.root.rotation.y = THREE.MathUtils.lerp(c.rig.root.rotation.y, c.baseRot, 1 - Math.pow(0.05, dt));
+    }
+  }
+
+  // light and mist life
+  key.intensity = 300 + Math.sin(beats * Math.PI) * 80;
+  rimB.intensity = 170 + Math.sin(beats * Math.PI * 0.5 + 1) * 90;
+  groundGlow.intensity = 9 + Math.sin(beats * Math.PI * 2) * 4;
+  for (var m = 0; m < mist.length; m++) {
+    var s = mist[m];
+    s.position.x += s.userData.vx * dt;
+    if (s.position.x > 30) s.position.x = -30;
+    s.position.y = 0.5 + Math.sin(t * 0.4 + m) * 0.35 + 0.6;
+  }
+
+  // camera
+  if (!freeCam) {
+    var next = CAM[sec];
+    var k = 1 - Math.pow(0.06, dt);
+    camPos.lerp(new THREE.Vector3().fromArray(next.pos), k);
+    camLook.lerp(new THREE.Vector3().fromArray(next.look), k);
+    camFov = THREE.MathUtils.lerp(camFov, next.fov, k);
+    camera.position.copy(camPos);
+    camera.position.y += Math.sin(t * 0.7) * 0.03;
+    camera.lookAt(camLook);
+    if (Math.abs(camera.fov - camFov) > 0.01) {
+      camera.fov = camFov;
+      camera.updateProjectionMatrix();
+    }
+  } else {
+    controls.update();
+  }
+
+  beatEl.innerHTML = 'bar ' + (Math.floor(beats / 4) + 1) + ' &middot; ' + section.name;
+
+  composer.render();
+  requestAnimationFrame(frame);
+}
+
+function resize() {
+  var w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
+  bloom.setSize(w, h);
+}
+
+window.addEventListener('resize', resize, { passive: true });
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "model": "qwen3.8-flash-next-iq3-s-strata",
+  "scope": "three-prompt-run",
+  "test_ids": [
+    "01-car-parallax",
+    "02-plants-vs-zombies",
+    "03-threejs-thriller"
+  ],
+  "status": "completed",
+  "started_at": "2026-10-04T12:27:41.132Z",
+  "completed_at": "2026-10-04T13:46:57.801Z",
+  "duration_ms": 4756669,
+  "usage": {
+    "coverage": "unavailable",
+    "source": "",
+    "reason": "Harness is a Qwen Code session driving a shared llama.cpp server (Strata 0.1.38 at 192.168.1.69:8080); it exposes no per-request usage to the caller. A /metrics baseline was captured before reading the prompts, but the server's cumulative counters reset mid-run (its metrics window 'since' timestamp is 1791120160, after the run started), so the remaining counts cover only requests made after the restart and cannot be attributed to this run. Elapsed time in run.json is still measured end to end.",
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null
+  }
+}

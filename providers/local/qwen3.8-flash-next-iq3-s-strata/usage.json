@@ -1,0 +1,8 @@
+{
+  "coverage": "unavailable",
+  "source": "",
+  "reason": "Harness is a Qwen Code session driving a shared llama.cpp server (Strata 0.1.38 at 192.168.1.69:8080); it exposes no per-request usage to the caller. A /metrics baseline was captured before reading the prompts, but the server's cumulative counters reset mid-run (its metrics window 'since' timestamp is 1791120160, after the run started), so the remaining counts cover only requests made after the restart and cannot be attributed to this run. Elapsed time in run.json is still measured end to end.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "total_tokens": null
+}

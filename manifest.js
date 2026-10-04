@@ -927,6 +927,21 @@ window.ARENA = {
         "03-threejs-thriller": "providers/openai/gpt-6.1-sol/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwen3.8-flash-next-iq3-s-strata",
+      model_display: "Qwen3.8 Flash Next IQ3_S (Strata)",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwen3.8-flash-next-iq3-s-strata",
+      added: "2026-10-04",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwen3.8-flash-next-iq3-s-strata/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwen3.8-flash-next-iq3-s-strata/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwen3.8-flash-next-iq3-s-strata/03-threejs-thriller/output.html",
+      },
+    },
   ]
 };
 

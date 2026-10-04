@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-iq3-s-strata",
+  "model_display": "Qwen3.8 Flash Next IQ3_S (Strata)",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-10-04T12:50:36Z",
+  "runner": "Qwen3.8 Flash Next IQ3_S via Qwen Code session + Strata 0.1.38 (llama.cpp) server",
+  "notes": "Iterate-until-polished per repo-owner request (deviates from PLAN.md single-shot raw output). Verified by scripted Chromium play-through: menu -> Play -> planting -> sun-cost gating blocked an unaffordable Wall-nut -> wave 1 spawn -> unguarded loss -> name entry -> leaderboard write to localStorage with the new row highlighted; no page errors. Repaired during the pass: falling sun unclickable above the lawn, leaderboard highlight comparing re-parsed objects instead of an index, keydown leaking into the name input, and two unfinished scene bands. A data-URI <link rel=\"icon\"> was added so the page logs no favicon 404 when served over http.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF IQ3_S (GSQ-RCO)",
+    "variant": "flash-next / Strata",
+    "engine": "Strata 0.1.38 (llama.cpp)",
+    "gpu": "4x NVIDIA RTX 3090"
+  }
+}

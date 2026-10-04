@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-iq3-s-strata",
+  "model_display": "Qwen3.8 Flash Next IQ3_S (Strata)",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-10-04T12:42:20Z",
+  "runner": "Qwen3.8 Flash Next IQ3_S via Qwen Code session + Strata 0.1.38 (llama.cpp) server",
+  "notes": "Repo-owner requested an iterate-until-polished pass rather than PLAN.md single-shot raw output: 5 generation/repair passes with browser screenshot QA (Chromium, no console errors). Repaired in place: body sill below the contact patch, missing wheel-arch cutouts, scenery showing through the arches, hard-edged additive road sheen, lamps spilling outside the body silhouette, canopy rim-light halos; a data-URI <link rel=\"icon\"> was added so the page logs no favicon 404 when served over http. Session config names qwen3.8-flash-next-orca-iq3_xxs-strata, but the server served Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S for every request in this run, so that is the model recorded here.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF IQ3_S (GSQ-RCO)",
+    "variant": "flash-next / Strata",
+    "engine": "Strata 0.1.38 (llama.cpp)",
+    "gpu": "4x NVIDIA RTX 3090"
+  }
+}
