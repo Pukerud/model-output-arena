@@ -942,6 +942,22 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/local/qwen3.8-flash-next-iq3-s-strata/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "local",
+      provider_display: "Local (llama.cpp)",
+      model: "qwen3.8-flash-next-orca-q4-k-s",
+      model_display: "Qwen3.8 Flash Next Orca Q4_K_S",
+      hosting: "local",
+      weights: "open",
+      path: "providers/local/qwen3.8-flash-next-orca-q4-k-s",
+      added: "2026-10-11",
+      outputs: {
+        "01-car-parallax":      "providers/local/qwen3.8-flash-next-orca-q4-k-s/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/local/qwen3.8-flash-next-orca-q4-k-s/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/local/qwen3.8-flash-next-orca-q4-k-s/03-threejs-thriller/output.html",
+      },
+    },
+
   ]
 };
 

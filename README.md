@@ -159,6 +159,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Swift 1.5 Qwen3.8 27B Uncensored (Dynamic MTP UD Q8_K_XL) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl`](./providers/local/swift-1.5-qwen3.8-27b-uncensored-dynamic-mtp-ud-q8-k-xl) |
 | OpenAI | GPT-6.1 Sol | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6.1-sol`](./providers/openai/gpt-6.1-sol) |
 | Local (llama.cpp) | Qwen3.8 Flash Next IQ3_S (Strata) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-iq3-s-strata`](./providers/local/qwen3.8-flash-next-iq3-s-strata) |
+| Local (llama.cpp) | Qwen3.8 Flash Next Orca Q4_K_S | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-orca-q4-k-s`](./providers/local/qwen3.8-flash-next-orca-q4-k-s) |
 
 ## How outputs were generated
 
