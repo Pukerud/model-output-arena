@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "qwen3.8-flash-next-sc117-abliterated-iq3-s",
+  "model_display": "Qwen3.8 Flash Next SC117 Abliterated IQ3_S",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-18T18:02:09Z",
+  "runner": "Qwen3.8 Flash Next SC117 Abliterated IQ3_S via OpenClaw Logic session",
+  "notes": "Procedural characters (no external models), 16 s six-move Thriller choreography loop, moon/stars/lightning, beat-pulsed stage spots, letterbox + title card. Needs internet for the Three.js CDN.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF IQ3_S",
+    "variant": "flash-next / SC117 abliterated",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

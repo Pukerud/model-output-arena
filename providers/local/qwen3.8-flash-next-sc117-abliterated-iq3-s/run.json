@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "model": "qwen3.8-flash-next-sc117-abliterated-iq3-s",
+  "scope": "three-prompt-run",
+  "test_ids": [
+    "01-car-parallax",
+    "02-plants-vs-zombies",
+    "03-threejs-thriller"
+  ],
+  "status": "completed",
+  "started_at": "2026-10-18T17:57:11.689Z",
+  "completed_at": "2026-10-18T18:07:21.375Z",
+  "duration_ms": 609686,
+  "usage": {
+    "coverage": "unavailable",
+    "source": "",
+    "reason": "OpenClaw harness exposes only rounded per-turn token snapshots (session_status), no trustworthy cumulative whole-run ledger",
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null
+  }
+}

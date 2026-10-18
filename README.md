@@ -160,6 +160,7 @@ Two independent axes are labelled:
 | OpenAI | GPT-6.1 Sol | ☁️ API | 🔒 Proprietary | [`providers/openai/gpt-6.1-sol`](./providers/openai/gpt-6.1-sol) |
 | Local (llama.cpp) | Qwen3.8 Flash Next IQ3_S (Strata) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-iq3-s-strata`](./providers/local/qwen3.8-flash-next-iq3-s-strata) |
 | Local (llama.cpp) | Qwen3.8 Flash Next Orca Q4_K_S | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-orca-q4-k-s`](./providers/local/qwen3.8-flash-next-orca-q4-k-s) |
+| Local (llama.cpp) | Qwen3.8 Flash Next SC117 Abliterated IQ3_S | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-sc117-abliterated-iq3-s`](./providers/local/qwen3.8-flash-next-sc117-abliterated-iq3-s) |
 
 ## How outputs were generated
 
