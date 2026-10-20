@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "minimax-m3.1-flash-free",
+  "model_display": "MiniMax M3.1 Flash Free",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-10-20T21:47:40Z",
+  "runner": "MiniMax M3.1 Flash Free via the opencode agent",
+  "notes": "Single-file canvas game. Five menus (title, level select, how to play, settings, pause) plus game-over and victory screens, all DOM overlays over the canvas. 5x9 lawn with seven plants (sunflower, peashooter, wall-nut, snow pea, repeater, cherry bomb, potato mine), five zombie types, sky and sunflower sun economy, seed packets with costs and recharge sweeps, shovel, lawn mowers, per-level wave lists with a progress bar and a huge-wave finale, score, combo of stats, a top-10 leaderboard persisted in localStorage, WebAudio-synthesised sound effects and a looping backing tune, particles, screen shake, floaters and day/dusk/night lawns. Verified in Chrome: no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

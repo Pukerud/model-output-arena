@@ -161,6 +161,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": 6114631
     }
   },
+  "providers/opencode/minimax-m3.1-flash-free": {
+    "schema_version": 1,
+    "provider": "opencode",
+    "model": "minimax-m3.1-flash-free",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-10-20T21:07:18.330Z",
+    "completed_at": "2026-10-20T22:03:14.502Z",
+    "duration_ms": 3356172,
+    "usage": {
+      "coverage": "complete",
+      "source": "OpenCode session store (SQLite) export; dedicated harness session for this run; sum of per-step assistant token records created at or after run.json started_at through the last step completed before the metric export. input = input + cache.read; output = output + reasoning, each counted once.",
+      "reason": "",
+      "input_tokens": 19400874,
+      "output_tokens": 143652,
+      "total_tokens": 19544526
+    }
+  },
   "providers/opencode/space-bunny-free": {
     "schema_version": 1,
     "provider": "opencode",

@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "minimax-m3.1-flash-free",
+  "model_display": "MiniMax M3.1 Flash Free",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-10-20T21:58:38Z",
+  "runner": "MiniMax M3.1 Flash Free via the opencode agent",
+  "notes": "Vanilla canvas 2D, no libraries. Dusk highway with eleven depth planes: painted sky with a low sun and glow band, stratus streaks, two mountain ridges, a conifer treeline, rolling hills with tree clumps, utility poles with sagging catenary wires, roadside trees, a guardrail with a sign, a grass verge, tarmac with wrapped aggregate and periodic tar seams, lane dashes and an out-of-focus foreground grass strip. Every layer is a pre-rendered tile that wraps on its own width, so the scenery repeats without a seam. The fastback coupe is one closed silhouette path with punched wheel arches, a gradient body, sun-side wash, rim light, glass with reflection sweep, chrome trim, headlights and taillight. Wheels spin with distance travelled; the body heaves and pitches on a summed-sine road profile per axle. Seeded RNG keeps the layout deterministic. Verified in Chrome: no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

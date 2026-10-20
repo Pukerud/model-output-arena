@@ -987,6 +987,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/opencode/deepseek-v4.1-flash-free/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "opencode",
+      provider_display: "OpenCode",
+      model: "minimax-m3.1-flash-free",
+      model_display: "MiniMax M3.1 Flash Free",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/opencode/minimax-m3.1-flash-free",
+      added: "2026-10-20",
+      outputs: {
+        "01-car-parallax":      "providers/opencode/minimax-m3.1-flash-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/opencode/minimax-m3.1-flash-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/opencode/minimax-m3.1-flash-free/03-threejs-thriller/output.html",
+      },
+    },
 
   ]
 };

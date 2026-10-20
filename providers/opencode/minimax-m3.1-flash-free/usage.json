@@ -1,0 +1,8 @@
+{
+  "coverage": "complete",
+  "source": "OpenCode session store (SQLite) export; dedicated harness session for this run; sum of per-step assistant token records created at or after run.json started_at through the last step completed before the metric export. input = input + cache.read; output = output + reasoning, each counted once.",
+  "reason": "",
+  "input_tokens": 19400874,
+  "output_tokens": 143652,
+  "total_tokens": 19544526
+}

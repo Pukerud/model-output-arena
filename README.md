@@ -162,6 +162,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | Qwen3.8 Flash Next Orca Q4_K_S | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-orca-q4-k-s`](./providers/local/qwen3.8-flash-next-orca-q4-k-s) |
 | Local (llama.cpp) | Qwen3.8 Flash Next SC117 Abliterated IQ3_S | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/qwen3.8-flash-next-sc117-abliterated-iq3-s`](./providers/local/qwen3.8-flash-next-sc117-abliterated-iq3-s) |
 | OpenCode | DeepSeek V4.1 Flash Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/deepseek-v4.1-flash-free`](./providers/opencode/deepseek-v4.1-flash-free) |
+| OpenCode | MiniMax M3.1 Flash Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/minimax-m3.1-flash-free`](./providers/opencode/minimax-m3.1-flash-free) |
 
 ## How outputs were generated
 

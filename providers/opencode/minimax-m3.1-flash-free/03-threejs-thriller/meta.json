@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "minimax-m3.1-flash-free",
+  "model_display": "MiniMax M3.1 Flash Free",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-20T21:54:45Z",
+  "runner": "MiniMax M3.1 Flash Free via the opencode agent",
+  "notes": "Three.js r160 via jsDelivr importmap with EffectComposer, UnrealBloomPass and OutputPass. Moonlit graveyard street set (moon, stars, fog cards, tombstones, dead trees, iron fence, a lit distant house) with ACES tone mapping, exponential fog and a five-lamp rig of keys, gels and a shadow-casting key. Michael Jackson, Pepe the Frog, Donald Trump and Elon Musk are articulated rigs (hips, torso, neck, head, two-bone arms and legs) posed by a 112 BPM beat clock: zombie arms, moonwalk, the thumb-to-mouth point and a group groove, plus a silhouetted chorus line. A twelve-shot camera list cuts on musical boundaries, with manual wide, orbit, close, low-angle and free cameras, transport bar, letterbox and an optional synth score. Verified in Chrome: no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}
