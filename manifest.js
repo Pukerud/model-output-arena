@@ -972,6 +972,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/local/qwen3.8-flash-next-sc117-abliterated-iq3-s/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "opencode",
+      provider_display: "OpenCode",
+      model: "deepseek-v4.1-flash-free",
+      model_display: "DeepSeek V4.1 Flash Free",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/opencode/deepseek-v4.1-flash-free",
+      added: "2026-10-20",
+      outputs: {
+        "01-car-parallax":      "providers/opencode/deepseek-v4.1-flash-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/opencode/deepseek-v4.1-flash-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/opencode/deepseek-v4.1-flash-free/03-threejs-thriller/output.html",
+      },
+    },
 
   ]
 };

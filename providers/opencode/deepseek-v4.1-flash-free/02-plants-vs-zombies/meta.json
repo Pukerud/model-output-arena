@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "deepseek-v4.1-flash-free",
+  "model_display": "DeepSeek V4.1 Flash Free",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-10-20T20:31:58Z",
+  "runner": "DeepSeek V4.1 Flash Free via the opencode agent",
+  "notes": "Cartoon vector 'Garden Siege' lawn defense. Five plants (Sunflower, Peashooter, Wall-nut, Snow Pea, Cherry Bomb), falling sun economy, escalating waves, mowers, pause and how-to-play menus, game-over flow, and a persistent top-8 leaderboard in localStorage. Verified in Chromium: placement, sun collection, pause, game over and score persistence work; no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "deepseek-v4.1-flash-free",
+  "model_display": "DeepSeek V4.1 Flash Free",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-20T20:46:29Z",
+  "runner": "DeepSeek V4.1 Flash Free via the opencode agent",
+  "notes": "Three.js 0.160 via CDN with EffectComposer and UnrealBloom. Low-poly stylized Michael Jackson, Pepe, Trump and Elon built from primitives on a foggy moonlit stage; procedural Thriller-style shuffle, claw and hip-thrust choreography with a camera cut per phase. Verified in Chromium: scene and all three phases render; no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

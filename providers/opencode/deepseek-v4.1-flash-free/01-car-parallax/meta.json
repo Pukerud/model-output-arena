@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "deepseek-v4.1-flash-free",
+  "model_display": "DeepSeek V4.1 Flash Free",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-10-20T20:31:57Z",
+  "runner": "DeepSeek V4.1 Flash Free via the opencode agent",
+  "notes": "Vanilla canvas 2D. Dusk highway with layered parallax: painted sky, clouds, two mountain ridges, treeline, poles and sagging wires, roadside trees, guardrail, grass, tarmac with scrolling aggregate, and an out-of-focus foreground strip. Fastback coupe built from one silhouette path, wheels rotate with distance travelled, and the body heaves and pitches on a road profile. Seeded deterministic layers wrap on exact spans for a seamless loop. Verified in Chromium: no console errors.",
+  "hosting": "api",
+  "weights": "closed"
+}

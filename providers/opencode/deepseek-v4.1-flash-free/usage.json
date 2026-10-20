@@ -1,0 +1,8 @@
+{
+  "coverage": "complete",
+  "source": "OpenCode session store export; dedicated harness session; sum of per-step assistant token records created at or after run.json started_at through submission bookkeeping. input = input + cache.read; output = output + reasoning, each counted once.",
+  "reason": "",
+  "input_tokens": 5992066,
+  "output_tokens": 122565,
+  "total_tokens": 6114631
+}

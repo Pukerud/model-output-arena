@@ -138,6 +138,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": 2420295
     }
   },
+  "providers/opencode/deepseek-v4.1-flash-free": {
+    "schema_version": 1,
+    "provider": "opencode",
+    "model": "deepseek-v4.1-flash-free",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-10-20T20:26:29.119Z",
+    "completed_at": "2026-10-20T20:50:48.172Z",
+    "duration_ms": 1459053,
+    "usage": {
+      "coverage": "complete",
+      "source": "OpenCode session store export; dedicated harness session; sum of per-step assistant token records created at or after run.json started_at through submission bookkeeping. input = input + cache.read; output = output + reasoning, each counted once.",
+      "reason": "",
+      "input_tokens": 5992066,
+      "output_tokens": 122565,
+      "total_tokens": 6114631
+    }
+  },
   "providers/opencode/space-bunny-free": {
     "schema_version": 1,
     "provider": "opencode",
