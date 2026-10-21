@@ -1,0 +1,8 @@
+{
+  "coverage": "unavailable",
+  "source": "This agent generates outputs directly in-session and has no harness/API token-usage observation for its own responses.",
+  "reason": "No trustworthy whole-run token counts are available; this agent produces the three HTML outputs directly and cannot observe input/output token usage.",
+  "input_tokens": null,
+  "output_tokens": null,
+  "total_tokens": null
+}

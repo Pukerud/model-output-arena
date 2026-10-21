@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lawn of Legends — Plants vs Zombies</title>
+<style>
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #111; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+canvas { display: block; width: 100vw; height: 100vh; background: linear-gradient(#8fd3f4, #5da9e0); }
+#ui { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; box-sizing: border-box; }
+#top { pointer-events: auto; display: flex; gap: 12px; align-items: flex-start; }
+.panel { background: rgba(0,0,0,0.45); border: 2px solid #333; color: #fff; border-radius: 10px; padding: 10px 14px; min-width: 110px; user-select: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.panel b { font-size: 13px; opacity: 0.8; display: block; text-transform: uppercase; letter-spacing: 0.06em; }
+.val { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+#sun { color: #ffd100; text-shadow: 0 0 10px #ffd100; }
+#coins { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+#bottom { pointer-events: auto; display: flex; gap: 10px; justify-content: center; }
+.slot { width: 64px; height: 80px; border: 2px solid #555; border-radius: 8px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; transition: border .15s, transform .05s; user-select: none; }
+.slot:hover { border-color: #ffd100; transform: translateY(-2px); }
+.slot.selected { border-color: #ffd100; background: rgba(255,209,0,0.25); }
+.slot.disabled { opacity: 0.45; border-color: #333; cursor: not-allowed; }
+#cost { position: absolute; bottom: 6px; left: 2px; font: bold 10px/1 sans-serif; color: #fff; text-shadow: 0 0 5px #000; pointer-events: none; }
+
+#menu, #gameover, #leaderboard { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 18px; background: rgba(0,0,0,0.55); z-index: 40; }
+.menu-card { background: #2a2a2a; border: 3px solid #ffd100; border-radius: 14px; padding: 28px 40px; text-align: center; box-shadow: 0 0 40px rgba(255,209,0,0.25); max-width: 420px; width: 90%; }
+h1 { font-size: 42px; margin: 0 0 10px; color: #fff; text-shadow: 2px 2px 0 #000, 0 0 15px #ffd100; letter-spacing: 2px; }
+h2 { font-size: 26px; margin: 0 0 12px; color: #ffd100; text-shadow: 1px 1px 0 #000; }
+p { color: #ddd; margin: 0 0 18px; line-height: 1.5; }
+.btn { background: linear-gradient(#ffd100, #f4b400); border: none; border-radius: 8px; color: #3a1a00; font-size: 17px; font-weight: 800; padding: 12px 28px; cursor: pointer; box-shadow: 0 4px 0 #b88600; text-transform: uppercase; letter-spacing: 0.5px; transition: transform .05s; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #b88600; }
+.btn.secondary { background: linear-gradient(#666, #444); color: #fff; box-shadow: 0 4px 0 #222; }
+
+table { border-collapse: collapse; margin-top: 8px; }
+th, td { border: 1px solid #444; padding: 6px 10px; color: #eee; font-size: 13px; text-align: center; }
+th { background: #333; color: #ffd100; font-weight: 800; text-transform: uppercase; }
+tr:nth-child(even) td { background: rgba(255,255,255,0.05); }
+
+#msg { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); color: #fff; font-weight: 800; font-size: 15px; text-shadow: 0 0 10px #000, 0 0 20px #ffd100; pointer-events: none; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+#msg.show { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="ui">
+  <div id="top">
+    <div class="panel"><b>Sun</b><span class="val" id="sun">50</span></div>
+    <div class="panel"><b>Coins</b><span class="val" id="coins">0</span></div>
+    <div class="panel"><b>Wave</b><span class="val" id="wave">1</span></div>
+    <div class="panel"><b>Score</b><span class="val" id="score">0</span></div>
+  </div>
+  <div id="bottom">
+    <div class="slot" data-plant="peashooter" title="Peashooter &mdash; 100 sun">🌻<div id="cost-peashooter" class="cost">100</div></div>
+    <div class="slot" data-plant="sunflower" title="Sunflower &mdash; 50 sun">🌼<div class="cost">50</div></div>
+    <div class="slot" data-plant="wallnut" title="Wall-nut &mdash; 50 sun">🥜<div class="cost">50</div></div>
+    <div class="slot" data-plant="repeater" title="Repeater &mdash; 200 sun">🌶️<div class="cost">200</div></div>
+    <div class="slot" data-plant="cherry" title="Cherry Bomb &mdash; 150 sun">💣<div class="cost">150</div></div>
+  </div>
+</div>
+<div id="msg"></div>
+<div id="menu">
+  <div class="menu-card">
+    <h1>LAWN OF LEGENDS</h1>
+    <p>Plants vs Zombies &mdash; polished, single-file.</p>
+    <button class="btn" onclick="startGame()">START GAME</button>
+    <button class="btn secondary" onclick="toggleLeaderboard()">LEADERBOARD</button>
+  </div>
+</div>
+<div id="gameover">
+  <div class="menu-card">
+    <h2 id="go-title">GAME OVER</h2>
+    <p id="go-text"></p>
+    <button class="btn" onclick="startGame()">TRY AGAIN</button>
+    <button class="btn secondary" onclick="showMenu()">MAIN MENU</button>
+  </div>
+</div>
+<div id="leaderboard">
+  <div class="menu-card">
+    <h2>LEADERBOARD</h2>
+    <table id="lb-table"><thead><tr><th>#</th><th>Score</th><th>Wave</th></tr></thead><tbody></tbody></table>
+    <div style="margin-top:14px"><button class="btn secondary" onclick="showMenu()">BACK</button></div>
+  </div>
+</div>
+<script>
+"use strict";
+
+var cvs = document.getElementById("scene");
+var ctx = cvs.getContext("2d");
+var W, H, DPR;
+var gridCols = 9, gridRows = 5;
+var cellW, cellH, lawnLeft, lawnTop;
+var sun = 50, coins = 0, score = 0, wave = 1;
+var selectedPlant = null;
+var gameState = "menu"; // menu, playing, gameover
+var lastTime = 0;
+var sunTimer = 0;
+var waveTimer = 0;
+var zombiesKilled = 0;
+var ZOMBIES_PER_WAVE = 5;
+
+var plants = [];   // {x,y,row,col,type,hp,shootTimer}
+var zombies = [];  // {x,y,row,hp,speed,atkTimer,type}
+var bullets = [];  // {x,y,row,vx,type}
+var explosions = [];// {x,y,r,life}
+var sunDrops = []; // {x,y,vy,life,collected}
+var leaderboard = JSON.parse(localStorage.getItem("lol_lb") || "[]");
+
+var PLANT_COST = { peashooter: 100, sunflower: 50, wallnut: 50, repeater: 200, cherry: 150 };
+var PLANT_HP   = { peashooter: 100, sunflower: 80, wallnut: 400, repeater: 120, cherry: 60 };
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cvs.width = Math.max(1, Math.round(W * DPR));
+  cvs.height = Math.max(1, Math.round(H * DPR));
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  cellW = Math.min(110, W / (gridCols + 2));
+  cellH = Math.min(110, H / (gridRows + 2));
+  lawnLeft = (W - cellW * gridCols) * 0.5;
+  lawnTop = (H - cellH * gridRows) * 0.55;
+}
+resize();
+window.addEventListener("resize", resize);
+
+function cell(c, r) { return { x: lawnLeft + c * cellW + cellW * 0.5, y: lawnTop + r * cellH + cellH * 0.5 }; }
+function colAt(x) { return Math.floor((x - lawnLeft) / cellW); }
+function rowAt(y) { return Math.floor((y - lawnTop) / cellH); }
+function occupied(c, r) { return plants.some(p => p.col === c && p.row === r); }
+
+function msg(text) {
+  var el = document.getElementById("msg");
+  el.textContent = text;
+  el.classList.add("show");
+  setTimeout(function () { el.classList.remove("show"); }, 2000);
+}
+
+function hud() {
+  document.getElementById("sun").textContent = sun;
+  document.getElementById("coins").textContent = coins;
+  document.getElementById("wave").textContent = wave;
+  document.getElementById("score").textContent = score;
+  var slots = document.querySelectorAll(".slot");
+  slots.forEach(function (s) {
+    var p = s.getAttribute("data-plant");
+    var cost = PLANT_COST[p];
+    s.querySelector(".cost").textContent = cost;
+    s.classList.toggle("selected", selectedPlant === p);
+    s.classList.toggle("disabled", sun < cost);
+  });
+}
+
+function spawnSun(x, y) {
+  sunDrops.push({ x: x, y: y, vy: -1.2 + Math.random() * -0.6, life: 200, collected: false });
+}
+
+function spawnZombie() {
+  if (zombies.length >= 8) return;
+  var row = Math.floor(Math.random() * gridRows);
+  zombies.push({
+    x: W + 60, y: lawnTop + row * cellH + cellH * 0.5, row: row,
+    hp: 120 + wave * 20, speed: 0.35 + Math.random() * 0.25 + wave * 0.03,
+    atkTimer: 0, type: wave > 3 ? "cone" : "normal"
+  });
+}
+
+function startWave() {
+  waveTimer = 120;
+  msg("Wave " + wave + " incoming!");
+}
+
+function addPlant(type, c, r) {
+  var cost = PLANT_COST[type];
+  if (sun < cost || occupied(c, r)) return false;
+  var pos = cell(c, r);
+  plants.push({ x: pos.x, y: pos.y, col: c, row: r, type: type, hp: PLANT_HP[type], maxHp: PLANT_HP[type], shootTimer: 0, eaten: false });
+  sun -= cost;
+  selectedPlant = null;
+  hud();
+  return true;
+}
+
+function fireBullet(c, r, type) {
+  var pos = cell(c, r);
+  var n = type === "repeater" ? 2 : 1;
+  for (var i = 0; i < n; i++) {
+    bullets.push({ x: pos.x + cellW * 0.5 + (i === 1 ? 6 : -6), y: pos.y - 6, row: r, vx: 7 + i, type: type });
+  }
+}
+
+function cherryExplode(p) {
+  explosions.push({ x: p.x, y: p.y, r: 0, maxR: cellW * 2.2, life: 22 });
+  for (var i = zombies.length - 1; i >= 0; i--) {
+    var z = zombies[i];
+    var dx = z.x - p.x, dy = z.y - p.y;
+    if (dx * dx + dy * dy < cellW * cellW * 2.5) { z.hp = 0; }
+  }
+  for (var i = plants.length - 1; i >= 0; i--) {
+    if (plants[i] === p) { plants.splice(i, 1); }
+  }
+  score += 20;
+  hud();
+}
+
+function dropCoin(x, y) { coins++; score += 10; hud(); msg("+" + 10 + " pts!"); }
+
+function update(dt) {
+  if (gameState !== "playing") return;
+  sunTimer += dt;
+  if (sunTimer > 300) { sunTimer = 0; spawnSun(lawnLeft + Math.random() * cellW * gridCols, lawnTop - 60); }
+  waveTimer += dt;
+  if (waveTimer > 1600 - wave * 60) { startWave(); waveTimer = 0; }
+  if (Math.random() < 0.008 * wave && zombies.length < 8) spawnZombie();
+
+  // plants
+  plants.forEach(function (p) {
+    if (p.eaten) return;
+    var target = zombies.filter(z => z.row === p.row && z.x > p.x - cellW * 0.3 && z.x < W + 40).sort(function (a, b) { return b.x - a.x; })[0];
+    if (target) {
+      p.shootTimer += dt;
+      var rate = p.type === "sunflower" ? 99999 : (p.type === "repeater" ? 700 : 1100);
+      if (p.shootTimer > rate) { p.shootTimer = 0; fireBullet(p.col, p.row, p.type); }
+    }
+    if (p.type === "sunflower") {
+      p.shootTimer += dt;
+      if (p.shootTimer > 7000) { p.shootTimer = 0; spawnSun(p.x, p.y); }
+    }
+  });
+
+  // bullets
+  bullets.forEach(function (b) { b.x += b.vx; });
+  bullets = bullets.filter(function (b) { return b.x < W + 60; });
+
+  // zombies
+  zombies.forEach(function (z) {
+    var pHere = plants.filter(p => p.row === z.row && Math.abs(z.x - p.x) < cellW * 0.55).sort(function (a, b) { return b.x - a.x; })[0];
+    if (pHere) {
+      z.atkTimer += dt;
+      if (z.atkTimer > 800) { z.atkTimer = 0; pHere.hp -= 22; if (pHere.hp <= 0) { pHere.eaten = true; msg("A plant was eaten!"); } }
+    } else {
+      z.x -= z.speed;
+    }
+  });
+
+  zombies = zombies.filter(function (z) { return z.hp > 0 && z.x > -120; });
+  zombies.forEach(function (z) {
+    if (z.x < lawnLeft - 40) { gameOver(false); }
+  });
+
+  // bullet-zombie collisions
+  bullets.forEach(function (b) {
+    zombies.forEach(function (z) {
+      if (z.row === b.row && Math.abs(z.x - b.x) < cellW * 0.5 && Math.abs(z.y - b.y) < cellH * 0.5) {
+        z.hp -= b.type === "repeater" ? 16 : 22;
+        b.x = W + 1000;
+      }
+    });
+  });
+
+  // cherry explosions handled at plant level
+  plants.forEach(function (p) {
+    if (p.type === "cherry" && p.shootTimer > 0) {
+      // cherry detonates after short delay vs nearest zombie
+    }
+  });
+  // cherry auto detonate if zombie adjacent
+  plants.forEach(function (p) {
+    if (p.type === "cherry") {
+      var near = zombies.some(z => z.row === p.row && Math.abs(z.x - p.x) < cellW * 0.7);
+      if (near) cherryExplode(p);
+    }
+  });
+
+  // zombie kill coins
+  zombies.forEach(function (z) {
+    if (z.hp <= 0) { zombiesKilled++; dropCoin(z.x, z.y); score += 50; }
+  });
+
+  if (zombiesKilled >= ZOMBIES_PER_WAVE * wave) {
+    zombiesKilled = 0; wave++; startWave();
+  }
+
+  // sun drops
+  sunDrops.forEach(function (d) {
+    d.y += d.vy; d.life--;
+    if (!d.collected && d.life < 0) d.collected = true;
+  });
+  sunDrops = sunDrops.filter(function (d) { return d.life > 0 && !d.collected; });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  if (gameState === "menu" || gameState === "gameover") return;
+  // lawn grid
+  for (var c = 0; c <= gridCols; c++) {
+    var x = lawnLeft + c * cellW;
+    ctx.beginPath(); ctx.moveTo(x, lawnTop); ctx.lineTo(x, lawnTop + cellH * gridRows);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+  for (var r = 0; r <= gridRows; r++) {
+    var y = lawnTop + r * cellH;
+    ctx.beginPath(); ctx.moveTo(lawnLeft, y); ctx.lineTo(lawnLeft + cellW * gridCols, y);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  // plants
+  plants.forEach(function (p) {
+    ctx.save(); ctx.translate(p.x, p.y);
+    ctx.fillStyle = p.type === "peashooter" ? "#7fd35c" : p.type === "sunflower" ? "#ffe066" : p.type === "wallnut" ? "#8a6d2e" : p.type === "repeater" ? "#e04040" : "#c060c0";
+    ctx.beginPath(); ctx.arc(0, 0, cellW * 0.34, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    if (p.type === "wallnut") {
+      ctx.fillStyle = "#222"; ctx.fillRect(-cellW * 0.16, -cellH * 0.1, cellW * 0.32, cellH * 0.2);
+    }
+    if (p.hp < p.maxHp) {
+      ctx.fillStyle = "#444"; ctx.fillRect(-cellW * 0.34, -cellW * 0.46, cellW * 0.68, 5);
+      ctx.fillStyle = "#4caf50"; ctx.fillRect(-cellW * 0.34, -cellW * 0.46, cellW * 0.68 * (p.hp / p.maxHp), 5);
+    }
+    ctx.restore();
+  });
+
+  // zombies
+  zombies.forEach(function (z) {
+    ctx.save(); ctx.translate(z.x, z.y);
+    ctx.fillStyle = z.type === "cone" ? "#e8a040" : "#8dd8ff";
+    ctx.beginPath(); ctx.arc(0, -6, cellW * 0.3, 0, Math.PI * 2); ctx.fill(); // head
+    ctx.fillStyle = "#555"; ctx.beginPath(); ctx.arc(-8, -11, 3, 0, Math.PI * 2); ctx.arc(8, -11, 3, 0, Math.PI * 2); ctx.fill(); // eyes
+    ctx.fillStyle = z.type === "cone" ? "#c87020" : "#5bbfd8";
+    ctx.beginPath(); ctx.moveTo(-14, 4); ctx.lineTo(14, 4); ctx.lineTo(14, 26); ctx.lineTo(-14, 26); ctx.fill(); // body
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    if (z.hp < z.type === "cone" ? 200 : 140) {
+      ctx.fillStyle = "#444"; ctx.fillRect(-cellW * 0.3, -cellW * 0.45, cellW * 0.6, 5);
+      ctx.fillStyle = "#e74c3c"; ctx.fillRect(-cellW * 0.3, -cellW * 0.45, cellW * 0.6 * (z.hp / 140), 5);
+    }
+    ctx.restore();
+  });
+
+  // bullets
+  bullets.forEach(function (b) {
+    ctx.fillStyle = "#ffe066";
+    ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = "#ffe066"; ctx.shadowBlur = 10; ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  // sun drops
+  sunDrops.forEach(function (d) {
+    ctx.fillStyle = "#ffd100";
+    ctx.beginPath(); ctx.arc(d.x, d.y, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  // explosions
+  explosions.forEach(function (e) {
+    ctx.fillStyle = "rgba(255,80,0," + (e.life / 22) + ")";
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill();
+    e.r += (e.maxR - e.r) * 0.25; e.life--;
+  });
+  explosions = explosions.filter(function (e) { return e.life > 0; });
+}
+
+function frame(t) {
+  var dt = Math.min(40, t - (lastTime || t));
+  lastTime = t;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function startGame() {
+  plants = []; zombies = []; bullets = []; explosions = []; sunDrops = [];
+  sun = 150; coins = 0; score = 0; wave = 1; zombiesKilled = 0; waveTimer = 0; sunTimer = 0;
+  selectedPlant = null;
+  gameState = "playing";
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("gameover").style.display = "none";
+  document.getElementById("leaderboard").style.display = "none";
+  hud();
+  spawnSun(lawnLeft + cellW * 2, lawnTop - 40);
+}
+
+function showMenu() {
+  gameState = "menu";
+  document.getElementById("menu").style.display = "flex";
+  document.getElementById("gameover").style.display = "none";
+  document.getElementById("leaderboard").style.display = "none";
+}
+
+function toggleLeaderboard() {
+  var lb = document.getElementById("leaderboard");
+  var vis = lb.style.display === "flex";
+  document.getElementById("menu").style.display = vis ? "flex" : "none";
+  lb.style.display = vis ? "none" : "flex";
+  if (!vis) renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  var tb = document.querySelector("#lb-table tbody");
+  tb.innerHTML = "";
+  var sorted = leaderboard.slice().sort(function (a, b) { return b.score - a.score || b.wave - a.wave; }).slice(0, 10);
+  sorted.forEach(function (e, i) {
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + e.score + "</td><td>" + e.wave + "</td>";
+    tb.appendChild(tr);
+  });
+}
+
+function gameOver(win) {
+  gameState = "gameover";
+  var title = document.getElementById("go-title");
+  var text = document.getElementById("go-text");
+  if (win) {
+    title.textContent = "VICTORY!";
+    text.textContent = "Lawn defended. Final score: " + score;
+  } else {
+    title.textContent = "GAME OVER";
+    text.textContent = "Zombies reached your house. Score: " + score;
+  }
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("gameover").style.display = "flex";
+  document.getElementById("leaderboard").style.display = "none";
+  leaderboard.push({ score: score, wave: wave, date: new Date().toISOString() });
+  leaderboard.sort(function (a, b) { return b.score - a.score; });
+  leaderboard = leaderboard.slice(0, 10);
+  localStorage.setItem("lol_lb", JSON.stringify(leaderboard));
+}
+
+cvs.addEventListener("mousedown", function (e) {
+  if (gameState !== "playing") return;
+  var rect = cvs.getBoundingClientRect();
+  var x = (e.clientX - rect.left) * DPR;
+  var y = (e.clientY - rect.top) * DPR;
+  // collect sun
+  for (var i = sunDrops.length - 1; i >= 0; i--) {
+    var d = sunDrops[i];
+    if (!d.collected && Math.hypot(d.x - x, d.y - y) < 16) { sun += 25; d.collected = true; score += 5; hud(); sunDrops.splice(i, 1); }
+  }
+  // select plant from bar
+  var barY = H - 90;
+  if (y > barY - 40 && y < barY + 40) {
+    var slotW = 64 * DPR, gap = 10 * DPR;
+    var startX = (W - (slotW * 5 + gap * 4)) * 0.5;
+    for (var i = 0; i < 5; i++) {
+      var sx = startX + i * (slotW + gap);
+      if (x >= sx && x <= sx + slotW) {
+        var s = document.querySelectorAll(".slot")[i];
+        selectedPlant = s.getAttribute("data-plant");
+        hud();
+        return;
+      }
+    }
+  }
+  // place plant
+  var c = colAt(x), r = rowAt(y);
+  if (c >= 0 && c < gridCols && r >= 0 && r < gridRows && selectedPlant) {
+    if (addPlant(selectedPlant, c, r)) hud();
+  }
+});
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -207,6 +207,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": 19544526
     }
   },
+  "providers/opencode/nemotron-3.5-super-vl-free": {
+    "schema_version": 1,
+    "provider": "opencode",
+    "model": "nemotron-3.5-super-vl-free",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-10-21T07:21:30.757Z",
+    "completed_at": "2026-10-21T07:29:08.592Z",
+    "duration_ms": 457835,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "This agent generates outputs directly in-session and has no harness/API token-usage observation for its own responses.",
+      "reason": "No trustworthy whole-run token counts are available; this agent produces the three HTML outputs directly and cannot observe input/output token usage.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/opencode/space-bunny-free": {
     "schema_version": 1,
     "provider": "opencode",

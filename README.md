@@ -164,6 +164,7 @@ Two independent axes are labelled:
 | OpenCode | DeepSeek V4.1 Flash Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/deepseek-v4.1-flash-free`](./providers/opencode/deepseek-v4.1-flash-free) |
 | OpenCode | MiniMax M3.1 Flash Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/minimax-m3.1-flash-free`](./providers/opencode/minimax-m3.1-flash-free) |
 | OpenCode | Beam Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/beam-free`](./providers/opencode/beam-free) |
+| OpenCode | Nemotron 3.5 Super VL Free | ☁️ API | 🔒 Proprietary | [`providers/opencode/nemotron-3.5-super-vl-free`](./providers/opencode/nemotron-3.5-super-vl-free) |
 
 ## How outputs were generated
 

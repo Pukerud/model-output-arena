@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thriller — Three.js Dance Scene</title>
+<style>
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #050508; font-family: ui-sans-serif, system-ui, sans-serif; }
+canvas { display: block; width: 100vw; height: 100vh; }
+#ui { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; padding: 20px; box-sizing: border-box; }
+#title { pointer-events: auto; color: #ffd100; font: 800 34px ui-sans-serif, system-ui; letter-spacing: 6px; text-transform: uppercase; text-shadow: 0 0 20px rgba(255,209,0,0.5), 2px 2px 0 #000; text-align: center; }
+#sub { pointer-events: auto; color: #e0e0e0; font: 600 14px ui-sans-serif, system-ui; text-align: center; opacity: 0.85; text-shadow: 0 0 8px #000; }
+#hint { pointer-events: auto; color: #888; font: 400 12px ui-sans-serif, system-ui; text-align: center; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="title">Thriller</div>
+  <div id="sub">Michael Jackson &middot; Pepe the Frog &middot; Donald Trump &middot; Elon Musk</div>
+  <div id="hint">Three.js cinematic dance scene &middot; Click/drag to rotate &middot; Scroll to zoom</div>
+</div>
+<canvas id="glcanvas"></canvas>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const cvs = document.getElementById('glcanvas');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050508, 0.035);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 4, 10);
+camera.lookAt(0, 1.2, 0);
+
+const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.target.set(0, 1.2, 0);
+controls.minDistance = 4;
+controls.maxDistance = 24;
+
+// Ambient + directional moon light
+const ambient = new THREE.AmbientLight(0x404060, 0.6);
+scene.add(ambient);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 8, 4);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 0.5;
+dirLight.shadow.camera.far = 30;
+dirLight.shadow.camera.left = -12;
+dirLight.shadow.camera.right = 12;
+dirLight.shadow.camera.top = 12;
+dirLight.shadow.camera.bottom = -12;
+scene.add(dirLight);
+
+// Colored spotlights for cinematic feel
+const spotColors = [0xff2d55, 0x2dff9b, 0x2d6bff, 0xffd100];
+const spots = [];
+spotColors.forEach((c, i) => {
+  const sp = new THREE.SpotLight(c, 4);
+  sp.position.set(Math.cos(i * Math.PI / 2) * 8, 6, Math.sin(i * Math.PI / 2) * 8);
+  sp.target.position.set(0, 1, 0);
+  sp.angle = Math.PI / 5;
+  sp.penumbra = 0.6;
+  sp.castShadow = true;
+  scene.add(sp);
+  scene.add(sp.target);
+  spots.push(sp);
+});
+
+// Stage floor
+const floorGeo = new THREE.PlaneGeometry(40, 40);
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a26, roughness: 0.6, metalness: 0.2 });
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Grid lines on floor
+const gridHelper = new THREE.GridHelper(40, 20, 0x444455, 0x222233);
+gridHelper.position.y = 0.01;
+scene.add(gridHelper);
+
+// Backdrop curtains
+const curtainGeo = new THREE.PlaneGeometry(30, 16);
+const curtainMat = new THREE.MeshStandardMaterial({ color: 0x6d0000, roughness: 0.9 });
+const leftCurtain = new THREE.Mesh(curtainGeo, curtainMat);
+leftCurtain.position.set(-14.5, 8, -12);
+leftCurtain.rotation.y = 0.35;
+leftCurtain.castShadow = true;
+leftCurtain.receiveShadow = true;
+scene.add(leftCurtain);
+
+const rightCurtain = new THREE.Mesh(curtainGeo, curtainMat);
+rightCurtain.position.set(14.5, 8, -12);
+rightCurtain.rotation.y = -0.35;
+rightCurtain.castShadow = true;
+rightCurtain.receiveShadow = true;
+scene.add(rightCurtain);
+
+// ---------- Character builder (stylized figures, no external models) ----------
+function createCharacter(color, hatColor, name) {
+  const group = new THREE.Group();
+  group.name = name;
+  group.userData = { name };
+
+  // Body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.95, 0.45), new THREE.MeshStandardMaterial({ color }));
+  body.position.y = 0.475;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  // Head
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({ color: 0xf5d7a0 }));
+  head.position.y = 1.05;
+  head.castShadow = true;
+  head.receiveShadow = true;
+  group.add(head);
+
+  // Hat
+  const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.3, 0.14, 16), new THREE.MeshStandardMaterial({ color: hatColor }));
+  hat.position.y = 1.32;
+  hat.rotation.x = Math.PI / 20;
+  hat.castShadow = true;
+  group.add(hat);
+
+  // Arms
+  const armMat = new THREE.MeshStandardMaterial({ color: 0xe0b380 });
+  const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.6, 0.18), armMat);
+  lArm.position.set(-0.38, 0.75, 0);
+  lArm.castShadow = true;
+  group.add(lArm);
+  const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.6, 0.18), armMat);
+  rArm.position.set(0.38, 0.75, 0);
+  rArm.castShadow = true;
+  group.add(rArm);
+  group.userData.lArm = lArm;
+  group.userData.rArm = rArm;
+
+  // Legs
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x22222a });
+  const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.62, 0.2), legMat);
+  lLeg.position.set(-0.16, 0.16, 0);
+  lLeg.castShadow = true;
+  group.add(lLeg);
+  const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.62, 0.2), legMat);
+  rLeg.position.set(0.16, 0.16, 0);
+  rLeg.castShadow = true;
+  group.add(rLeg);
+  group.userData.lLeg = lLeg;
+  group.userData.rLeg = rLeg;
+
+  // Name tag
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 64;
+  const cctx = canvas.getContext('2d');
+  cctx.fillStyle = '#000'; cctx.fillRect(0, 0, 256, 64);
+  cctx.fillStyle = '#ffd100'; cctx.font = 'bold 34px sans-serif'; cctx.textAlign = 'center';
+  cctx.fillText(name, 128, 42);
+  const tex = new THREE.CanvasTexture(canvas);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+  sprite.position.set(0, 1.6, 0);
+  sprite.scale.set(1.6, 0.4, 1);
+  group.add(sprite);
+
+  return group;
+}
+
+// Characters
+const mj = createCharacter(0x111111, 0x222222, 'MJ');
+const pepe = createCharacter(0x7fbf4f, 0x3a3a3a, 'PEPE');
+const trump = createCharacter(0xf5d7a0, 0xffd700, 'TRUMP');
+const musk = createCharacter(0xcccccc, 0x444444, 'MUSK');
+
+musk.userData.hat.material.color.setHex(0x444444);
+
+const formation = [
+  { pos: new THREE.Vector3(-2.2, 0, 0), char: mj },
+  { pos: new THREE.Vector3(2.2, 0, 0), char: pepe },
+  { pos: new THREE.Vector3(-2.2, 0, -2.4), char: trump },
+  { pos: new THREE.Vector3(2.2, 0, -2.4), char: musk },
+];
+
+formation.forEach(f => {
+  f.char.position.copy(f.pos);
+  f.char.position.y = 0;
+  scene.add(f.char);
+}
+
+// Spotlight floor markers
+const markerGeo = new THREE.CircleGeometry(0.7, 16);
+markerGeo.rotateX(-Math.PI / 2);
+const markerMat = new THREE.MeshBasicMaterial({ color: 0xffd100, transparent: true, opacity: 0.35 });
+formation.forEach((f, i) => {
+  const m = new THREE.Mesh(markerGeo, markerMat);
+  m.position.set(f.pos.x, 0.02, f.pos.z);
+  scene.add(m);
+});
+
+// ---------- Animation ----------
+const clock = new THREE.Clock();
+let time = 0;
+
+function easeInOut(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+function animate() {
+  requestAnimationFrame(animate);
+  const delta = clock.getDelta();
+  time += delta;
+
+  controls.update();
+
+  // Slow pulsing spotlights
+  spots.forEach((sp, i) => {
+    const t = time * 0.8 + i;
+    sp.intensity = 3 + Math.sin(t) * 1.2;
+    sp.target.position.lerp(new THREE.Vector3(0, 1, 0), 0.1);
+    sp.target.updateMatrixWorld();
+  });
+
+  // Thriller choreography loop (4-beat cycle)
+  const beat = (time % 4) / 4;
+  const phase = Math.sin(time * Math.PI * 0.5);
+  const zombieLean = Math.sin(time * 2);
+
+  formation.forEach((f, i) => {
+    const char = f.char;
+    const basePos = f.pos;
+    const offset = new THREE.Vector3(
+      Math.sin(time + i) * 0.12,
+      Math.abs(Math.sin(time * 1.5 + i)) * 0.06,
+      Math.cos(time + i) * 0.1
+    );
+    char.position.copy(basePos).add(offset);
+    char.position.y = 0;
+
+    // Body bounce
+    char.position.y += Math.sin(time * 3 + i) * 0.05;
+
+    // Arm swing (Thriller claws)
+    const armSwing = Math.sin(time * 2.5 + i) * 0.5;
+    char.userData.lArm.rotation.z = armSwing * 0.6;
+    char.userData.rArm.rotation.z = -armSwing * 0.6;
+    char.userData.lArm.position.y = 0.75 + Math.sin(time * 2 + i) * 0.08;
+    char.userData.rArm.position.y = 0.75 - Math.sin(time * 2 + i) * 0.08;
+
+    // Legs
+    char.userData.lLeg.rotation.x = Math.sin(time * 3 + i) * 0.35;
+    char.userData.rLeg.rotation.x = -Math.sin(time * 3 + i) * 0.35;
+
+    // Slight body lean to the beat
+    char.rotation.z = Math.sin(time * 2 + i) * 0.12;
+    char.rotation.y = Math.sin(time + i) * 0.15;
+  });
+
+  // Gentle camera drift
+  camera.position.x = Math.sin(time * 0.3) * 0.6;
+  camera.lookAt(0, 1.2, 0);
+
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate();
+</script>
+</body>
+</html>

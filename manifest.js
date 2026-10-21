@@ -1017,6 +1017,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/opencode/beam-free/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "opencode",
+      provider_display: "OpenCode",
+      model: "nemotron-3.5-super-vl-free",
+      model_display: "Nemotron 3.5 Super VL Free",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/opencode/nemotron-3.5-super-vl-free",
+      added: "2026-10-21",
+      outputs: {
+        "01-car-parallax":      "providers/opencode/nemotron-3.5-super-vl-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/opencode/nemotron-3.5-super-vl-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/opencode/nemotron-3.5-super-vl-free/03-threejs-thriller/output.html",
+      },
+    },
 
   ]
 };
