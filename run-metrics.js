@@ -138,6 +138,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": 2420295
     }
   },
+  "providers/opencode/beam-free": {
+    "schema_version": 1,
+    "provider": "opencode",
+    "model": "beam-free",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-10-21T07:05:40.375Z",
+    "completed_at": "2026-10-21T07:06:37.564Z",
+    "duration_ms": 57189,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "opencode harness does not expose whole-run token usage for this session",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/opencode/deepseek-v4.1-flash-free": {
     "schema_version": 1,
     "provider": "opencode",

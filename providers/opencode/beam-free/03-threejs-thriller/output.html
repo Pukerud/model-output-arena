@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thriller Dance</title>
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;background:#000;height:100%}
+  canvas{display:block}
+  #info{position:fixed;top:10px;left:10px;color:#fff;font-family:system-ui,sans-serif;font-size:14px;opacity:0.7}
+</style>
+</head>
+<body>
+<div id="info">Three.js Thriller — MJ, Pepe, Trump, Elon</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0a0a12);
+scene.fog=new THREE.Fog(0x0a0a12,8,40);
+const camera=new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,0.1,100);
+camera.position.set(0,4,12);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+
+// lights
+const amb=new THREE.AmbientLight(0x404060,0.6);scene.add(amb);
+const key=new THREE.DirectionalLight(0xffeedd,1.2);key.position.set(5,8,6);key.castShadow=true;key.shadow.mapSize.width=2048;key.shadow.mapSize.height=2048;scene.add(key);
+const rim=new THREE.DirectionalLight(0x6688ff,0.7);rim.position.set(-6,4,-6);scene.add(rim);
+const spot1=new THREE.SpotLight(0xff3366,1.2,30,0.4,0.5);spot1.position.set(0,10,0);scene.add(spot1);
+const spot2=new THREE.SpotLight(0x3366ff,1.0,30,0.4,0.5);spot2.position.set(4,10,4);scene.add(spot2);
+
+// ground
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:0x111118,roughness:0.9}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+// grid lines
+const grid=new THREE.GridHelper(60,60,0x222233,0x151522);scene.add(grid);
+
+function makeCharacter(color,accent){
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color,roughness:0.6,metalness:0.1});
+  const acc=new THREE.MeshStandardMaterial({color:accent,roughness:0.4});
+  // torso
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.55,1.2,12),mat);torso.position.y=1.6;torso.castShadow=true;g.add(torso);
+  // head
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.35,16,16),mat);head.position.y=2.5;head.castShadow=true;g.add(head);
+  // arms
+  const armL=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,1.1,8),mat);armL.position.set(-0.7,2.0,0);armL.rotation.z=0.6;armL.castShadow=true;g.add(armL);
+  const armR=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,1.1,8),mat);armR.position.set(0.7,2.0,0);armR.rotation.z=-0.6;armR.castShadow=true;g.add(armR);
+  // legs
+  const legL=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.14,1.2,8),mat);legL.position.set(-0.25,0.6,0);legL.castShadow=true;g.add(legL);
+  const legR=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.14,1.2,8),mat);legR.position.set(0.25,0.6,0);legR.castShadow=true;g.add(legR);
+  // accent (hat/prop)
+  const hat=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.15,12),acc);hat.position.y=2.85;g.add(hat);
+  g.userData={armL,armR,legL,legR,torso,head,hat,phase:Math.random()*Math.PI*2};
+  return g;
+}
+
+const chars=[];
+const cfg=[
+  {name:'MJ',color:0xffffff,accent:0x111111,x:0},
+  {name:'Pepe',color:0x4caf50,accent:0x2e7d32,x:-2.6},
+  {name:'Trump',color:0xf5deb3,accent:0xff8c00,x:2.6},
+  {name:'Elon',color:0x1e88e5,accent:0x90caf9,x:-5.2}
+];
+// arrange in two rows
+const positions=[[ -2.6,0],[-0.9,0],[0.9,0],[2.6,0]];
+cfg.forEach((c,i)=>{
+  const ch=makeCharacter(c.color,c.accent);
+  ch.position.set(positions[i][0],0,positions[i][1]-1);
+  scene.add(ch);
+  chars.push({mesh:ch,name:c.name,phase:i*0.7});
+});
+// add a 5th? no, 4 chars. Move Elon to back row maybe
+chars[3].mesh.position.set(0,0,-3.2);
+
+// camera orbit
+let camAngle=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const t=performance.now()*0.001;
+  chars.forEach((ch,i)=>{
+    const m=ch.mesh;
+    const p=ch.phase;
+    // Thriller-ish: arm positions, leg kicks
+    const beat=Math.sin(t*2.4+p);
+    m.userData.armL.rotation.z=0.4+beat*0.6;
+    m.userData.armR.rotation.z=-0.4-beat*0.6;
+    m.userData.armL.rotation.x=Math.sin(t*1.2+p)*0.3;
+    m.userData.armR.rotation.x=-Math.sin(t*1.2+p)*0.3;
+    m.userData.legL.rotation.x=Math.sin(t*2.4+p+Math.PI)*0.5;
+    m.userData.legR.rotation.x=-Math.sin(t*2.4+p+Math.PI)*0.5;
+    m.position.y=Math.abs(Math.sin(t*2.4+p))*0.15;
+    m.rotation.y=Math.sin(t*0.6+p)*0.15;
+  });
+  camAngle+=0.002;
+  camera.position.x=Math.sin(camAngle)*14;
+  camera.position.z=Math.cos(camAngle)*14;
+  camera.position.y=4+Math.sin(t*0.3)*0.5;
+  camera.lookAt(0,1.5,0);
+  spot1.position.x=Math.sin(t*0.7)*4;
+  spot2.position.x=Math.cos(t*0.9)*4;
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>

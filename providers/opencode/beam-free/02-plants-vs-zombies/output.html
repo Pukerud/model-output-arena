@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plants vs Zombies Mini</title>
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;background:#1b3a1b;height:100%;font-family:system-ui,sans-serif;color:#fff}
+  canvas{display:block;margin:0 auto}
+  #ui{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+  .btn{pointer-events:auto;padding:8px 14px;border:0;border-radius:8px;background:#4caf50;color:#fff;font-weight:700;cursor:pointer}
+  .btn:hover{background:#66bb6a}
+  #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);z-index:10}
+  .panel{background:#263238;padding:24px;border-radius:14px;max-width:420px;width:90%;text-align:center}
+  .panel h1{margin:0 0 12px}
+  .panel button{margin:6px}
+  .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  input{padding:8px;border-radius:8px;border:0;width:100%;max-width:260px}
+  .lb{margin-top:12px;text-align:left;max-height:180px;overflow:auto}
+  .lb div{padding:4px 0;border-bottom:1px solid #444}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="overlay">
+  <div class="panel" id="menuPanel">
+    <h1>Plants vs Zombies</h1>
+    <p>Defend your lawn. Collect sun, plant defenses, stop the zombies.</p>
+    <div class="row">
+      <button class="btn" id="startBtn">Start Game</button>
+      <button class="btn" id="lbBtn">Leaderboard</button>
+    </div>
+    <div id="lbView" class="lb" style="display:none"></div>
+  </div>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const ROWS=5, COLS=9;
+let cellW,cellH,gridX,gridY;
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;cellW=Math.min(canvas.width/11,canvas.height/7);cellH=cellW;gridX=(canvas.width-COLS*cellW)/2;gridY=(canvas.height-ROWS*cellH)/2;}
+resize();window.addEventListener('resize',resize);
+
+const PLANTS={
+  sunflower:{cost:50,color:'#ffeb3b',cd:0,prod:25},
+  peashooter:{cost:100,color:'#4caf50',cd:1.2},
+  wallnut:{cost:50,color:'#8d6e63',hp:200},
+  cherry:{cost:150,color:'#e53935',boom:true}
+};
+const ZOMBIE_HP=60, ZOMBIE_SPEED=18;
+
+let state='menu';
+let sun=150,score=0,wave=1;
+let plants=[],zombies=[],peas=[],suns=[];
+let selected=null, cooldowns={};
+let lastTime=0, spawnTimer=0, waveTimer=0;
+let gameOver=false, victory=false;
+let leaderboard=JSON.parse(localStorage.getItem('pvz_lb')||'[]');
+
+function showMenu(){state='menu';document.getElementById('overlay').style.display='flex';document.getElementById('menuPanel').innerHTML=`<h1>Plants vs Zombies</h1><p>Defend your lawn. Collect sun, plant defenses, stop the zombies.</p><div class="row"><button class="btn" id="startBtn">Start Game</button><button class="btn" id="lbBtn">Leaderboard</button></div><div id="lbView" class="lb" style="display:none"></div>`;bindMenu();}
+function bindMenu(){
+  document.getElementById('startBtn').onclick=startGame;
+  document.getElementById('lbBtn').onclick=toggleLb;
+}
+function toggleLb(){
+  const v=document.getElementById('lbView');
+  if(v.style.display==='none'){v.style.display='block';renderLb();}
+  else v.style.display='none';
+}
+function renderLb(){
+  const v=document.getElementById('lbView');
+  if(!leaderboard.length){v.innerHTML='<div>No scores yet.</div>';return;}
+  v.innerHTML=leaderboard.map((e,i)=>`<div>${i+1}. ${escapeHtml(e.name)} — ${e.score}</div>`).join('');
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function startGame(){
+  document.getElementById('overlay').style.display='none';
+  resetGame();
+  state='playing';
+  lastTime=performance.now();
+  requestAnimationFrame(loop);
+}
+
+function resetGame(){
+  plants=[];zombies=[];peas=[];suns=[];
+  sun=150;score=0;wave=1;selected=null;cooldowns={};
+  spawnTimer=0;waveTimer=0;gameOver=false;victory=false;
+}
+
+function cellAt(x,y){const c=Math.floor((x-gridX)/cellW);const r=Math.floor((y-gridY)/cellH);if(r<0||r>=ROWS||c<0||c>=COLS)return null;return {r,c};}
+
+canvas.addEventListener('click',e=>{
+  if(state!=='playing'||gameOver||victory)return;
+  const x=e.clientX,y=e.clientY;
+  // sun collection
+  for(let i=suns.length-1;i>=0;i--){
+    const s=suns[i];
+    if(Math.hypot(x-s.x,y-s.y)<24){sun+=s.val;suns.splice(i,1);return;}
+  }
+  // plant selection bar (bottom)
+  const barY=canvas.height-90;
+  if(y>barY){
+    const keys=Object.keys(PLANTS);
+    const idx=Math.floor((x-20)/70);
+    if(idx>=0&&idx<keys.length){selected=keys[idx];return;}
+  }
+  // grid placement
+  const cell=cellAt(x,y);
+  if(cell&&selected){
+    const p=PLANTS[selected];
+    if(sun>=p.cost && !plants.some(pl=>pl.r===cell.r&&pl.c===cell.c)){
+      sun-=p.cost;
+      plants.push({type:selected,r:cell.r,c:cell.c,hp:p.hp||30,t:0,lastShot:0});
+      cooldowns[selected]=p.cd||0;
+      selected=null;
+    }
+  }
+});
+
+function spawnZombie(){
+  const r=Math.floor(Math.random()*ROWS);
+  zombies.push({r,x:canvas.width+20,hp:ZOMBIE_HP+wave*10,speed:ZOMBIE_SPEED+wave*2,eating:false});
+}
+
+function update(dt){
+  if(gameOver||victory)return;
+  // sun production
+  for(const p of plants){
+    if(p.type==='sunflower'){
+      p.t+=dt;
+      if(p.t>8){p.t=0;suns.push({x:gridX+p.c*cellW+cellW/2,y:gridY+p.r*cellH+cellH/2-10,val:25,life:6});}
+    }
+    if(p.type==='peashooter'){
+      p.lastShot+=dt;
+      if(p.lastShot>1.3){
+        p.lastShot=0;
+        const z=zombies.find(z=>z.r===p.r&&z.x>gridX+p.c*cellW);
+        if(z) peas.push({r:p.r,x:gridX+p.c*cellW+cellW,y:gridY+p.r*cellH+cellH/2,vx:320});
+      }
+    }
+  }
+  // suns fade
+  for(let i=suns.length-1;i>=0;i--){suns[i].life-=dt;if(suns[i].life<=0)suns.splice(i,1);}
+  // peas
+  for(let i=peas.length-1;i>=0;i--){
+    const pe=peas[i];pe.x+=pe.vx*dt;
+    if(pe.x>canvas.width+20){peas.splice(i,1);continue;}
+    // hit zombie
+    let hit=false;
+    for(const z of zombies){
+      if(z.r===pe.r && Math.abs(z.x-pe.x)<18){z.hp-=20;hit=true;break;}
+    }
+    if(hit) peas.splice(i,1);
+  }
+  // zombies
+  for(const z of zombies){
+    // find plant in front
+    const inCell=plants.find(p=>p.r===z.r && Math.abs((gridX+p.c*cellW+cellW/2)-z.x)<cellW*0.6);
+    if(inCell){z.eating=true;inCell.hp-=15*dt;if(inCell.hp<=0){plants=plants.filter(p=>p!==inCell);}}
+    else {z.eating=false;z.x-=z.speed*dt;}
+    if(z.x<gridX-10){gameOver=true;}
+    if(z.hp<=0){z.dead=true;score+=10;}
+  }
+  zombies=zombies.filter(z=>!z.dead);
+  // cherry bomb
+  for(let i=plants.length-1;i>=0;i--){
+    const p=plants[i];
+    if(p.type==='cherry'&&p.t>0.3){
+      // boom
+      const cx=gridX+p.c*cellW+cellW/2,cy=gridY+p.r*cellH+cellH/2;
+      for(const z of zombies){if(Math.hypot(z.x-cx,cy-(gridY+z.r*cellH+cellH/2))<cellW*1.6) z.hp-=200;}
+      plants.splice(i,1);
+    }
+    if(p.type==='cherry') p.t+=dt;
+  }
+  // spawn
+  spawnTimer+=dt;
+  const spawnInterval=Math.max(1.2,4-wave*0.3);
+  if(spawnTimer>spawnInterval){spawnTimer=0;spawnZombie();}
+  // wave progression
+  waveTimer+=dt;
+  if(waveTimer>25){waveTimer=0;wave++;if(wave>5){victory=true;endGame(true);}}
+  // cleanup dead zombies already
+}
+
+function endGame(win){
+  state='ended';
+  if(win) victory=true; else gameOver=true;
+  const name=prompt(win?'You won! Enter name for leaderboard:':'Game over. Enter name for leaderboard:')||'Anon';
+  leaderboard.push({name,score:score+ (win?500:0)});
+  leaderboard.sort((a,b)=>b.score-a.score);
+  leaderboard=leaderboard.slice(0,10);
+  localStorage.setItem('pvz_lb',JSON.stringify(leaderboard));
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('menuPanel').innerHTML=`<h1>${win?'Victory!':'Defeat'}</h1><p>Score: ${score}</p><div class="row"><button class="btn" id="againBtn">Play Again</button><button class="btn" id="menuBtn">Menu</button></div>`;
+  document.getElementById('againBtn').onclick=startGame;
+  document.getElementById('menuBtn').onclick=showMenu;
+}
+
+function draw(){
+  ctx.fillStyle='#5fa35f';ctx.fillRect(0,0,canvas.width,canvas.height);
+  // grid
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    ctx.fillStyle=(r+c)%2?'#7cb342':'#8bc34a';
+    ctx.fillRect(gridX+c*cellW,gridY+r*cellH,cellW,cellH);
+    ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.strokeRect(gridX+c*cellW,gridY+r*cellH,cellW,cellH);
+  }
+  // house
+  ctx.fillStyle='#8d6e63';ctx.fillRect(gridX-60,gridY,60,ROWS*cellH);
+  ctx.fillStyle='#5d4037';ctx.fillRect(gridX-60,gridY-20,60,20);
+  // plants
+  for(const p of plants){
+    const x=gridX+p.c*cellW+cellW/2,y=gridY+p.r*cellH+cellH/2;
+    ctx.fillStyle=PLANTS[p.type].color;
+    ctx.beginPath();ctx.arc(x,y,cellW*0.35,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(p.type[0].toUpperCase(),x,y+4);
+    // hp bar
+    const maxhp=PLANTS[p.type].hp||30;
+    ctx.fillStyle='#333';ctx.fillRect(x-20,y+22,40,4);
+    ctx.fillStyle='#4caf50';ctx.fillRect(x-20,y+22,40*(p.hp/maxhp),4);
+  }
+  // zombies
+  for(const z of zombies){
+    const y=gridY+z.r*cellH+cellH/2;
+    ctx.fillStyle='#7e8f6b';
+    ctx.fillRect(z.x-16,y-24,32,48);
+    ctx.fillStyle='#556b2f';
+    ctx.fillRect(z.x-12,y-32,24,16);
+    // hp
+    ctx.fillStyle='#333';ctx.fillRect(z.x-20,y-40,40,4);
+    ctx.fillStyle='#e53935';ctx.fillRect(z.x-20,y-40,40*(z.hp/(ZOMBIE_HP+wave*10)),4);
+  }
+  // peas
+  ctx.fillStyle='#aeea00';
+  for(const pe of peas){ctx.beginPath();ctx.arc(pe.x,pe.y,6,0,Math.PI*2);ctx.fill();}
+  // suns
+  for(const s of suns){
+    ctx.fillStyle='#ffeb3b';ctx.beginPath();ctx.arc(s.x,s.y,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#f9a825';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('25',s.x,s.y+4);
+  }
+  // HUD
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,60);
+  ctx.fillStyle='#fff';ctx.font='bold 18px sans-serif';ctx.textAlign='left';
+  ctx.fillText('Sun: '+sun,20,36);
+  ctx.fillText('Score: '+score,160,36);
+  ctx.fillText('Wave: '+wave+'/5',320,36);
+  // plant bar
+  const barY=canvas.height-90;
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,barY,canvas.width,90);
+  const keys=Object.keys(PLANTS);
+  keys.forEach((k,i)=>{
+    const x=20+i*70,y=barY+10;
+    ctx.fillStyle=PLANTS[k].color;ctx.fillRect(x,y,60,60);
+    ctx.strokeStyle=selected===k?'#fff':'#000';ctx.lineWidth=selected===k?3:1;ctx.strokeRect(x,y,60,60);
+    ctx.fillStyle='#000';ctx.font='10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(k,x+30,y+30);
+    ctx.fillText(PLANTS[k].cost,x+30,y+50);
+  });
+  if(gameOver&&!state.includes('ended')){ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#fff';ctx.font='bold 48px sans-serif';ctx.textAlign='center';ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);}
+}
+
+function loop(now){
+  if(state!=='playing')return;
+  const dt=Math.min(0.05,(now-lastTime)/1000);lastTime=now;
+  if(!gameOver&&!victory) update(dt);
+  if((gameOver||victory)&&state==='playing') endGame(victory);
+  draw();
+  if(state==='playing') requestAnimationFrame(loop);
+}
+
+showMenu();
+</script>
+</body>
+</html>

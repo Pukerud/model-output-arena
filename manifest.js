@@ -1002,6 +1002,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/opencode/minimax-m3.1-flash-free/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "opencode",
+      provider_display: "OpenCode",
+      model: "beam-free",
+      model_display: "Beam Free",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/opencode/beam-free",
+      added: "2026-10-21",
+      outputs: {
+        "01-car-parallax":      "providers/opencode/beam-free/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/opencode/beam-free/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/opencode/beam-free/03-threejs-thriller/output.html",
+      },
+    },
 
   ]
 };

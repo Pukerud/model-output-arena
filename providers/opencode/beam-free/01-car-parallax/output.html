@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallax Car</title>
+<style>
+  html, body { margin:0; padding:0; overflow:hidden; background:#0b1020; height:100%; }
+  canvas { display:block; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, dpr;
+function resize(){ dpr=window.devicePixelRatio||1; W=canvas.width=window.innerWidth*dpr; H=canvas.height=window.innerHeight*dpr; canvas.style.width=window.innerWidth+'px'; canvas.style.height=window.innerHeight+'px'; }
+resize(); window.addEventListener('resize', resize);
+
+// Sky gradient (sunset)
+function sky(){
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#1a1a3e');
+  g.addColorStop(0.35,'#ff6b35');
+  g.addColorStop(0.62,'#ff9f1c');
+  g.addColorStop(0.78,'#ffd166');
+  g.addColorStop(1,'#3a5a40');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // sun
+  const sx=W*0.72, sy=H*0.32;
+  const rg=ctx.createRadialGradient(sx,sy,0,sx,sy,H*0.4);
+  rg.addColorStop(0,'rgba(255,230,150,0.9)');
+  rg.addColorStop(0.4,'rgba(255,120,40,0.35)');
+  rg.addColorStop(1,'rgba(255,120,40,0)');
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  ctx.beginPath(); ctx.arc(sx,sy,40*dpr,0,Math.PI*2); ctx.fillStyle='#ffe8a3'; ctx.fill();
+  // clouds
+  for(let i=0;i<6;i++){
+    const cx=(i*230+ t*12)% (W+200) -100;
+    const cy=H*(0.12+i*0.05);
+    ctx.fillStyle='rgba(255,200,170,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,90*dpr,22*dpr,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx+40*dpr,cy-8*dpr,60*dpr,18*dpr,0,0,Math.PI*2); ctx.fill();
+  }
+}
+
+let t=0;
+// parallax layers
+const layers = [
+  {speed:0.05, y:0.55, draw:drawDistantHills},
+  {speed:0.12, y:0.62, draw:drawHills},
+  {speed:0.25, y:0.70, draw:drawTrees},
+  {speed:0.45, y:0.78, draw:drawRoadside},
+];
+
+function drawDistantHills(ctx, off){
+  ctx.fillStyle='#2d3a5a';
+  ctx.beginPath();
+  for(let x=0;x<=W+200;x+=40){
+    const xx=x-off*0.3;
+    const h=Math.sin(x*0.003+1)*40+Math.sin(x*0.007)*25;
+    if(x===0) ctx.moveTo(xx, H*0.55 + h); else ctx.lineTo(xx, H*0.55 + h);
+  }
+  ctx.lineTo(W+200,H); ctx.lineTo(-200,H); ctx.closePath(); ctx.fill();
+}
+function drawHills(ctx, off){
+  ctx.fillStyle='#3a4f3a';
+  ctx.beginPath();
+  for(let x=0;x<=W+200;x+=30){
+    const xx=x-off*0.6;
+    const h=Math.sin(x*0.005+2)*55+Math.sin(x*0.011)*30;
+    if(x===0) ctx.moveTo(xx, H*0.62 + h); else ctx.lineTo(xx, H*0.62 + h);
+  }
+  ctx.lineTo(W+200,H); ctx.lineTo(-200,H); ctx.closePath(); ctx.fill();
+}
+function drawTrees(ctx, off){
+  for(let i=0;i<18;i++){
+    const x=((i*170 - off*1.2) % (W+400)) - 200;
+    const base=H*0.70;
+    const h=60+ (i%5)*20;
+    ctx.fillStyle='#1f3320';
+    ctx.fillRect(x-4, base-h*0.3, 8, h*0.3);
+    ctx.beginPath();
+    ctx.moveTo(x, base-h);
+    ctx.lineTo(x-22, base-10);
+    ctx.lineTo(x+22, base-10);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x, base-h+15);
+    ctx.lineTo(x-16, base-25);
+    ctx.lineTo(x+16, base-25);
+    ctx.closePath(); ctx.fill();
+  }
+}
+function drawRoadside(ctx, off){
+  // poles
+  for(let i=0;i<12;i++){
+    const x=((i*260 - off*2.2) % (W+300)) - 150;
+    const base=H*0.78;
+    ctx.fillStyle='#5a4a3a';
+    ctx.fillRect(x-3, base-90, 6, 90);
+    ctx.fillStyle='#888';
+    ctx.fillRect(x-14, base-92, 28, 6);
+  }
+  // ground strip
+  ctx.fillStyle='#2b2b2b';
+  ctx.fillRect(0,H*0.82,W,H*0.18);
+  // lane dashes
+  ctx.fillStyle='#e8e8e8';
+  for(let i=0;i<20;i++){
+    const x=((i*120 - off*3) % (W+120)) - 60;
+    ctx.fillRect(x, H*0.89, 60*dpr? 50 : 50, 6);
+  }
+}
+
+function drawCar(){
+  const cx=W*0.35, cy=H*0.78;
+  const scale=dpr*0.9;
+  // body
+  ctx.save();
+  ctx.translate(cx,cy);
+  // subtle bounce
+  const bounce=Math.sin(t*6)*2*dpr;
+  ctx.translate(0,bounce);
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(0, 30*scale, 110*scale, 12*scale,0,0,Math.PI*2); ctx.fill();
+  // main body
+  ctx.fillStyle='#c0392b';
+  ctx.beginPath();
+  ctx.moveTo(-90*scale,0);
+  ctx.lineTo(-70*scale,-40*scale);
+  ctx.lineTo(-20*scale,-55*scale);
+  ctx.lineTo(40*scale,-55*scale);
+  ctx.lineTo(80*scale,-30*scale);
+  ctx.lineTo(100*scale,0);
+  ctx.lineTo(100*scale,15*scale);
+  ctx.lineTo(-90*scale,15*scale);
+  ctx.closePath(); ctx.fill();
+  // cabin
+  ctx.fillStyle='#8e1f1f';
+  ctx.beginPath();
+  ctx.moveTo(-60*scale,-40*scale);
+  ctx.lineTo(-20*scale,-55*scale);
+  ctx.lineTo(35*scale,-55*scale);
+  ctx.lineTo(70*scale,-30*scale);
+  ctx.lineTo(60*scale,-30*scale);
+  ctx.lineTo(25*scale,-48*scale);
+  ctx.lineTo(-15*scale,-48*scale);
+  ctx.lineTo(-50*scale,-32*scale);
+  ctx.closePath(); ctx.fill();
+  // windows
+  ctx.fillStyle='rgba(180,220,255,0.6)';
+  ctx.fillRect(-15*scale,-50*scale,40*scale,14*scale);
+  ctx.fillRect(30*scale,-48*scale,30*scale,12*scale);
+  // headlights
+  ctx.fillStyle='#fff3b0';
+  ctx.beginPath(); ctx.ellipse(95*scale,-5*scale,6*scale,8*scale,0,0,Math.PI*2); ctx.fill();
+  // taillight
+  ctx.fillStyle='#ff3333';
+  ctx.fillRect(-92*scale,-12*scale,6*scale,8*scale);
+  // wheels
+  for(const wx of [-55, 60]){
+    const wcx=wx*scale, wcy=18*scale;
+    ctx.save();
+    ctx.translate(wcx,wcy);
+    // rim
+    ctx.fillStyle='#111';
+    ctx.beginPath(); ctx.arc(0,0,22*scale,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#444';
+    ctx.beginPath(); ctx.arc(0,0,16*scale,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#bbb';
+    ctx.beginPath(); ctx.arc(0,0,6*scale,0,Math.PI*2); ctx.fill();
+    // spokes
+    ctx.strokeStyle='#888'; ctx.lineWidth=2*dpr;
+    const ang=t*12;
+    for(let s=0;s<5;s++){
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(ang+s*1.256)*14*scale, Math.sin(ang+s*1.256)*14*scale);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function frame(){
+  t += 1/60;
+  ctx.clearRect(0,0,W,H);
+  sky();
+  // parallax layers
+  const off = t*120;
+  drawDistantHills(ctx, off*0.3);
+  drawHills(ctx, off*0.6);
+  drawTrees(ctx, off*1.2);
+  drawRoadside(ctx, off*2.2);
+  drawCar();
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "provider": "opencode",
+  "provider_display": "OpenCode",
+  "model": "beam-free",
+  "model_display": "Beam Free",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-10-21T07:05:50Z",
+  "runner": "Beam Free via the opencode agent",
+  "notes": "Single-file canvas PvZ with menus, leaderboard, sun economy, plants and zombies.",
+  "hosting": "api",
+  "weights": "closed"
+}
