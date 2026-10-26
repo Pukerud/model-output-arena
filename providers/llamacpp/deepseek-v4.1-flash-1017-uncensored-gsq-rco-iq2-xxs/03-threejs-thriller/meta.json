@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+  "model_display": "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-26T17:32:23Z",
+  "runner": "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS via OpenClaw (llama.cpp)",
+  "notes": "Three.js r160 via CDN; four procedural stylized characters (Michael Jackson, Pepe, Donald Trump, Elon Musk) in synchronized Thriller-style choreography with cinematic spotlights, shadows, fog, moon, and dust.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ2_XXS",
+    "variant": "GSQ RCO",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

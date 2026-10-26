@@ -1032,6 +1032,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/opencode/nemotron-3.5-super-vl-free/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "llamacpp",
+      provider_display: "llama.cpp",
+      model: "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+      model_display: "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS",
+      hosting: "local",
+      weights: "open",
+      path: "providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+      added: "2026-10-26",
+      outputs: {
+        "01-car-parallax":      "providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs/03-threejs-thriller/output.html",
+      },
+    },
 
   ]
 };

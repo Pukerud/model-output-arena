@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+  "model_display": "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-10-26T17:32:23Z",
+  "runner": "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS via OpenClaw (llama.cpp)",
+  "notes": "Single-file procedural Canvas 2D animation with no libraries: layered sunset parallax, spinning wheels, subtle body bob, and moving road details.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ2_XXS",
+    "variant": "GSQ RCO",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

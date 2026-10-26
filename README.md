@@ -165,6 +165,7 @@ Two independent axes are labelled:
 | OpenCode | MiniMax M3.1 Flash Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/minimax-m3.1-flash-free`](./providers/opencode/minimax-m3.1-flash-free) |
 | OpenCode | Beam Free | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/opencode/beam-free`](./providers/opencode/beam-free) |
 | OpenCode | Nemotron 3.5 Super VL Free | ☁️ API | 🔒 Proprietary | [`providers/opencode/nemotron-3.5-super-vl-free`](./providers/opencode/nemotron-3.5-super-vl-free) |
+| llama.cpp | DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs`](./providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs) |
 
 ## How outputs were generated
 

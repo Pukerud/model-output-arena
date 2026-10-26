@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thriller Stage — Three.js</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #04040a;
+    }
+    canvas { display: block; }
+    .overlay {
+      position: fixed;
+      top: 18px;
+      left: 20px;
+      color: #f8e8c7;
+      pointer-events: none;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
+    }
+    .overlay h1 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 44px);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+    .overlay p {
+      margin: 5px 0 0;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      color: #b8a88a;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>Thriller</h1>
+    <p>Michael Jackson · Pepe · Donald Trump · Elon Musk</p>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05050d);
+    scene.fog = new THREE.FogExp2(0x05050d, 0.036);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 3.15, 10.5);
+    camera.lookAt(0, 1.32, 0);
+
+    const clock = new THREE.Clock();
+
+    // ---------- Materials ----------
+    const mat = (color, roughness = 0.55, metalness = 0.05, emissive = 0x000000, emissiveIntensity = 0) =>
+      new THREE.MeshStandardMaterial({ color, roughness, metalness, emissive, emissiveIntensity });
+
+    const skinLight = mat(0xe0b58f, 0.62);
+    const skinPepe = mat(0x7cbe56, 0.55);
+    const skinTrump = mat(0xd89a72, 0.6);
+    const skinElon = mat(0xc79c7c, 0.65);
+    const black = mat(0x111318, 0.48, 0.18);
+    const white = mat(0xf3eee2, 0.5);
+    const glove = mat(0xf4f1e6, 0.45, 0.08);
+    const navy = mat(0x1c2435, 0.55);
+    const darkSuit = mat(0x11151b, 0.55);
+    const red = mat(0xb52b2b, 0.45);
+    const gold = mat(0xd7a85a, 0.35, 0.55);
+    const green = mat(0x77b84c, 0.55);
+    const hairTrump = mat(0xe4c477, 0.55);
+    const hairElon = mat(0x2b2118, 0.7);
+    const hairMJ = mat(0x18120e, 0.65);
+
+    // ---------- Stage ----------
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(24, 16),
+      new THREE.MeshStandardMaterial({ color: 0x080a10, roughness: 0.28, metalness: 0.72 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const platform = new THREE.Mesh(
+      new THREE.CylinderGeometry(5.1, 5.25, 0.12, 72),
+      new THREE.MeshStandardMaterial({ color: 0x15121a, roughness: 0.32, metalness: 0.5 })
+    );
+    platform.position.y = 0.06;
+    platform.receiveShadow = true;
+    scene.add(platform);
+
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(3.9, 4.08, 72),
+      new THREE.MeshStandardMaterial({ color: 0xa47854, roughness: 0.3, metalness: 0.75, emissive: 0x5d3b21, emissiveIntensity: 0.8 })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.13;
+    scene.add(ring);
+
+    const innerRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.25, 1.31, 48),
+      new THREE.MeshBasicMaterial({ color: 0x6b547a, transparent: true, opacity: 0.48 })
+    );
+    innerRing.rotation.x = -Math.PI / 2;
+    innerRing.position.y = 0.14;
+    scene.add(innerRing);
+
+    // Backdrop wall.
+    const backdrop = new THREE.Mesh(
+      new THREE.PlaneGeometry(24, 12),
+      new THREE.MeshStandardMaterial({ color: 0x080912, roughness: 0.8, metalness: 0.1 })
+    );
+    backdrop.position.set(0, 5.8, -9.5);
+    backdrop.receiveShadow = true;
+    scene.add(backdrop);
+
+    const moon = new THREE.Mesh(
+      new THREE.SphereGeometry(1.18, 32, 24),
+      new THREE.MeshStandardMaterial({ color: 0xf2e7c9, emissive: 0xe9caa0, emissiveIntensity: 1.0, roughness: 0.35 })
+    );
+    moon.position.set(-4.9, 6.1, -9.0);
+    scene.add(moon);
+
+    const moonHalo = new THREE.Mesh(
+      new THREE.SphereGeometry(1.55, 32, 24),
+      new THREE.MeshBasicMaterial({ color: 0xe7c79a, transparent: true, opacity: 0.12, depthWrite: false })
+    );
+    moonHalo.position.copy(moon.position);
+    scene.add(moonHalo);
+
+    // Stars.
+    const starGeometry = new THREE.BufferGeometry();
+    const starPositions = [];
+    for (let i = 0; i < 300; i++) {
+      starPositions.push(
+        -13 + Math.random() * 26,
+        2.6 + Math.random() * 7.5,
+        -12 + Math.random() * 4
+      );
+    }
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+    const stars = new THREE.Points(
+      starGeometry,
+      new THREE.PointsMaterial({ color: 0xd9d9e6, size: 0.035, transparent: true, opacity: 0.72, depthWrite: false })
+    );
+    scene.add(stars);
+
+    // Dust / haze particles.
+    const dustGeometry = new THREE.BufferGeometry();
+    const dustPositions = [];
+    for (let i = 0; i < 220; i++) {
+      dustPositions.push(
+        -8 + Math.random() * 16,
+        0.2 + Math.random() * 5.2,
+        -3 + Math.random() * 5.5
+      );
+    }
+    dustGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dustPositions, 3));
+    const dust = new THREE.Points(
+      dustGeometry,
+      new THREE.PointsMaterial({
+        color: 0xbca98e,
+        size: 0.035,
+        transparent: true,
+        opacity: 0.35,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    scene.add(dust);
+
+    // ---------- Lights ----------
+    const hemi = new THREE.HemisphereLight(0x6f8cff, 0x080812, 0.55);
+    scene.add(hemi);
+
+    const ambient = new THREE.AmbientLight(0x28202d, 0.35);
+    scene.add(ambient);
+
+    function addSpot(x, y, z, color, intensity, angle = 0.42) {
+      const spot = new THREE.SpotLight(color, intensity, 24, angle, 0.55, 1.4);
+      spot.position.set(x, y, z);
+      spot.target.position.set(0, 1.0, 0);
+      spot.castShadow = true;
+      spot.shadow.mapSize.set(1024, 1024);
+      spot.shadow.bias = -0.00015;
+      spot.shadow.normalBias = 0.02;
+      scene.add(spot);
+      scene.add(spot.target);
+      return spot;
+    }
+
+    const keySpot = addSpot(0, 7.5, 3.0, 0xffd6b2, 3.7, 0.48);
+    const leftSpot = addSpot(-5.5, 6.6, 2.0, 0x63c8ff, 2.8, 0.38);
+    const rightSpot = addSpot(5.5, 6.4, 2.2, 0xff5f9c, 2.6, 0.38);
+    const backSpot = addSpot(0, 6.8, -6.0, 0x8d63ff, 2.2, 0.45);
+
+    const leftPoint = new THREE.PointLight(0x5e9dff, 3.0, 14, 1.5);
+    leftPoint.position.set(-5.0, 4.4, 1.0);
+    scene.add(leftPoint);
+
+    const rightPoint = new THREE.PointLight(0xff6b9f, 2.6, 14, 1.5);
+    rightPoint.position.set(5.0, 4.0, 1.0);
+    scene.add(rightPoint);
+
+    // Visible spot beams.
+    function beam(x, z, color, radius) {
+      const geometry = new THREE.ConeGeometry(radius, 7.8, 32, 1, true);
+      const material = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.055,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, 4.0, z);
+      mesh.rotation.x = 0.36;
+      scene.add(mesh);
+    }
+    beam(-3.8, -1.2, 0x6ec8ff, 1.3);
+    beam(3.8, -1.2, 0xff78b2, 1.3);
+    beam(0, 0.7, 0xffd1a6, 1.6);
+
+    // ---------- Humanoid rig ----------
+    function createHumanoid(config) {
+      const root = new THREE.Group();
+      root.position.set(config.x, 0, config.z);
+      root.rotation.y = config.rotation || 0;
+
+      const jacketMat = config.jacketMat || black;
+      const shirtMat = config.shirtMat || white;
+      const pantsMat = config.pantsMat || black;
+      const shoeMat = config.shoeMat || black;
+      const headMat = config.headMat || skinLight;
+      const handMat = config.handMat || headMat;
+
+      // Pelvis.
+      const pelvis = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.38, 0.34, 0.25, 18),
+        pantsMat
+      );
+      pelvis.position.y = 0.66;
+      pelvis.castShadow = true;
+      root.add(pelvis);
+
+      // Torso.
+      const torso = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.36, 0.43, 1.05, 20),
+        jacketMat
+      );
+      torso.position.y = 1.16;
+      torso.castShadow = true;
+      torso.receiveShadow = true;
+      root.add(torso);
+
+      // Shirt / tie detail.
+      const shirt = new THREE.Mesh(
+        new THREE.BoxGeometry(0.21, 0.52, 0.055),
+        shirtMat
+      );
+      shirt.position.set(0, 1.22, 0.39);
+      shirt.castShadow = true;
+      root.add(shirt);
+
+      if (config.tieMat) {
+        const tie = new THREE.Mesh(
+          new THREE.BoxGeometry(0.10, 0.42, 0.06),
+          config.tieMat
+        );
+        tie.position.set(0, 1.13, 0.43);
+        tie.castShadow = true;
+        root.add(tie);
+      }
+
+      // Head group.
+      const head = new THREE.Group();
+      head.position.y = 1.78;
+      root.add(head);
+
+      const skull = new THREE.Mesh(
+        new THREE.SphereGeometry(0.25, 24, 20),
+        headMat
+      );
+      skull.scale.set(1.0, 1.12, 0.95);
+      skull.castShadow = true;
+      head.add(skull);
+
+      // Eyes.
+      const eyeWhite = mat(0xf6f2e8, 0.45);
+      const eyeDark = mat(0x161419, 0.35);
+      const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 12), eyeWhite);
+      eyeL.position.set(-0.085, 0.045, 0.225);
+      eyeL.castShadow = true;
+      head.add(eyeL);
+      const eyeR = eyeL.clone();
+      eyeR.position.x = 0.085;
+      head.add(eyeR);
+
+      const pupilL = new THREE.Mesh(new THREE.SphereGeometry(0.023, 10, 8), eyeDark);
+      pupilL.position.set(-0.085, 0.045, 0.272);
+      head.add(pupilL);
+      const pupilR = pupilL.clone();
+      pupilR.position.x = 0.085;
+      head.add(pupilR);
+
+      // Nose.
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), headMat);
+      nose.position.set(0, -0.025, 0.248);
+      nose.castShadow = true;
+      head.add(nose);
+
+      // Mouth.
+      const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), mat(0x5b342d, 0.6));
+      mouth.scale.set(1.45, 0.34, 0.4);
+      mouth.position.set(0, -0.105, 0.238);
+      head.add(mouth);
+
+      // Hair / accessories.
+      if (config.hair) {
+        head.add(config.hair);
+      }
+      if (config.fedora) {
+        head.add(config.fedora);
+      }
+      if (config.glasses) {
+        head.add(config.glasses);
+      }
+
+      // Arms.
+      function makeArm(side, handMaterial) {
+        const group = new THREE.Group();
+        group.position.set(side * 0.43, 1.48, 0);
+
+        const upper = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.135, 0.52, 8, 14),
+          jacketMat
+        );
+        upper.position.y = -0.34;
+        upper.castShadow = true;
+        group.add(upper);
+
+        const elbow = new THREE.Group();
+        elbow.position.y = -0.63;
+        group.add(elbow);
+
+        const sleeve = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.115, 0.44, 8, 14),
+          jacketMat
+        );
+        sleeve.position.y = -0.27;
+        sleeve.castShadow = true;
+        elbow.add(sleeve);
+
+        const hand = new THREE.Mesh(
+          new THREE.SphereGeometry(0.135, 16, 12),
+          handMaterial
+        );
+        hand.position.y = -0.55;
+        hand.castShadow = true;
+        elbow.add(hand);
+
+        return { group, elbow, hand };
+      }
+
+      const armL = makeArm(-1, handMat);
+      const armR = makeArm(1, config.rightHandMat || handMat);
+      root.add(armL.group);
+      root.add(armR.group);
+
+      // Legs.
+      function makeLeg(side) {
+        const group = new THREE.Group();
+        group.position.set(side * 0.19, 0.65, 0);
+
+        const thigh = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.145, 0.52, 8, 14),
+          pantsMat
+        );
+        thigh.position.y = -0.30;
+        thigh.castShadow = true;
+        group.add(thigh);
+
+        const knee = new THREE.Group();
+        knee.position.y = -0.58;
+        group.add(knee);
+
+        const shin = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.12, 0.42, 8, 14),
+          pantsMat
+        );
+        shin.position.y = -0.24;
+        shin.castShadow = true;
+        knee.add(shin);
+
+        const shoe = new THREE.Mesh(
+          new THREE.BoxGeometry(0.23, 0.12, 0.36),
+          shoeMat
+        );
+        shoe.position.set(0, -0.49, 0.10);
+        shoe.castShadow = true;
+        knee.add(shoe);
+
+        return { group, knee, shoe };
+      }
+
+      const legL = makeLeg(-1);
+      const legR = makeLeg(1);
+      root.add(legL.group);
+      root.add(legR.group);
+
+      return {
+        root,
+        torso,
+        head,
+        armL,
+        armR,
+        legL,
+        legR,
+        baseX: config.x,
+        phase: config.phase || 0
+      };
+    }
+
+    // Michael Jackson — black suit, white shirt, fedora, one white glove.
+    const mjFedora = new THREE.Group();
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.055, 28), black);
+    brim.position.y = 0.30;
+    brim.castShadow = true;
+    mjFedora.add(brim);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.28, 24), black);
+    crown.position.y = 0.47;
+    crown.castShadow = true;
+    mjFedora.add(crown);
+
+    const mjHair = new THREE.Mesh(new THREE.SphereGeometry(0.23, 18, 14), hairMJ);
+    mjHair.scale.set(1.06, 0.62, 1.02);
+    mjHair.position.set(0, 0.11, -0.02);
+    mjHair.castShadow = true;
+
+    const mjGlasses = new THREE.Group();
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0x090b10, roughness: 0.25, metalness: 0.55 });
+    const lensL = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10), lensMat);
+    lensL.scale.set(1.25, 0.8, 0.35);
+    lensL.position.set(-0.09, 0.05, 0.24);
+    mjGlasses.add(lensL);
+    const lensR = lensL.clone();
+    lensR.position.x = 0.09;
+    mjGlasses.add(lensR);
+
+    const mj = createHumanoid({
+      x: -2.55,
+      z: 0.45,
+      phase: 0.0,
+      jacketMat: black,
+      shirtMat: white,
+      pantsMat: black,
+      shoeMat: black,
+      headMat: skinLight,
+      handMat: skinLight,
+      rightHandMat: glove,
+      hair: mjHair,
+      fedora: mjFedora,
+      glasses: mjGlasses
+    });
+
+    // Pepe the Frog — green head and body, theatrical jacket.
+    const pepeHair = new THREE.Mesh(new THREE.SphereGeometry(0.30, 18, 14), green);
+    pepeHair.scale.set(1.15, 0.72, 1.0);
+    pepeHair.position.set(0, 0.16, -0.01);
+    pepeHair.castShadow = true;
+
+    const pepe = createHumanoid({
+      x: -0.85,
+      z: 0.0,
+      phase: 0.8,
+      jacketMat: darkSuit,
+      shirtMat: white,
+      pantsMat: darkSuit,
+      shoeMat: black,
+      headMat: skinPepe,
+      handMat: skinPepe,
+      hair: pepeHair,
+      tieMat: darkSuit
+    });
+
+    // Replace the normal face with a frog face: large side eyes and wide mouth.
+    const pepeHead = pepe.head;
+    // Remove the standard eyes/face at their positions by scaling them down subtly.
+    pepeHead.children.forEach((child) => {
+      if (child.geometry && child.geometry.type === 'SphereGeometry') {
+        if (child.position.z > 0.20) {
+          child.scale.set(0.85, 0.85, 0.72);
+        }
+      }
+    });
+
+    const frogEyeWhite = mat(0xf4f0d8, 0.4);
+    const frogPupil = mat(0x17130f, 0.35);
+    for (const side of [-1, 1]) {
+      const bulge = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 14), frogEyeWhite);
+      bulge.position.set(side * 0.20, 0.11, 0.24);
+      bulge.castShadow = true;
+      pepeHead.add(bulge);
+
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 10), frogPupil);
+      pupil.position.set(side * 0.20, 0.11, 0.39);
+      pepeHead.add(pupil);
+    }
+
+    const frogMouth = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15, 18, 10),
+      mat(0x2c3526, 0.65)
+    );
+    frogMouth.scale.set(1.35, 0.28, 0.45);
+    frogMouth.position.set(0, -0.13, 0.31);
+    pepeHead.add(frogMouth);
+
+    // Donald Trump — navy suit, red tie, signature hair.
+    const trumpHair = new THREE.Group();
+    const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.27, 18, 14), hairTrump);
+    hairCap.scale.set(1.15, 0.55, 1.05);
+    hairCap.position.set(0, 0.18, -0.02);
+    hairCap.castShadow = true;
+    trumpHair.add(hairCap);
+    const swoop = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.42, 12), hairTrump);
+    swoop.rotation.z = -0.52;
+    swoop.rotation.x = 0.32;
+    swoop.position.set(0.18, 0.28, 0.15);
+    swoop.castShadow = true;
+    trumpHair.add(swoop);
+
+    const trump = createHumanoid({
+      x: 0.85,
+      z: 0.0,
+      phase: 1.5,
+      jacketMat: navy,
+      shirtMat: white,
+      pantsMat: navy,
+      shoeMat: black,
+      headMat: skinTrump,
+      handMat: skinTrump,
+      hair: trumpHair,
+      tieMat: red
+    });
+
+    // Elon Musk — dark suit, short hair, understated tie.
+    const elonHair = new THREE.Mesh(new THREE.SphereGeometry(0.25, 18, 14), hairElon);
+    elonHair.scale.set(1.05, 0.58, 0.95);
+    elonHair.position.set(0, 0.16, -0.02);
+    elonHair.castShadow = true;
+
+    const elon = createHumanoid({
+      x: 2.55,
+      z: 0.45,
+      phase: 2.3,
+      jacketMat: darkSuit,
+      shirtMat: white,
+      pantsMat: darkSuit,
+      shoeMat: black,
+      headMat: skinElon,
+      handMat: skinElon,
+      hair: elonHair,
+      tieMat: black
+    });
+
+    scene.add(mj.root, pepe.root, trump.root, elon.root);
+
+    const dancers = [mj, pepe, trump, elon];
+
+    // A faint silhouetted audience / stage props.
+    for (let i = 0; i < 16; i++) {
+      const silhouette = new THREE.Mesh(
+        new THREE.SphereGeometry(0.16 + Math.random() * 0.08, 10, 8),
+        new THREE.MeshStandardMaterial({ color: 0x171923, roughness: 0.9 })
+      );
+      silhouette.position.set(-7 + i * 0.92, 0.12, -4.4 - Math.random() * 0.8);
+      scene.add(silhouette);
+    }
+
+    // ---------- Animation ----------
+    function animate() {
+      const t = clock.getElapsedTime();
+
+      // Camera breathing / cinematic drift.
+      camera.position.x = Math.sin(t * 0.22) * 0.12;
+      camera.position.y = 3.15 + Math.sin(t * 0.42) * 0.05;
+      camera.lookAt(0, 1.32, 0);
+
+      // Stars and dust shimmer.
+      stars.rotation.y = t * 0.008;
+      dust.rotation.y = t * 0.01;
+      dust.position.y = Math.sin(t * 0.4) * 0.05;
+
+      const glowPulse = 0.85 + Math.sin(t * 1.6) * 0.15;
+      leftPoint.intensity = 3.0 * glowPulse;
+      rightPoint.intensity = 2.6 * (0.85 + Math.sin(t * 1.8 + 1.4) * 0.15);
+      moon.material.emissiveIntensity = 0.8 + Math.sin(t * 0.8) * 0.18;
+
+      // Thriller choreography: synchronized sway, alternating arms, head snaps, and leg steps.
+      dancers.forEach((dancer, index) => {
+        const phase = dancer.phase + t * 2.45;
+        const sway = Math.sin(phase);
+        const swayOffset = Math.sin(phase + 0.8);
+
+        dancer.root.position.y = 0.035 + Math.abs(Math.sin(phase * 0.5)) * 0.035;
+        dancer.root.position.x = dancer.baseX + Math.sin(t * 0.7 + index) * 0.045;
+
+        dancer.torso.rotation.y = Math.sin(t * 1.15 + index) * 0.10;
+        dancer.torso.rotation.z = Math.sin(phase * 0.8) * 0.035;
+
+        dancer.head.rotation.y = Math.sin(t * 1.55 + index * 0.9) * 0.24;
+        dancer.head.rotation.z = Math.sin(phase * 0.7) * 0.06;
+
+        // Arms form a stylized zombie-like Thriller posture.
+        dancer.armL.group.rotation.z = 0.22 + sway * 0.65;
+        dancer.armR.group.rotation.z = -0.22 - swayOffset * 0.65;
+        dancer.armL.group.rotation.x = Math.sin(phase * 0.8 + 0.5) * 0.18;
+        dancer.armR.group.rotation.x = -Math.sin(phase * 0.8 + 0.5) * 0.18;
+        dancer.armL.elbow.rotation.x = 0.20 + sway * 0.38;
+        dancer.armR.elbow.rotation.x = 0.20 - swayOffset * 0.38;
+
+        // Legs shuffle with the beat.
+        dancer.legL.group.rotation.x = sway * 0.22;
+        dancer.legR.group.rotation.x = -sway * 0.22;
+        dancer.legL.knee.rotation.x = 0.08 + sway * 0.28;
+        dancer.legR.knee.rotation.x = 0.08 - sway * 0.28;
+
+        // Michael Jackson's iconic glove hand gets a little extra flourish.
+        if (index === 0) {
+          dancer.armR.elbow.rotation.z = Math.sin(phase * 1.1) * 0.24;
+        }
+      });
+
+      // A subtle stage haze drift.
+      scene.fog.density = 0.032 + Math.sin(t * 0.35) * 0.006;
+
+      renderer.render(scene, camera);
+    }
+
+    renderer.setAnimationLoop(animate);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    });
+  </script>
+</body>
+</html>

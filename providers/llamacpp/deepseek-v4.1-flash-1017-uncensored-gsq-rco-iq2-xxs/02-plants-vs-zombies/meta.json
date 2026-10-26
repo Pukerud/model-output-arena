@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+  "model_display": "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-10-26T17:32:23Z",
+  "runner": "DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS via OpenClaw (llama.cpp)",
+  "notes": "Self-contained Canvas/DOM mini game with five lanes, five waves, sun economy, seed packets, collectible sun, game-over flow, and a localStorage leaderboard.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ2_XXS",
+    "variant": "GSQ RCO",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}
