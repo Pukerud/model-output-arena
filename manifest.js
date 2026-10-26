@@ -10,23 +10,39 @@ window.ARENA = {
     { id: "01-car-parallax",      title: "01 · Animated Car — Parallax (vanilla canvas)" },
     { id: "02-plants-vs-zombies", title: "02 · Mini Plants vs Zombies (single HTML)" },
     { id: "03-threejs-thriller",  title: "03 · Three.js \"Thriller\" Dance Scene" },
-    {
-      provider: "local",
-      provider_display: "Local (llama.cpp)",
-      model: "nemotron-3.5-lightning-free",
-      model_display: "Nemotron 3.5 Lightning Free",
-      hosting: "local",
-      weights: "open",
-      path: "providers/local/nemotron-3.5-lightning-free",
-      added: "2026-09-03",
-      outputs: {
-        "01-car-parallax":      "providers/local/nemotron-3.5-lightning-free/01-car-parallax/output.html",
-        "02-plants-vs-zombies": "providers/local/nemotron-3.5-lightning-free/02-plants-vs-zombies/output.html",
-        "03-threejs-thriller":  "providers/local/nemotron-3.5-lightning-free/03-threejs-thriller/output.html",
-      },
-    },
   ],
   models: [
+    // Existing historical submissions, previously omitted from the comparison catalog.
+    {
+      provider: "deepseek",
+      provider_display: "DeepSeek",
+      model: "deepseek-v4-flash",
+      model_display: "DeepSeek V4 Flash",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/deepseek/deepseek-v4-flash",
+      added: "2026-09-03",
+      outputs: {
+        "01-car-parallax": "providers/deepseek/deepseek-v4-flash/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/deepseek/deepseek-v4-flash/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller": "providers/deepseek/deepseek-v4-flash/03-threejs-thriller/output.html",
+      },
+    },
+    {
+      provider: "meta",
+      provider_display: "Meta",
+      model: "muse-spark-1.3",
+      model_display: "Muse Spark 1.3",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/meta/muse-spark-1.3",
+      added: "2026-09-03",
+      outputs: {
+        "01-car-parallax": "providers/meta/muse-spark-1.3/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/meta/muse-spark-1.3/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller": "providers/meta/muse-spark-1.3/03-threejs-thriller/output.html",
+      },
+    },
     {
       provider: "z-ai",
       provider_display: "Z.AI",
@@ -480,8 +496,9 @@ window.ARENA = {
     {
       provider: "local",
       provider_display: "Local (llama.cpp)",
-      model: "laguna-s-2.1 i3XSS",
-      model_display: "Laguna S 2.1 i3XSS",
+      model: "laguna-s-2.1",
+      aliases: ["laguna-s-2.1 i3XSS"], // Preserve historical comparison links.
+      model_display: "Laguna S 2.1 IQ3_XXS",
       hosting: "local",
       weights: "open",
       path: "providers/local/laguna-s-2.1",

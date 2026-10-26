@@ -4,436 +4,311 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Model Output Arena — Compare</title>
-<!-- Loads window.ARENA from manifest.js. Works on file:// because <script src> of
-     local relative files is allowed in every browser. -->
+<!-- Classic relative scripts keep double-click/file:// viewing server-free. -->
 <script src="manifest.js"></script>
 <script src="run-metrics.js"></script>
 <script src="metrics-display.js"></script>
+<script src="model-catalog.js"></script>
 <style>
   :root{
-    --bg:#0b0e14; --panel:#141925; --panel-2:#1b2230; --line:#262f42;
-    --txt:#e7ecf5; --muted:#8b95a9; --accent:#7c5cff; --accent-2:#22d3ee; --good:#34d399;
+    color-scheme:dark;
+    --bg:#0b0e14; --panel:#141925; --panel-2:#1b2230; --line:#303a50;
+    --txt:#e7ecf5; --muted:#a1adc1; --accent:#9479ff; --accent-2:#59dff2;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
+  html,body{margin:0;min-height:100%}
   body{
-    margin:0; color:var(--txt); background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(124,92,255,.18), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(34,211,238,.12), transparent 60%),
-      var(--bg);
-    font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    height:100vh;height:100dvh;display:flex;flex-direction:column;color:var(--txt);
+    background:radial-gradient(1000px 500px at 80% -10%,#7c5cff22,transparent 60%),var(--bg);
+    font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   }
-  header{
-    display:flex; align-items:center; gap:14px; padding:16px 20px;
-    border-bottom:1px solid var(--line); background:rgba(10,12,18,.6); backdrop-filter:blur(8px);
-    position:sticky; top:0; z-index:5;
-  }
-  header .logo{
-    width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800;
-    background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#0b0e14; box-shadow:0 6px 20px rgba(124,92,255,.4);
-  }
-  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
-  header .sub{color:var(--muted);font-size:12.5px}
-  .toolbar{
-    display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center;
-    padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel);
-  }
-  .field{display:flex;flex-direction:column;gap:5px;min-width:0}
-  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-  select{
-    appearance:none; background:var(--panel-2); color:var(--txt);
-    border:1px solid var(--line); border-radius:8px; padding:8px 30px 8px 10px; font:inherit; min-width:210px;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b95a9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-    background-repeat:no-repeat; background-position:right 9px center;
-  }
-  select:focus{outline:2px solid var(--accent); outline-offset:1px}
-  .field.group{min-width:0}
-  .field.group .picks{display:flex;gap:8px;align-items:center}
-  .field.group .picks select{min-width:0}
-  .field.group .picks .prov{min-width:105px;max-width:145px}
-  .field.group .picks .family{min-width:120px;max-width:220px}
-  .field.group .picks .mdl{min-width:135px;max-width:240px}
-  .field.group .picks select{flex:1 1 auto}
-  .field label .tagA,.field label .tagB{margin-left:7px;vertical-align:1px}
-  .btns{display:flex;gap:8px;margin-left:auto}
-  button{
-    background:var(--panel-2); color:var(--txt); border:1px solid var(--line);
-    border-radius:8px; padding:9px 12px; font:inherit; cursor:pointer; transition:.15s;
-  }
-  button:hover{border-color:var(--accent); color:#fff}
-  button.primary{background:linear-gradient(135deg,var(--accent),#5b3df0); border-color:transparent; color:#fff; font-weight:600}
-  .pill{font-size:11px;color:var(--muted); padding:2px 8px; border:1px solid var(--line); border-radius:999px}
-
-  main{display:grid; grid-template-columns:1fr auto 1fr; gap:0; height:calc(100vh - 132px); min-height:520px}
-  .col{display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--line)}
-  .col:last-of-type{border-right:none}
-  .col .head{
-    display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--line);
-    background:var(--panel); min-height:46px;
-  }
-  .col .head .name{font-weight:700}
-  .col .head .who{color:var(--muted); font-size:12px}
-  .col .head .spacer{flex:1}
-  .col .head a{color:var(--accent-2); text-decoration:none; font-size:12px}
-  .col .head a:hover{text-decoration:underline}
+  button,input,select{font:inherit}
+  button,select{cursor:pointer}
+  button,input,select{border:1px solid var(--line);border-radius:9px;color:var(--txt);background:var(--panel-2)}
+  button{padding:9px 12px}
+  button:hover{border-color:var(--accent)}
+  :is(button,input,select,a):focus-visible{outline:2px solid var(--accent-2);outline-offset:3px}
+  header{display:flex;align-items:center;gap:13px;padding:15px 20px;border-bottom:1px solid var(--line)}
+  .logo{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);flex:none}
+  h1{font-size:16px;margin:0;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12px}
+  .pill{margin-left:auto;font-size:12px;color:var(--muted);padding:4px 10px;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
+  .toolbar{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(0,1fr) minmax(0,1fr) auto;
+    gap:14px;align-items:start;padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .field{min-width:0}
+  .field > label,.field-label{display:block;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  select{width:100%;min-width:0;padding:10px 30px 10px 10px;text-overflow:ellipsis}
+  .pick-trigger{display:flex;align-items:center;gap:10px;width:100%;text-align:left;min-height:66px;padding:10px 12px}
+  .pick-trigger .selection{flex:1;min-width:0}
+  .pick-trigger .model-name{display:block;font-weight:650;overflow-wrap:anywhere}
+  .pick-trigger .model-provider{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .pick-trigger .chevron{color:var(--muted);flex:none}
+  .field-note{font-size:11px;color:var(--muted);margin-top:6px}
+  .btns{display:flex;gap:8px;padding-top:22px}
+  .btns button{white-space:nowrap;min-height:44px}
+  .tagA,.tagB{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.04em;flex:none}
+  .tagA{background:#7c5cff26;color:#c8baff;border:1px solid #7c5cff66}
+  .tagB{background:#22d3ee24;color:#9bebff;border:1px solid #22d3ee66}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 10px minmax(0,1fr);flex:1;min-height:460px}
+  .col{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .col .head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .col .head .name{font-weight:700;overflow-wrap:anywhere;min-width:0}
+  .col .head .who{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+  .col .head a{margin-left:auto;white-space:nowrap}
+  a{color:var(--accent-2);text-decoration:none}
+  a:hover{text-decoration:underline}
   .run-metrics{padding:7px 14px;border-bottom:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
-  .run-metrics a{color:var(--accent-2);margin-left:8px}
-  .tagA,.tagB{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.04em}
-  .tagA{background:rgba(124,92,255,.16);color:#b9a6ff;border:1px solid rgba(124,92,255,.4)}
-  .tagB{background:rgba(34,211,238,.14);color:#9bebff;border:1px solid rgba(34,211,238,.4)}
-  iframe{flex:1; width:100%; border:0; background:#fff; min-height:0}
-  .divider{width:10px; background:var(--bg); border-left:1px solid var(--line); border-right:1px solid var(--line); cursor:col-resize}
-
-  .empty{flex:1; display:grid; place-items:center; color:var(--muted); background:#0e121b; font-size:13px}
-  .toast{
-    position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:20;
-    background:var(--panel-2); border:1px solid var(--line); padding:10px 14px; border-radius:10px;
-    box-shadow:0 12px 40px rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:.2s;
-  }
+  .run-metrics a{margin-left:8px}
+  iframe{flex:1;width:100%;border:0;background:#fff;min-height:0}
+  .divider{background:var(--bg);border-inline:1px solid var(--line);cursor:col-resize;touch-action:none}
+  body.resizing{cursor:col-resize;user-select:none}
+  body.resizing iframe{pointer-events:none}
+  .empty{flex:1;display:grid;place-items:center;color:var(--muted);background:#0e121b;padding:24px;text-align:center}
+  .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:20;max-width:calc(100% - 32px);
+    background:var(--panel-2);border:1px solid var(--line);padding:10px 14px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .15s}
   .toast.show{opacity:1}
-  .stat{color:var(--good)}
+
+  /* Native modal provides focus trapping, Escape and top-layer placement; the list,
+     not the browser's unstyleable select popup, owns scrolling and wrapping. */
+  .model-picker{width:min(760px,calc(100vw - 32px));height:min(740px,calc(100vh - 40px));height:min(740px,calc(100dvh - 40px));
+    max-width:none;max-height:none;margin:auto;padding:0;border:1px solid #495571;border-radius:16px;background:var(--panel);color:var(--txt);
+    box-shadow:0 24px 100px #0009;overflow:hidden}
+  .model-picker[open]{display:flex;flex-direction:column}
+  .model-picker::backdrop{background:#030712b8;backdrop-filter:blur(5px)}
+  .picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 12px;flex:none}
+  .picker-head h2{font-size:19px;margin:0}
+  .picker-head p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+  .close-picker{flex:none;min-width:44px;min-height:44px;font-size:20px}
+  .picker-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,.7fr);gap:12px;padding:0 20px 12px;flex:none}
+  .picker-tools input{width:100%;min-width:0;padding:10px 12px;min-height:44px}
+  .picker-tools select{min-height:44px}
+  .picker-summary{padding:9px 20px;border-block:1px solid var(--line);color:var(--muted);font-size:12px;flex:none}
+  .model-results{margin:0;padding:8px 12px;list-style:none;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;min-height:0;flex:1}
+  .model-results li{margin:0 0 5px}
+  .model-option{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:12px;border:1px solid transparent;background:transparent}
+  .model-option:hover{background:var(--panel-2)}
+  .model-option[aria-current="true"]{border-color:#9479ff80;background:#9479ff12}
+  .option-copy{min-width:0;flex:1}
+  .option-name{display:block;overflow-wrap:anywhere;font-weight:600}
+  .option-meta{display:block;overflow-wrap:anywhere;font-size:12px;color:var(--muted);margin-top:3px}
+  .selected-mark{font-size:11px;color:#c8baff;flex:none}
+  .no-results{padding:30px 16px;color:var(--muted);text-align:center}
+  .picker-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;flex:none}
+  @media (max-width:1100px){
+    .toolbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .test-field{grid-column:1}.btns{grid-column:2;grid-row:1;justify-content:flex-end;padding-top:22px}
+    .model-field{grid-row:2}
+  }
   @media (max-width:700px){
-    header #countPill{display:none}
-    .toolbar > .field:first-child,
-    .toolbar .field.group{flex:1 1 100%;width:100%}
-    .field.group .picks{flex-wrap:wrap}
-    .field.group .picks .prov,
-    .field.group .picks .family{flex:1 1 calc(50% - 4px);max-width:none}
-    .field.group .picks .mdl{flex:1 1 100%;max-width:none}
-    .btns{width:100%;margin-left:0}
-    .btns button{flex:1}
-    main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;height:auto;min-height:0}
-    main .col{min-height:70vh;border-right:0;border-bottom:1px solid var(--line)}
+    body{height:auto;min-height:100dvh}
+    header{padding:13px 16px;flex-wrap:wrap}
+    header .pill{margin-left:47px}
+    .toolbar{grid-template-columns:minmax(0,1fr);padding:14px 16px;gap:12px}
+    .test-field,.model-field,.btns{grid-column:auto;grid-row:auto}
+    .btns{padding:0;justify-content:stretch}.btns button{flex:1}
+    main{display:flex;flex-direction:column;min-height:0;flex:none}
+    main .col{min-height:70vh;border-bottom:1px solid var(--line)}
+    main .col iframe{min-height:55vh}
     main .divider{display:none}
+    .model-picker{width:calc(100vw - 16px);height:calc(100vh - 16px);height:calc(100dvh - 16px);border-radius:12px}
+    .picker-head{padding:14px 14px 10px}.picker-head p{max-width:240px}
+    .picker-tools{grid-template-columns:minmax(0,1fr);gap:8px;padding:0 14px 10px}
+    .picker-tools .field > label{margin-bottom:3px}
+    .picker-summary{padding:8px 14px}.model-results{padding:6px}
+    .model-option{padding:10px;gap:8px}.picker-footer{padding:10px 14px}
+  }
+  @media (max-height:500px){
+    .picker-head{padding:8px 14px}.picker-head p,.picker-footer .key-hint{display:none}
+    .picker-tools{grid-template-columns:minmax(0,1fr) minmax(120px,.7fr);padding:0 14px 8px}
+    .picker-tools .field > label{margin-bottom:2px}.picker-footer{padding:6px 14px}
+  }
+  @media (max-height:320px){
+    /* At extreme zoom/keyboard heights, scroll the whole dialog instead of
+       allowing fixed controls to squeeze the results down to zero height. */
+    .model-picker[open]{display:block;overflow-y:auto;overscroll-behavior:contain;scroll-padding-top:68px}
+    .picker-head{position:sticky;top:0;z-index:1;background:var(--panel)}
+    .model-results{overflow:visible;scrollbar-gutter:auto;min-height:96px}
   }
 </style>
 </head>
 <body>
-
 <header>
-  <div class="logo">A</div>
-  <div>
-    <h1>Model Output Arena</h1>
-    <div class="sub">Pick a test, pick two models, compare side‑by‑side.</div>
-  </div>
-  <div style="margin-left:auto" class="pill" id="countPill">— models</div>
+  <div class="logo" aria-hidden="true">A</div>
+  <div><h1>Model Output Arena</h1><div class="sub">Same prompts. Every model. Side-by-side.</div></div>
+  <div class="pill" id="countPill">— models</div>
 </header>
-
 <div class="toolbar">
-  <div class="field">
-    <label for="testSel">Test</label>
-    <select id="testSel"></select>
+  <div class="field test-field"><label for="testSel">Test</label><select id="testSel"></select><div class="field-note">Choose the same challenge for both sides.</div></div>
+  <div class="field model-field">
+    <span class="field-label" id="aLabel">Model A</span>
+    <button id="aPick" class="pick-trigger" aria-labelledby="aLabel aSelection" aria-haspopup="dialog" aria-controls="modelPicker">
+      <span class="tagA" aria-hidden="true">A</span><span class="selection" id="aSelection"><span class="model-name" id="aSelectionName">Choose a model</span><span class="model-provider" id="aSelectionProvider"></span></span><span class="chevron" aria-hidden="true">⌄</span>
+    </button><div class="field-note">Browse every model and variant, or search by name.</div>
   </div>
-  <div class="field group">
-    <label for="aProv">Model A <span class="tagA">A</span></label>
-    <div class="picks">
-      <select id="aProv" class="prov" title="Provider"></select>
-      <select id="aFamily" class="family" title="Model family" aria-label="Model A family"></select>
-      <select id="aSel" class="mdl" title="Variant" aria-label="Model A variant"></select>
-    </div>
+  <div class="field model-field">
+    <span class="field-label" id="bLabel">Model B</span>
+    <button id="bPick" class="pick-trigger" aria-labelledby="bLabel bSelection" aria-haspopup="dialog" aria-controls="modelPicker">
+      <span class="tagB" aria-hidden="true">B</span><span class="selection" id="bSelection"><span class="model-name" id="bSelectionName">Choose a model</span><span class="model-provider" id="bSelectionProvider"></span></span><span class="chevron" aria-hidden="true">⌄</span>
+    </button><div class="field-note">All variants appear separately. Nothing hidden in families.</div>
   </div>
-  <div class="field group">
-    <label for="bProv">Model B <span class="tagB">B</span></label>
-    <div class="picks">
-      <select id="bProv" class="prov" title="Provider"></select>
-      <select id="bFamily" class="family" title="Model family" aria-label="Model B family"></select>
-      <select id="bSel" class="mdl" title="Variant" aria-label="Model B variant"></select>
-    </div>
-  </div>
-  <div class="btns">
-    <button id="swapBtn" title="Swap A &amp; B">⇄ Swap</button>
-    <button id="reloadBtn" title="Reload both outputs">⟳ Reload</button>
-  </div>
+  <div class="btns"><button id="swapBtn" title="Swap A and B">⇄ Swap</button><button id="reloadBtn" title="Reload both outputs">⟳ Reload</button></div>
 </div>
-
 <main>
-  <section class="col">
-    <div class="head">
-      <span class="tagA">A</span>
-      <span class="name" id="aName">—</span>
-      <span class="who" id="aWho"></span>
-      <span class="spacer"></span>
-      <a id="aOpen" href="#" target="_blank" rel="noopener">Open ↗</a>
-    </div>
-    <div class="run-metrics" id="aMetrics" aria-live="polite"></div>
-    <iframe id="aFrame" referrerpolicy="no-referrer"></iframe>
+  <section class="col" aria-label="Model A output">
+    <div class="head"><span class="tagA">A</span><span class="name" id="aName">—</span><span class="who" id="aWho"></span><a id="aOpen" href="#" target="_blank" rel="noopener">Open ↗</a></div>
+    <div class="run-metrics" id="aMetrics" aria-live="polite"></div><iframe id="aFrame" title="Model A benchmark output" referrerpolicy="no-referrer"></iframe>
   </section>
-  <div class="divider" id="divider" title="drag to resize"></div>
-  <section class="col">
-    <div class="head">
-      <span class="tagB">B</span>
-      <span class="name" id="bName">—</span>
-      <span class="who" id="bWho"></span>
-      <span class="spacer"></span>
-      <a id="bOpen" href="#" target="_blank" rel="noopener">Open ↗</a>
-    </div>
-    <div class="run-metrics" id="bMetrics" aria-live="polite"></div>
-    <iframe id="bFrame" referrerpolicy="no-referrer"></iframe>
+  <div class="divider" id="divider" title="Drag to resize"></div>
+  <section class="col" aria-label="Model B output">
+    <div class="head"><span class="tagB">B</span><span class="name" id="bName">—</span><span class="who" id="bWho"></span><a id="bOpen" href="#" target="_blank" rel="noopener">Open ↗</a></div>
+    <div class="run-metrics" id="bMetrics" aria-live="polite"></div><iframe id="bFrame" title="Model B benchmark output" referrerpolicy="no-referrer"></iframe>
   </section>
 </main>
-
-<div class="toast" id="toast"></div>
-
+<dialog id="modelPicker" class="model-picker" aria-labelledby="pickerTitle" aria-describedby="pickerDescription">
+  <div class="picker-head"><div><h2 id="pickerTitle">Choose Model A</h2><p id="pickerDescription">Every submission and variant has its own row.</p></div><button id="closePicker" class="close-picker" aria-label="Close model picker">×</button></div>
+  <div class="picker-tools">
+    <div class="field"><label for="modelSearch">Search models</label><input id="modelSearch" type="search" placeholder="Name, variant, quantization…" autocomplete="off" spellcheck="false" aria-controls="modelResults" /></div>
+    <div class="field"><label for="providerFilter">Provider</label><select id="providerFilter" aria-controls="modelResults"></select></div>
+  </div>
+  <div id="pickerSummary" class="picker-summary" role="status" aria-live="polite" aria-atomic="true"></div>
+  <ul id="modelResults" class="model-results" aria-label="Model submissions"></ul>
+  <div class="picker-footer"><span class="key-hint">Scroll or ↑ ↓ to browse · Enter to select · Esc to close</span><button id="resetFilters">Show all models</button></div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
 <script>
 (function(){
+  "use strict";
   const A = window.ARENA;
-  if(!A || !A.tests || !A.models){
-    document.body.innerHTML =
-      '<div style="padding:40px;font-family:sans-serif;color:#cbd2e0;background:#0b0e14;min-height:100vh">'+
-      '<h2>manifest.js not found</h2>'+
-      '<p>This page needs <code>manifest.js</code> next to it. Make sure you opened compare.html from inside the repo root.</p></div>';
+  if(!A || !A.tests || !A.models || !window.ArenaCatalog){
+    document.body.textContent = "The arena files could not be loaded. Open compare.html from the complete repository folder.";
     return;
   }
-
   const $ = id => document.getElementById(id);
-  const testSel = $("testSel"), aSel = $("aSel"), bSel = $("bSel");
-  const aProv = $("aProv"), bProv = $("bProv");
-  const aFamily = $("aFamily"), bFamily = $("bFamily");
-  const aFrame = $("aFrame"), bFrame = $("bFrame");
-  const aName = $("aName"), bName = $("bName"), aWho = $("aWho"), bWho = $("bWho");
-  const aOpen = $("aOpen"), bOpen = $("bOpen");
-  const toastEl = $("toast");
+  const catalog = ArenaCatalog.create(A.models), models = catalog.models;
+  const tests = A.tests.filter(test => test.id && test.title);
+  const testSel = $("testSel"), picker = $("modelPicker"), search = $("modelSearch");
+  const providerFilter = $("providerFilter"), results = $("modelResults");
+  const modelId = ArenaCatalog.id;
+  const selected = {a:models[0] ? modelId(models[0]) : "", b:""};
+  const second = models.find(model => model.provider !== models[0]?.provider);
+  selected.b = second ? modelId(second) : selected.a;
+  let pickerSide = "a", visibleModels = [];
+  const findModel = slug => ArenaCatalog.resolve(catalog,slug);
+  const pathFor = (slug,testId) => findModel(slug)?.outputs?.[testId] || null;
+  function opt(value,label){const option=document.createElement("option");option.value=value;option.textContent=label;return option;}
+  tests.forEach(test => testSel.appendChild(opt(test.id,test.title)));
+  providerFilter.appendChild(opt("","All providers (" + models.length + ")"));
+  catalog.providers.forEach(provider => providerFilter.appendChild(opt(provider.slug,provider.display + " (" + provider.count + ")")));
+  $("countPill").textContent = models.length + " models · " + catalog.providers.length + " providers";
 
-  function opt(v,t){const o=document.createElement("option");o.value=v;o.textContent=t;return o}
-
-  // Populate tests
-  A.tests.forEach(t => testSel.appendChild(opt(t.id, t.title)));
-
-  // Models: flat lookup + grouped/sorted providers
-  const models = A.models.slice();
-  const providerMap = new Map();
-  for (const m of models){
-    if(!providerMap.has(m.provider))
-      providerMap.set(m.provider, { slug:m.provider, display:(m.provider_display||m.provider), models:[] });
-    providerMap.get(m.provider).models.push(m);
-  }
-  const ci = (a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"});
-  const providers = [...providerMap.values()].sort((p,q)=>ci(p.display,q.display));
-  function modelParts(m){
-    const display = m.model_display || m.model;
-    let family = display;
-    let variant = "Standard";
-    const parenthesized = display.match(/^(.*?)\s*\(([^)]+)\)$/);
-    if(parenthesized){
-      family = parenthesized[1].trim();
-      variant = parenthesized[2].trim();
-    } else {
-      const qwenFamily = display.match(/^(?:(.*?)\s+)?(Qwen\s+\d+(?:\.\d+)?\s+\d+B)(?:\s+(.+))?$/i);
-      const knownFamily = display.match(/^(GPT-\d+(?:\.\d+)?|GLM\s+\d+(?:\.\d+)?|Claude\s+(?:Opus|Sonnet|Haiku)\s+\d+(?:\.\d+)?)(?:\s+(.+))?$/i);
-      if(qwenFamily){
-        family = qwenFamily[2].trim();
-        variant = [qwenFamily[1], qwenFamily[3]].filter(Boolean).join(" ").trim() || "Standard";
-      } else if(knownFamily){
-        family = knownFamily[1].trim();
-        variant = (knownFamily[2] || "Standard").trim();
-      }
-    }
-    return { family, variant };
-  }
-  for (const m of models){
-    const parts = modelParts(m);
-    m.family = parts.family;
-    m.variant = parts.variant;
-  }
-  for (const p of providers) p.models.sort((m,n)=>{
-    const familyOrder = ci(m.family, n.family);
-    return familyOrder || ci(m.variant, n.variant);
-  });
-
-  function modelLabel(m){ return (m.model_display||m.model) + (m.hosting==="local" ? "  · local" : ""); }
-  function providerBySlug(slug){ return providers.find(p=>p.slug===slug); }
-  function fillProviders(sel){ sel.innerHTML=""; for(const p of providers) sel.appendChild(opt(p.slug, p.display+" ("+p.models.length+")")); }
-  function fillFamilies(sel, provSlug, preferredFamily){
-    const p = providerBySlug(provSlug) || providers[0];
-    const families = [];
-    for(const m of p.models){
-      if(!families.some(f => f.name === m.family)) families.push({ name:m.family, count:0 });
-      families.find(f => f.name === m.family).count++;
-    }
-    families.sort((a,b)=>ci(a.name,b.name));
-    sel.innerHTML="";
-    for(const f of families) sel.appendChild(opt(f.name, f.name + (f.count > 1 ? " (" + f.count + ")" : "")));
-    const selected = families.some(f => f.name === preferredFamily) ? preferredFamily : families[0]?.name || "";
-    sel.value = selected;
-    return selected;
-  }
-  function fillModels(sel, provSlug, family, preferredModel){
-    const p = providerBySlug(provSlug) || providers[0];
-    const familyModels = p.models.filter(m => m.family === family);
-    sel.innerHTML="";
-    for(const m of familyModels) sel.appendChild(opt(m.model, m.variant));
-    const selected = familyModels.some(m => m.model === preferredModel) ? preferredModel : familyModels[0]?.model || "";
-    sel.value = selected;
-    return selected;
-  }
-
-  // Populate provider dropdowns for A and B
-  fillProviders(aProv); fillProviders(bProv);
-  bProv.value = providers[Math.min(1, providers.length - 1)]?.slug || "";
-  $("countPill").textContent = models.length + " model" + (models.length===1?"":"s") + " · " + providers.length + " providers";
-
-  function findModel(slug){ return models.find(m => m.model === slug); }
-
-  function pathFor(modelSlug, testId){
-    const m = findModel(modelSlug);
-    if(!m) return null;
-    return (m.outputs && m.outputs[testId]) || null;
-  }
-
-  function setIframe(frame, openLink, nameEl, whoEl, tag, modelSlug, testId){
-    const m = findModel(modelSlug);
-    const p = pathFor(modelSlug, testId);
-    const metricsEl = $(tag.toLowerCase() + "Metrics");
-    const run = m && (window.ARENA_RUN_METRICS || {})[m.path];
-    const metrics = ArenaMetrics.describe(run);
-    metricsEl.textContent = m ? metrics.text : "No model selected.";
-    metricsEl.title = m ? metrics.detail : "";
-    if (m && run) {
-      const link = document.createElement("a");
-      link.href = m.path + "/run.json";
-      link.textContent = "Run details";
-      link.target = "_blank";
-      link.rel = "noopener";
-      metricsEl.appendChild(link);
-    }
-    if(!m || !p){
-      frame.src = "about:blank";
-      nameEl.textContent = "—";
-      whoEl.textContent = "";
-      openLink.removeAttribute("href");
-      // show empty state inside the iframe area
-      const parent = frame.parentElement;
-      let empty = parent.querySelector(".empty");
-      if(!empty){ empty = document.createElement("div"); empty.className="empty"; parent.appendChild(empty); }
-      empty.textContent = (m ? "This model has no output for this test." : "No model selected.");
-      empty.style.display = "grid";
-      frame.style.display = "none";
-      return;
-    }
-    const empty = frame.parentElement.querySelector(".empty");
-    if(empty) empty.style.display = "none";
-    frame.style.display = "";
-    // cache-bust on reload by appending t
-    frame.src = p;
-    nameEl.textContent = m.model_display || m.model;
-    const weightsLabel = m.weights === "open" ? "🔓 Open-weights" : m.weights === "closed" ? "🔒 Proprietary" : "";
-    whoEl.textContent = [
-      (m.provider_display || m.provider),
-      (m.hosting === "local" ? "Local" : "API"),
-      weightsLabel,
-      (m.added || "")
-    ].filter(Boolean).join(" · ");
-    openLink.href = p;
-  }
-
-  function render(reloadOnly){
-    const testId = testSel.value;
-    // Provider A valid? else default to first provider
-    if(!aProv.value || !providerBySlug(aProv.value)) aProv.value = providers[0].slug;
-    const currentA = findModel(aSel.value);
-    const aPreferredFamily = aFamily.value || (currentA && currentA.provider === aProv.value ? currentA.family : "");
-    const aSelectedFamily = fillFamilies(aFamily, aProv.value, aPreferredFamily);
-    aSel.value = fillModels(aSel, aProv.value, aSelectedFamily,
-      currentA && currentA.provider === aProv.value && currentA.family === aSelectedFamily ? currentA.model : "");
-    // Provider B defaults to second provider (or first if only one)
-    if(!bProv.value || !providerBySlug(bProv.value))
-      bProv.value = providers[Math.min(1, providers.length-1)].slug;
-    const currentB = findModel(bSel.value);
-    const bPreferredFamily = bFamily.value || (currentB && currentB.provider === bProv.value ? currentB.family : "");
-    const bSelectedFamily = fillFamilies(bFamily, bProv.value, bPreferredFamily);
-    bSel.value = fillModels(bSel, bProv.value, bSelectedFamily,
-      currentB && currentB.provider === bProv.value && currentB.family === bSelectedFamily ? currentB.model : "");
-    setIframe(aFrame, aOpen, aName, aWho, "A", aSel.value, testId);
-    setIframe(bFrame, bOpen, bName, bWho, "B", bSel.value, testId);
-    writeParams();
-  }
-
-  // Deep-linking: encode the current view in the URL hash so a comparison
-  // is shareable (e.g. #test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5).
   function writeParams(){
-    const p = new URLSearchParams();
-    p.set("test", testSel.value);
-    if(aSel.value) p.set("a", aSel.value);
-    if(bSel.value) p.set("b", bSel.value);
-    try { history.replaceState(null, "", "#" + p.toString()); } catch(e){}
+    const params = new URLSearchParams({test:testSel.value,a:selected.a,b:selected.b});
+    try{history.replaceState(null,"","#" + params.toString());}catch(error){}
   }
   function applyParams(){
-    const raw = location.hash.slice(1) || location.search.slice(1);
-    if(!raw) return;
-    const p = new URLSearchParams(raw);
-    const test = p.get("test");
-    if(test && A.tests.some(t => t.id === test)) testSel.value = test;
-    const setSide = (slug, provSel, familySel, mdlSel) => {
-      const m = slug && findModel(slug);
-      if(!m) return;
-      provSel.value = m.provider;
-      familySel.value = fillFamilies(familySel, m.provider, m.family);
-      mdlSel.value = fillModels(mdlSel, m.provider, familySel.value, slug);
-    };
-    setSide(p.get("a"), aProv, aFamily, aSel);
-    setSide(p.get("b"), bProv, bFamily, bSel);
+    const params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+    if(tests.some(test => test.id === params.get("test"))) testSel.value = params.get("test");
+    for(const side of ["a","b"]){const model=findModel(params.get(side));if(model)selected[side]=modelId(model);}
   }
-
-  function toast(msg){
-    toastEl.textContent = msg; toastEl.classList.add("show");
-    clearTimeout(toast._t); toast._t = setTimeout(()=>toastEl.classList.remove("show"), 1400);
+  function renderSide(side,forceReload){
+    const model = findModel(selected[side]), path = pathFor(selected[side],testSel.value);
+    const frame = $(side + "Frame"), open = $(side + "Open"), metricsEl = $(side + "Metrics");
+    $(side + "SelectionName").textContent = model?.model_display || model?.model || "Choose a model";
+    $(side + "SelectionProvider").textContent = model ? (model.provider_display || model.provider) + " · " + (model.hosting === "local" ? "Local" : "API") : "";
+    $(side + "Name").textContent = model?.model_display || model?.model || "—";
+    $(side + "Who").textContent = model ? [model.provider_display || model.provider,model.hosting === "local" ? "Local" : "API",model.weights === "open" ? "Open-weights" : model.weights === "closed" ? "Proprietary" : "",model.added].filter(Boolean).join(" · ") : "";
+    const run = model && (window.ARENA_RUN_METRICS || {})[model.path];
+    const metrics = ArenaMetrics.describe(run);
+    metricsEl.textContent = model ? metrics.text : "No model selected.";
+    metricsEl.title = model ? metrics.detail : "";
+    if(model && run){
+      const link=document.createElement("a");link.href=model.path + "/run.json";link.textContent="Run details";link.target="_blank";link.rel="noopener";metricsEl.appendChild(link);
+    }
+    let empty = frame.parentElement.querySelector(".empty");
+    if(!path){
+      if(!empty){empty=document.createElement("div");empty.className="empty";frame.parentElement.appendChild(empty);}
+      empty.textContent = model ? "This model has no output for this test." : "No model selected.";
+      empty.hidden=false;empty.style.display="grid";frame.style.display="none";
+      if(frame.dataset.output !== "") frame.src="about:blank";
+      frame.dataset.output="";open.removeAttribute("href");return;
+    }
+    if(empty) empty.style.display="none";
+    frame.style.display="";open.href=path;
+    // Do not restart the other model's game/animation when only one side changes.
+    if(forceReload || frame.dataset.output !== path){
+      frame.src = forceReload ? path + (path.includes("?") ? "&" : "?") + "arenaReload=" + Date.now() : path;
+      frame.dataset.output=path;
+    }
   }
-
-  // Events
-  testSel.addEventListener("change", ()=>render());
-  aProv.addEventListener("change", ()=>{
-    aFamily.value = fillFamilies(aFamily, aProv.value, "");
-    aSel.value = fillModels(aSel, aProv.value, aFamily.value, "");
-    render();
-  });
-  bProv.addEventListener("change", ()=>{
-    bFamily.value = fillFamilies(bFamily, bProv.value, "");
-    bSel.value = fillModels(bSel, bProv.value, bFamily.value, "");
-    render();
-  });
-  aFamily.addEventListener("change", ()=>{ aSel.value = fillModels(aSel, aProv.value, aFamily.value, ""); render(); });
-  bFamily.addEventListener("change", ()=>{ bSel.value = fillModels(bSel, bProv.value, bFamily.value, ""); render(); });
-  aSel.addEventListener("change", ()=>render());
-  bSel.addEventListener("change", ()=>render());
-  $("swapBtn").addEventListener("click", ()=>{
-    const ap=aProv.value, af=aFamily.value, am=aSel.value;
-    const bp=bProv.value, bf=bFamily.value, bm=bSel.value;
-    aProv.value=bp; aFamily.value=fillFamilies(aFamily, bp, bf); aSel.value=fillModels(aSel, bp, aFamily.value, bm);
-    bProv.value=ap; bFamily.value=fillFamilies(bFamily, ap, af); bSel.value=fillModels(bSel, ap, bFamily.value, am);
-    render(); toast("Swapped A ⇄ B");
-  });
-  $("reloadBtn").addEventListener("click", ()=>{
-    const t = Date.now();
-    aFrame.contentWindow?.location?.replace?.(aFrame.src); // may be blocked; fallback below
-    // reliable fallback: re-set src with cache-buster
-    [aFrame,bFrame].forEach(f=>{ if(f.dataset.last){ /* noop */ } });
-    // simple robust reload: reassign src
-    const testId = testSel.value;
-    const pa = pathFor(aSel.value,testId), pb = pathFor(bSel.value,testId);
-    aFrame.src = "about:blank"; bFrame.src = "about:blank";
-    setTimeout(()=>{ aFrame.src = pa; bFrame.src = pb; }, 30);
-    toast("Reloaded both");
-  });
-
-  // Resizable divider
-  (function(){
-    const divider = $("divider"), main = document.querySelector("main");
-    let dragging=false;
-    divider.addEventListener("mousedown", e=>{dragging=true;document.body.style.cursor="col-resize";e.preventDefault();});
-    window.addEventListener("mousemove", e=>{
-      if(!dragging) return;
-      const r = main.getBoundingClientRect();
-      let pct = ((e.clientX - r.left)/r.width)*100;
-      pct = Math.max(15, Math.min(85, pct));
-      main.style.gridTemplateColumns = pct + "% 10px " + (100-pct) + "%";
+  function render(forceReload=false){renderSide("a",forceReload);renderSide("b",forceReload);writeParams();}
+  function renderResults(){
+    visibleModels = ArenaCatalog.filter(catalog,providerFilter.value,search.value);
+    const total = providerFilter.value ? catalog.providers.find(provider => provider.slug === providerFilter.value)?.count || 0 : models.length;
+    $("pickerSummary").textContent = visibleModels.length + " of " + total + " models · All variants listed separately";
+    results.replaceChildren();
+    visibleModels.forEach(model => {
+      const item=document.createElement("li"), button=document.createElement("button");
+      button.type="button";button.className="model-option";button.dataset.model=modelId(model);
+      const copy=document.createElement("span"), name=document.createElement("span"), meta=document.createElement("span");
+      copy.className="option-copy";name.className="option-name";meta.className="option-meta";
+      name.textContent=model.model_display || model.model;
+      meta.textContent=[model.provider_display || model.provider,model.hosting === "local" ? "Local" : "API",model.weights === "open" ? "Open-weights" : model.weights === "closed" ? "Proprietary" : ""].filter(Boolean).join(" · ");
+      copy.append(name,meta);button.appendChild(copy);
+      if(modelId(model) === selected[pickerSide]){
+        button.setAttribute("aria-current","true");const mark=document.createElement("span");mark.className="selected-mark";mark.textContent="Selected";button.appendChild(mark);
+      }
+      button.addEventListener("click",()=>{selected[pickerSide]=modelId(model);render();closePicker();});
+      item.appendChild(button);results.appendChild(item);
     });
-    window.addEventListener("mouseup", ()=>{dragging=false;document.body.style.cursor="";});
-  })();
-
-  // Init — honor a deep-link if present, otherwise fall back to defaults
-  applyParams();
-  render();
-  window.addEventListener("hashchange", ()=>{ applyParams(); render(); });
+    if(!visibleModels.length){
+      const empty=document.createElement("li");empty.className="no-results";empty.textContent="No models match. Try another name or Show all models.";results.appendChild(empty);
+    }
+    results.scrollTop=0;
+  }
+  function openPicker(side){
+    pickerSide=side;$("pickerTitle").textContent="Choose Model " + side.toUpperCase();
+    // A provider's advertised count now equals its number of individually selectable rows.
+    providerFilter.value=findModel(selected[side])?.provider || "";search.value="";renderResults();picker.showModal();search.focus();
+  }
+  function closePicker(){picker.close();$(pickerSide + "Pick").focus();}
+  $("aPick").addEventListener("click",()=>openPicker("a"));$("bPick").addEventListener("click",()=>openPicker("b"));
+  $("closePicker").addEventListener("click",closePicker);
+  picker.addEventListener("cancel",event=>{event.preventDefault();closePicker();});
+  picker.addEventListener("click",event=>{if(event.target===picker){const rect=picker.getBoundingClientRect();if(event.clientX<rect.left || event.clientX>rect.right || event.clientY<rect.top || event.clientY>rect.bottom)closePicker();}});
+  search.addEventListener("input",renderResults);providerFilter.addEventListener("change",renderResults);
+  $("resetFilters").addEventListener("click",()=>{providerFilter.value="";search.value="";renderResults();search.focus();});
+  picker.addEventListener("keydown",event=>{
+    // Enter commits IME text; it must not choose a model or close the dialog.
+    if(event.isComposing || event.keyCode===229)return;
+    if(event.target===providerFilter || !["ArrowDown","ArrowUp","Home","End","Enter"].includes(event.key))return;
+    const buttons=[...results.querySelectorAll("button")];
+    const index=buttons.indexOf(document.activeElement), fromSearch=event.target===search;
+    if(fromSearch && ["Home","End"].includes(event.key))return;
+    if(index<0 && !fromSearch)return;
+    if(!buttons.length)return;
+    if(event.key==="Enter"){
+      if(fromSearch){event.preventDefault();buttons[0].click();}return;
+    }
+    event.preventDefault();
+    const next=event.key==="Home" ? 0 : event.key==="End" ? buttons.length-1 : event.key==="ArrowDown" ? Math.min(index+1,buttons.length-1) : index<0 ? buttons.length-1 : Math.max(index-1,0);
+    buttons[next].focus();buttons[next].scrollIntoView({block:"nearest"});
+  });
+  function toast(message){const element=$("toast");element.textContent=message;element.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>element.classList.remove("show"),1600);}
+  testSel.addEventListener("change",()=>render());
+  $("swapBtn").addEventListener("click",()=>{[selected.a,selected.b]=[selected.b,selected.a];render();toast("Swapped A and B");});
+  $("reloadBtn").addEventListener("click",()=>{render(true);toast("Reloaded both outputs");});
+  const divider=$("divider"), main=document.querySelector("main");
+  divider.addEventListener("pointerdown",event=>{divider.setPointerCapture(event.pointerId);document.body.classList.add("resizing");event.preventDefault();});
+  divider.addEventListener("pointermove",event=>{
+    if(!divider.hasPointerCapture(event.pointerId))return;
+    const rect=main.getBoundingClientRect(), fraction=Math.max(.15,Math.min(.85,(event.clientX-rect.left)/rect.width));
+    main.style.gridTemplateColumns="minmax(0," + fraction + "fr) 10px minmax(0," + (1-fraction) + "fr)";
+  });
+  divider.addEventListener("lostpointercapture",()=>document.body.classList.remove("resizing"));
+  divider.addEventListener("pointerup",event=>{if(divider.hasPointerCapture(event.pointerId))divider.releasePointerCapture(event.pointerId);});
+  applyParams();render();
+  window.addEventListener("hashchange",()=>{applyParams();render();if(picker.open)renderResults();});
 })();
 </script>
 </body>

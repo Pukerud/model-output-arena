@@ -34,7 +34,19 @@ trivial to diff two models head‑to‑head.
 🌐 **Try it live (no clone needed):** <https://pukerud.github.io/model-output-arena/compare.html>
 
 Or open [`compare.html`](./compare.html) in any browser (just double‑click it — **no server needed**).
-It auto‑discovers every model and lets you pick a test plus any two models to view **side‑by‑side**.
+It lists every registered submission and lets you pick a test plus any two models to view **side‑by‑side**.
+
+Click either **Model A** or **Model B** to open the searchable model catalog. Each model, fine-tune,
+quantization and harness variant has its **own full-name row**; nothing is hidden inside a model family.
+Filter by provider, search by name or variant, then scroll or use ↑/↓ and Enter to select. Escape closes
+without changing the comparison. Long names wrap on desktop and mobile.
+
+Provider counts are **submission counts**, not family counts: **Local (llama.cpp) (25)** means 25
+individually selectable rows. The counter shows how many match your current search. **Show all models**
+clears both filters. Provider and hosting are separate: locally hosted submissions also exist under
+Google, Qwen and llama.cpp; use All providers and search `local` to find them all.
+
+![Searchable catalog with all 25 Local submissions listed separately](./docs/model-picker.png)
 
 ### Quick start
 
@@ -75,15 +87,29 @@ Maintainer checks:
 
 ```bash
 python -m unittest discover -s tests -p "test_*.py"
-node --test tests/metrics-display.test.cjs
+node --test tests/metrics-display.test.cjs tests/model-catalog.test.cjs
 python scripts/run_metrics.py check
 ```
+
+Optional browser regression (requires Python Playwright and an installed Chrome):
+
+```bash
+python tests/verify_picker.py
+# Or verify an HTTP-served copy:
+python tests/verify_picker.py --base-url http://127.0.0.1:8766/compare.html
+```
+
+This checks every provider and both pickers, selects all local submissions, and exercises search,
+keyboard navigation, deep links, swapping, reloads and narrow/short viewports. The default verifies
+actual `file://` mode; no generated benchmark artifacts or run metrics are modified.
 
 ### Shareable links
 
 The current comparison is encoded in the URL hash, so you can link straight to a matchup —
-e.g. <https://pukerud.github.io/model-output-arena/compare.html#test=01-car-parallax&a=claude-sonnet-4-6&b=gpt-5.5>
-opens the view above. (Drop the domain to get a relative link that works on your local clone.)
+e.g. <https://pukerud.github.io/model-output-arena/compare.html#test=01-car-parallax&a=anthropic/claude-sonnet-4-6&b=openai/gpt-5.5>
+opens the view above. New links qualify each model with its provider, so similarly named models cannot
+select the wrong submission. Existing bare-model links remain supported when unambiguous.
+(Drop the domain to get a relative link that works on your local clone.)
 
 ## Models tested
 
@@ -120,7 +146,7 @@ Two independent axes are labelled:
 | OpenAI | GPT-5.6 Terra | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-terra`](./providers/openai/gpt-5.6-terra) |
 | OpenAI | GPT-5.6 Luna | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-5.6-luna`](./providers/openai/gpt-5.6-luna) |
 | OpenAI | GPT-6 Luna | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-6-luna`](./providers/openai/gpt-6-luna) |
-| Local (llama.cpp) | Laguna S 2.1 i3XSS | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/laguna-s-2.1`](./providers/local/laguna-s-2.1) |
+| Local (llama.cpp) | Laguna S 2.1 IQ3_XXS | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/laguna-s-2.1`](./providers/local/laguna-s-2.1) |
 | Qwen | Qwen 3.6 27B Heretic v2 | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/qwen/qwen3.6-27b-heretic-v2`](./providers/qwen/qwen3.6-27b-heretic-v2) |
 | Z.AI | GLM 5 Turbo | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/z-ai/glm-5-turbo`](./providers/z-ai/glm-5-turbo) |
 | Z.AI | GLM 5.1 | ☁️&nbsp;API | 🔓&nbsp;Open&#8209;weights | [`providers/z-ai/glm-5.1`](./providers/z-ai/glm-5.1) |
