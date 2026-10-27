@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-6.1-terra",
+  "model_display": "GPT-6.1 Terra",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-27T08:51:11Z",
+  "runner": "GPT-6.1 Terra via OpenClaw Codex",
+  "notes": "Stylized geometric likenesses and an eight-pose dance approximation; the Three.js CDN requires an internet connection.",
+  "hosting": "api",
+  "weights": "closed"
+}

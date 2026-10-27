@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "openai",
+  "model": "gpt-6.1-terra",
+  "scope": "three-prompt-run",
+  "test_ids": [
+    "01-car-parallax",
+    "02-plants-vs-zombies",
+    "03-threejs-thriller"
+  ],
+  "status": "completed",
+  "started_at": "2026-10-27T08:46:06.837Z",
+  "completed_at": "2026-10-27T08:58:31.140Z",
+  "duration_ms": 744303,
+  "usage": {
+    "coverage": "unavailable",
+    "source": "",
+    "reason": "The OpenClaw session exposes only rounded per-turn usage; no trustworthy exact cumulative whole-run token ledger is available.",
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null
+  }
+}

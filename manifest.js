@@ -1065,6 +1065,22 @@ window.ARENA = {
       },
     },
 
+    {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-6.1-terra",
+      model_display: "GPT-6.1 Terra",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-6.1-terra",
+      added: "2026-10-27",
+      outputs: {
+        "01-car-parallax":      "providers/openai/gpt-6.1-terra/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-6.1-terra/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/openai/gpt-6.1-terra/03-threejs-thriller/output.html",
+      },
+    },
+
   ]
 };
 
