@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lawn of the Dead — a Plants vs Zombies mini game</title>
+<style>
+  :root{
+    --ink:#e9f4e2;
+    --muted:#a9bfa4;
+    --leaf:#5fbf4d;
+    --leaf-2:#3d8f34;
+    --soil:#6b4a2e;
+    --soul:#f4c95d;
+    --blood:#d84b4b;
+    --panel:#15251c;
+    --panel-2:#1d3327;
+    --edge:#2f4a37;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font:14px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 700px at 70% -10%, #21402f, transparent 65%),
+      radial-gradient(900px 600px at 10% 110%, #1b3327, transparent 65%),
+      #0e1a14;
+  }
+  #app{position:relative; height:100%; display:flex; flex-direction:column}
+  #hud{
+    display:flex; align-items:center; gap:14px; padding:10px 16px;
+    background:rgba(10,20,14,.72); border-bottom:1px solid var(--edge);
+    backdrop-filter:blur(6px);
+  }
+  #hud .brand{font-weight:800; letter-spacing:.4px; color:#cdf3c2; font-size:15px}
+  #hud .stat{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted)}
+  #hud .stat b{color:var(--ink); font-variant-numeric:tabular-nums}
+  #hud .spacer{flex:1}
+  .pill{
+    padding:5px 10px; border:1px solid var(--edge); border-radius:9px;
+    background:var(--panel); font-size:12.5px; color:var(--muted); cursor:pointer;
+  }
+  .pill:hover{background:var(--panel-2); color:var(--ink)}
+  #stage{flex:1; display:block; width:100%; min-height:0; background:#1a2a1d}
+  #cardbar{
+    display:flex; gap:8px; padding:9px 12px 12px; background:rgba(10,20,14,.85);
+    border-top:1px solid var(--edge); overflow-x:auto;
+  }
+  .card{
+    display:flex; flex-direction:column; gap:4px; padding:8px 10px; border-radius:10px;
+    background:var(--panel); border:1px solid var(--edge); cursor:pointer;
+    min-width:86px; transition:transform .08s ease, border-color .12s ease;
+  }
+  .card:hover{border-color:#4f7c5a}
+  .card.sel{border-color:var(--soul); box-shadow:0 0 0 2px rgba(244,201,93,.35)}
+  .card.off{opacity:.45; cursor:default}
+  .card .nm{font-weight:700; font-size:12.5px}
+  .card .cost{color:var(--soul); font-size:11.5px; font-variant-numeric:tabular-nums}
+  .card .cd{height:3px; background:#365b40; border-radius:3px; overflow:hidden}
+  .card .cd i{display:block; height:100%; background:var(--soul); width:0%}
+  .overlay{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(6,14,10,.72); backdrop-filter:blur(4px); padding:20px;
+  }
+  .overlay.on{display:flex}
+  .sheet{
+    width:min(560px, 92vw); background:linear-gradient(180deg,#1d3327,#14251c);
+    border:1px solid var(--edge); border-radius:16px; padding:22px;
+    box-shadow:0 18px 60px rgba(0,0,0,.5);
+  }
+  .sheet h2{margin:0 0 6px; font-size:20px; letter-spacing:.3px}
+  .sheet p.sub{margin:0 0 16px; color:var(--muted); font-size:13px}
+  .btn{
+    display:inline-block; padding:10px 16px; border-radius:10px; border:1px solid #3b6047;
+    background:linear-gradient(180deg,#2f5c3f,#22452f); color:#dcf5d2; font:inherit;
+    font-weight:700; cursor:pointer; margin:6px 8px 6px 0;
+  }
+  .btn:hover{background:linear-gradient(180deg,#376d4b,#264d35)}
+  .btn.ghost{background:transparent; color:var(--muted); border-color:var(--edge); font-weight:600}
+  .btn.ghost:hover{color:var(--ink); background:var(--panel)}
+  table.lb{width:100%; border-collapse:collapse; font-size:13px}
+  table.lb th{text-align:left; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--edge)}
+  table.lb td{padding:6px 8px; border-bottom:1px solid #24382c}
+  table.lb tr:nth-child(1) td{color:var(--soul)}
+  .field{display:flex; gap:8px; margin-top:12px}
+  .field input{
+    flex:1; padding:9px 11px; border-radius:9px; border:1px solid var(--edge);
+    background:#0f1c15; color:var(--ink); font:inherit;
+  }
+  .planlist{margin:0; padding-left:20px; color:#cfe6c8; font-size:13px}
+  .planlist li{margin:5px 0}
+  #toast{
+    position:absolute; left:50%; bottom:78px; transform:translateX(-50%);
+    background:rgba(20,35,26,.95); border:1px solid var(--edge); color:var(--ink);
+    padding:9px 14px; border-radius:10px; font-size:13px; opacity:0;
+    transition:opacity .25s ease; pointer-events:none;
+  }
+  #toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="brand">LAWN OF THE DEAD</div>
+    <div class="stat">Sun <b id="hSun">50</b></div>
+    <div class="stat">Wave <b id="hWave">0</b>/8</div>
+    <div class="stat">Score <b id="hScore">0</b></div>
+    <div class="spacer"></div>
+    <button class="pill" id="btnPause">Pause</button>
+    <button class="pill" id="btnMenu">Menu</button>
+  </div>
+  <canvas id="stage"></canvas>
+  <div id="cardbar"></div>
+  <div id="toast"></div>
+
+  <div class="overlay on" id="ovMenu">
+    <div class="sheet">
+      <h2>Lawn of the Dead</h2>
+      <p class="sub">A small, polished Plants vs Zombies game. Defend five lanes with plants, collect sun, and survive eight waves.</p>
+      <button class="btn" id="btnPlay">Play</button>
+      <button class="btn ghost" id="btnLeaderboard">Leaderboard</button>
+      <button class="btn ghost" id="btnPlan">Plan</button>
+      <button class="btn ghost" id="btnHelp">How to play</button>
+      <div style="margin-top:14px;color:var(--muted);font-size:12.5px">
+        Difficulty:
+        <select id="difficulty" style="margin-left:6px;padding:6px 9px;border-radius:8px;border:1px solid var(--edge);background:#0f1c15;color:var(--ink)">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovPlan">
+    <div class="sheet">
+      <h2>Plan</h2>
+      <p class="sub">The build plan this game follows.</p>
+      <ol class="planlist">
+        <li>Build a single-file HTML shell with menu, HUD, canvas board, and card bar.</li>
+        <li>Lay out a 5 x 9 lawn grid and define sun, plants, zombies, and lawnmower state.</li>
+        <li>Implement sun drops, sunflower production, and click-to-collect economy.</li>
+        <li>Implement plant cards with costs, cooldowns, and per-plant behaviour.</li>
+        <li>Implement zombie spawning in waves, eating, bullets, and damage.</li>
+        <li>Add per-row lawnmowers as the last line of defence.</li>
+        <li>Add win/loss handling, score, difficulty scaling, and a persistent leaderboard.</li>
+        <li>Polish visuals, then verify the game runs and interacts correctly.</li>
+      </ol>
+      <button class="btn ghost" id="btnPlanBack">Back</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovHelp">
+    <div class="sheet">
+      <h2>How to play</h2>
+      <p class="sub">Click a plant card, then click a lawn tile to plant it.</p>
+      <ul class="planlist">
+        <li>Click falling sun to collect it. Sunflowers also produce sun.</li>
+        <li>Peashooters damage zombies in their own lane.</li>
+        <li>Wall-nuts absorb damage and stall zombies.</li>
+        <li>Cherry Bombs explode and damage nearby zombies.</li>
+        <li>Each lane has one lawnmower. It triggers once and clears that lane.</li>
+        <li>Survive all eight waves to win; if a zombie passes the left edge without a mower, you lose.</li>
+      </ul>
+      <button class="btn ghost" id="btnHelpBack">Back</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovLeaderboard">
+    <div class="sheet">
+      <h2>Leaderboard</h2>
+      <p class="sub">Best runs stored in this browser.</p>
+      <table class="lb" id="lbTable"></table>
+      <div class="field">
+        <input id="lbName" placeholder="Your name" maxlength="24" />
+        <button class="btn" id="lbAdd">Add a score</button>
+      </div>
+      <button class="btn ghost" id="btnLbBack" style="margin-top:14px">Back</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovEnd">
+    <div class="sheet">
+      <h2 id="endTitle">Game over</h2>
+      <p class="sub" id="endSub"></p>
+      <div class="field">
+        <input id="endName" placeholder="Name for the leaderboard" maxlength="24" />
+        <button class="btn" id="endSave">Save score</button>
+      </div>
+      <button class="btn" id="endAgain">Play again</button>
+      <button class="btn ghost" id="endMenu">Menu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ------------------------------------------------------------------
+  // Constants
+  // ------------------------------------------------------------------
+  const COLS = 9;
+  const ROWS = 5;
+  const TOTAL_WAVES = 8;
+
+  const canvas = document.getElementById("stage");
+  const ctx = canvas.getContext("2d");
+
+  let W = 0, H = 0, DPR = 1;
+  let boardX = 0, boardY = 0, tileW = 0, tileH = 0;
+
+  function layout() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    const marginX = Math.max(18, W * 0.035);
+    const marginY = Math.max(16, H * 0.045);
+    const usableW = W - marginX * 2;
+    const usableH = H - marginY * 2;
+    tileW = usableW / COLS;
+    tileH = usableH / ROWS;
+    boardX = marginX;
+    boardY = marginY;
+  }
+  window.addEventListener("resize", layout);
+  layout();
+
+  // ------------------------------------------------------------------
+  // Game state
+  // ------------------------------------------------------------------
+  const game = {
+    screen: "menu",
+    sun: 50,
+    score: 0,
+    wave: 0,
+    waveActive: false,
+    spawnTimer: 0,
+    spawnQueue: 0,
+    time: 0,
+    difficulty: "normal",
+    plants: [],
+    zombies: [],
+    bullets: [],
+    suns: [],
+    particles: [],
+    mowers: [],
+    selected: -1,
+    cooldowns: {},
+    over: false,
+    paused: false,
+    lastFrame: 0
+  };
+
+  const PLANT_TYPES = [
+    { id: "sunflower", name: "Sunflower", cost: 50, hp: 280, cd: 5, role: "sun", every: 7, value: 25 },
+    { id: "peashooter", name: "Peashooter", cost: 100, hp: 300, cd: 5, role: "shoot", every: 1.35, dmg: 20 },
+    { id: "wallnut", name: "Wall-nut", cost: 50, hp: 1200, cd: 9, role: "wall" },
+    { id: "repeater", name: "Repeater", cost: 200, hp: 300, cd: 10, role: "shoot", every: 1.25, dmg: 20, twin: true },
+    { id: "cherry", name: "Cherry Bomb", cost: 150, hp: 200, cd: 18, role: "bomb", fuse: 1.1, radius: 1.7, dmg: 900 }
+  ];
+
+  const ZOMBIE_TYPES = {
+    basic: { hp: 200, speed: 0.30, points: 10, color: "#7fa06d" },
+    cone: { hp: 400, speed: 0.28, points: 18, color: "#8fb37c" },
+    bucket: { hp: 620, speed: 0.26, points: 26, color: "#9cc08a" },
+    flag: { hp: 260, speed: 0.44, points: 14, color: "#88ab76" }
+  };
+
+  const DIFF = {
+    easy: { speedMul: 0.85, hpMul: 0.9, spawnMul: 0.85, sunRate: 1.1 },
+    normal: { speedMul: 1.0, hpMul: 1.0, spawnMul: 1.0, sunRate: 1.0 },
+    hard: { speedMul: 1.22, hpMul: 1.25, spawnMul: 1.12, sunRate: 0.85 }
+  };
+
+  function tileToPx(col, row) {
+    return { x: boardX + (col + 0.5) * tileW, y: boardY + (row + 0.5) * tileH };
+  }
+
+  // ------------------------------------------------------------------
+  // HUD helpers
+  // ------------------------------------------------------------------
+  const hSun = document.getElementById("hSun");
+  const hWave = document.getElementById("hWave");
+  const hScore = document.getElementById("hScore");
+  const cardbar = document.getElementById("cardbar");
+  const toast = document.getElementById("toast");
+
+  function refreshHud() {
+    hSun.textContent = game.sun;
+    hWave.textContent = game.wave;
+    hScore.textContent = game.score;
+  }
+
+  let toastTimer = 0;
+  function showToast(text, ms = 1800) {
+    toast.textContent = text;
+    toast.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("on"), ms);
+  }
+
+  // ------------------------------------------------------------------
+  // Card bar
+  // ------------------------------------------------------------------
+  function buildCards() {
+    cardbar.innerHTML = "";
+    PLANT_TYPES.forEach((p, i) => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.dataset.idx = i;
+      el.innerHTML = `<div class="nm">${p.name}</div>
+        <div class="cost">${p.cost} sun</div>
+        <div class="cd"><i></i></div>`;
+      el.addEventListener("click", () => {
+        if (game.screen !== "game" || game.over) return;
+        if (game.sun < p.cost) { showToast("Not enough sun."); return; }
+      game.selected = (game.selected === i) ? -1 : i;
+        syncCards();
+      });
+      cardbar.appendChild(el);
+    });
+    syncCards();
+  }
+
+  function syncCards() {
+    [...cardbar.children].forEach((el, i) => {
+      const p = PLANT_TYPES[i];
+      const cd = game.cooldowns[p.id] || 0;
+      const ready = cd <= 0 && game.sun >= p.cost && !game.over && game.screen === "game";
+      el.classList.toggle("sel", game.selected === i);
+      el.classList.toggle("off", !ready);
+      el.querySelector(".cd i").style.width = `${100 - Math.min(100, (cd / p.cd) * 100)}%`;
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Sun
+  // ------------------------------------------------------------------
+  function spawnSun() {
+    const x = boardX + Math.random() * (COLS * tileW);
+    const y = boardY - 10;
+    game.suns.push({ x, y, r: 14, vy: 26 + Math.random() * 14, value: 25, life: 14 });
+  }
+
+  function collectSun(s) {
+    game.sun += s.value;
+    game.suns = game.suns.filter(o => o !== s);
+    burst(s.x, s.y, "#f4c95d", 8);
+    refreshHud(); syncCards();
+  }
+
+  function burst(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      game.particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 120,
+        vy: -40 - Math.random() * 80,
+        life: 0.5 + Math.random() * 0.5,
+        color
+      });
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Plants
+  // ------------------------------------------------------------------
+  function plantAt(col, row) {
+    if (game.selected < 0) return;
+    const type = PLANT_TYPES[game.selected];
+    if (game.sun < type.cost) { showToast("Not enough sun."); return; }
+    if ((game.cooldowns[type.id] || 0) > 0) { showToast("Card is recharging."); return; }
+    if (game.plants.some(p => p.col === col && p.row === row)) { showToast("That tile is occupied."); return; }
+
+    game.sun -= type.cost;
+    game.cooldowns[type.id] = type.cd;
+
+    game.plants.push({
+      type: type.id,
+      col, row,
+      hp: type.hp,
+      maxHp: type.hp,
+      timer: 0,
+      born: game.time,
+      fuse: type.fuse || 0,
+      eaten: false
+    });
+    refreshHud(); syncCards();
+    burst(tileToPx(col, row).x, tileToPx(col, row).y + tileH * 0.3, "#7fbf5a", 6);
+  }
+
+  // ------------------------------------------------------------------
+  // Zombies
+  // ------------------------------------------------------------------
+  function spawnZombie(row) {
+    const pick = Math.random();
+    let kind = "basic";
+    if (pick > 0.78) kind = "bucket";
+    else if (pick > 0.55) kind = "cone";
+    else if (pick > 0.38) kind = "flag";
+
+    const base = ZOMBIE_TYPES[kind];
+    const d = DIFF[game.difficulty];
+    game.zombies.push({
+      row,
+      x: COLS + 0.7,
+      hp: base.hp * d.hpMul,
+      maxHp: base.hp * d.hpMul,
+      speed: base.speed * d.speedMul,
+      kind,
+      points: base.points,
+      eatTimer: 0,
+      phase: Math.random() * Math.PI * 2,
+      dead: false,
+      dying: 0
+    });
+  }
+
+  function startWave() {
+    game.wave++;
+    game.waveActive = true;
+    game.spawnQueue = 2 + game.wave * 2;
+    game.spawnTimer = 0.4;
+    showToast(`Wave ${game.wave} incoming.`);
+    refreshHud();
+  }
+
+  // ------------------------------------------------------------------
+  // Bullets
+  // ------------------------------------------------------------------
+  function firePea(plant) {
+    const type = PLANT_TYPES.find(t => t.id === plant.type);
+    if (!type || type.role !== "shoot") return;
+    const pos = tileToPx(plant.col, plant.row);
+    game.bullets.push({
+      x: pos.x + tileW * 0.22,
+      y: pos.y - tileH * 0.18,
+      row: plant.row,
+      dmg: type.dmg,
+      vx: 6.2 * tileW,
+      alive: true
+    });
+    if (type.twin) {
+      game.bullets.push({
+        x: pos.x + tileW * 0.16,
+        y: pos.y - tileH * 0.06,
+        row: plant.row,
+        dmg: type.dmg,
+        vx: 6.2 * tileW,
+        alive: true
+      });
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Mowers
+  // ------------------------------------------------------------------
+  function buildMowers() {
+    game.mowers = [];
+    for (let r = 0; r < ROWS; r++) {
+      game.mowers.push({ row: r, x: boardX - tileW * 0.35, used: false, active: false, t: 0 });
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Update
+  // ------------------------------------------------------------------
+  function update(dt) {
+    if (game.screen !== "game" || game.over || game.paused) return;
+    game.time += dt;
+
+    // sun drops (accumulator, not wall-clock modulo)
+    game.sunAcc = (game.sunAcc || 0) + dt;
+    if (game.sunAcc > 4.2) { game.sunAcc = 0; spawnSun(); }
+
+    // falling suns
+    for (const s of game.suns) {
+      s.y += s.vy * dt;
+      s.life -= dt;
+      if (s.y > boardY + ROWS * tileH + 20 || s.life <= 0) s.dead = true;
+    }
+    game.suns = game.suns.filter(s => !s.dead);
+
+    // plant behaviour
+    for (const p of game.plants) {
+      if (p.eaten) continue;
+      const type = PLANT_TYPES.find(t => t.id === p.type);
+      p.timer += dt;
+
+      if (type.role === "sun") {
+        if (p.timer >= type.every) {
+          p.timer = 0;
+          const pos = tileToPx(p.col, p.row);
+          game.suns.push({ x: pos.x, y: pos.y - tileH * 0.2, r: 12, vy: 18, value: type.value, life: 9 });
+        }
+      } else if (type.role === "shoot") {
+        if (p.timer >= type.every) {
+          p.timer = 0;
+          firePea(p);
+        }
+      } else if (type.role === "bomb") {
+        if (p.timer >= type.fuse) {
+          explode(p, type);
+        }
+      }
+    }
+    game.plants = game.plants.filter(p => !p.eaten);
+
+    // bullets
+    for (const b of game.bullets) {
+      b.x -= b.vx * dt;
+      if (b.x < boardX) b.alive = false;
+    }
+    game.bullets = game.bullets.filter(b => b.alive);
+
+    // zombie movement and eating
+    for (const z of game.zombies) {
+      if (z.dead) continue;
+      z.phase += dt * 6;
+      const px = boardX + z.x * tileW;
+      // find plant in same row in front of zombie
+      const target = game.plants.find(p => p.row === z.row && Math.abs(px - (boardX + (p.col + 0.5) * tileW)) < tileW * 0.55);
+      if (target) {
+        target.hp -= 26 * dt;
+        z.eatTimer += dt;
+        if (target.hp <= 0) {
+          target.eaten = true;
+          burst(tileToPx(target.col, target.row).x, tileToPx(target.col, target.row).y, "#5f8f46", 10);
+        }
+      } else {
+        z.x -= z.speed * dt;
+      }
+
+      // mower trigger
+      if (z.x < -0.1) {
+        const m = game.mowers.find(m => m.row === z.row);
+        if (m && !m.used && !m.active) {
+          m.active = true;
+          m.t = 0;
+        } else if (m && m.used) {
+          // zombie passes edge -> loss
+          game.over = true;
+          endGame(false);
+        }
+      }
+    }
+
+    // bullet collisions
+    for (const b of game.bullets) {
+      for (const z of game.zombies) {
+        if (z.dead || z.row !== b.row) continue;
+        const zx = boardX + z.x * tileW;
+        if (Math.abs(b.x - zx) < tileW * 0.18) {
+          z.hp -= b.dmg;
+          b.alive = false;
+          burst(b.x, b.y, "#a8d98d", 5);
+          break;
+        }
+      }
+    }
+    game.bullets = game.bullets.filter(b => b.alive);
+
+    // zombie deaths
+    for (const z of game.zombies) {
+      if (z.hp <= 0 && !z.dead) {
+        z.dead = true;
+        z.dying = 0;
+        game.score += z.points * (1 + game.wave * 0.15);
+        burst(boardX + z.x * tileW, boardY + (z.row + 0.5) * tileH, "#7fa06d", 9);
+      }
+    }
+    game.zombies = game.zombies.filter(z => !(z.dead && z.dying > 0.6));
+
+    // zombie dying anim
+    for (const z of game.zombies) if (z.dead) z.dying += dt;
+
+    // particles
+    for (const p of game.particles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 120 * dt;
+      p.life -= dt;
+    }
+    game.particles = game.particles.filter(p => p.life > 0);
+
+    // mower movement
+    for (const m of game.mowers) {
+      if (!m.active) continue;
+      m.t += dt;
+      m.x += tileW * 7 * dt;
+      // kill zombies it passes
+      for (const z of game.zombies) {
+        if (z.dead || z.row !== m.row) continue;
+        const zx = boardX + z.x * tileW;
+        if (Math.abs(zx - m.x) < tileW * 0.6) {
+          z.hp = 0;
+          z.dead = true;
+          z.dying = 0;
+          game.score += z.points;
+        }
+      }
+      if (m.x > boardX + COLS * tileW + tileW) {
+        m.active = false;
+        m.used = true;
+      }
+    }
+
+    // wave spawning
+    if (game.waveActive) {
+      game.spawnTimer -= dt;
+      if (game.spawnTimer <= 0 && game.spawnQueue > 0) {
+        const row = Math.floor(Math.random() * ROWS);
+        spawnZombie(row);
+        game.spawnQueue--;
+        game.spawnTimer = 1.5 * DIFF[game.difficulty].spawnMul;
+      }
+      if (game.spawnQueue === 0 && game.zombies.length === 0) {
+        game.waveActive = false;
+        if (game.wave >= TOTAL_WAVES) {
+          game.over = true;
+          endGame(true);
+        } else {
+          setTimeout(() => { if (game.screen === "game" && !game.over) startWave(); }, 900);
+        }
+        refreshHud();
+      }
+    }
+
+    // cooldowns
+    for (const k in game.cooldowns) {
+      game.cooldowns[k] -= dt;
+      if (game.cooldowns[k] < 0) game.cooldowns[k] = 0;
+    }
+
+    refreshHud();
+    syncCards();
+  }
+
+  function explode(p, type) {
+    p.eaten = true;
+    const pos = tileToPx(p.col, p.row);
+    burst(pos.x, pos.y, "#e86a3f", 24);
+    for (const z of game.zombies) {
+      if (z.dead || z.row !== p.row) continue;
+      const zx = boardX + z.x * tileW;
+      if (Math.abs(zx - pos.x) < type.radius * tileW) {
+        z.hp -= type.dmg;
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Win / loss
+  // ------------------------------------------------------------------
+  function endGame(win) {
+    game.screen = "game";
+    document.getElementById("endTitle").textContent = win ? "You survived!" : "The zombies got through.";
+    document.getElementById("endSub").textContent = win
+      ? `You cleared all ${TOTAL_WAVES} waves with a score of ${Math.round(game.score)}.`
+      : `Score ${Math.round(game.score)} before the lane broke.`;
+    document.getElementById("endName").value = "";
+    document.getElementById("ovEnd").classList.add("on");
+    refreshHud();
+  }
+
+  // ------------------------------------------------------------------
+  // Drawing
+  // ------------------------------------------------------------------
+  function drawLawn() {
+    // background grass
+    for (let r = 0; r < ROWS; r++) {
+      const y = boardY + r * tileH;
+      const shade = r % 2 === 0 ? "#2d4d33" : "#26422c";
+      ctx.fillStyle = shade;
+      ctx.fillRect(boardX, y, COLS * tileW, tileH);
+    }
+
+    // tile grid
+    ctx.strokeStyle = "rgba(120,170,120,0.16)";
+    ctx.lineWidth = 1;
+    for (let c = 0; c <= COLS; c++) {
+      const x = boardX + c * tileW;
+      ctx.beginPath(); ctx.moveTo(x, boardY); ctx.lineTo(x, boardY + ROWS * tileH); ctx.stroke();
+    }
+    for (let r = 0; r <= ROWS; r++) {
+      const y = boardY + r * tileH;
+      ctx.beginPath(); ctx.moveTo(boardX, y); ctx.lineTo(boardX + COLS * tileW, y); ctx.stroke();
+    }
+
+    // left edge strip where the mowers sit
+    ctx.fillStyle = "#1b3022";
+    ctx.fillRect(boardX - tileW * 0.85, boardY, tileW * 0.85, ROWS * tileH);
+
+    // subtle vignette
+    const g = ctx.createRadialGradient(W / 2, H * 0.5, H * 0.15, W / 2, H * 0.5, H * 0.85);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.35)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawSun(s) {
+    const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+    grad.addColorStop(0, "rgba(255,246,190,1)");
+    grad.addColorStop(0.6, "rgba(244,201,93,0.95)");
+    grad.addColorStop(1, "rgba(244,201,93,0.35)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,235,150,0.7)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(s.x + Math.cos(a) * s.r * 0.75, s.y + Math.sin(a) * s.r * 0.75);
+      ctx.lineTo(s.x + Math.cos(a) * s.r * 1.35, s.y + Math.sin(a) * s.r * 1.35);
+      ctx.stroke();
+    }
+  }
+
+  function drawPlant(p) {
+    const pos = tileToPx(p.col, p.row);
+    const x = pos.x, y = pos.y;
+    const t = PLANT_TYPES.find(pt => pt.id === p.type);
+    const hpFrac = Math.max(0, p.hp / p.maxHp);
+
+    // shadow
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    ctx.beginPath();
+    ctx.ellipse(x, y + tileH * 0.34, tileW * 0.32, tileH * 0.09, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // stem
+    ctx.strokeStyle = "#3f7a35";
+    ctx.lineWidth = Math.max(2, tileW * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(x, y + tileH * 0.25);
+    ctx.quadraticCurveTo(x - tileW * 0.04, y + tileH * 0.05, x, y - tileH * 0.1);
+    ctx.stroke();
+
+    if (p.type === "sunflower") {
+      // petals
+      ctx.fillStyle = "#f2c94c";
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(x + Math.cos(a) * tileW * 0.17, y - tileH * 0.12 + Math.sin(a) * tileH * 0.17,
+          tileW * 0.085, tileH * 0.1, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#b8862e";
+      ctx.beginPath();
+      ctx.arc(x, y - tileH * 0.12, tileW * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+      // leaves
+      ctx.fillStyle = "#4f9a42";
+      ctx.beginPath();
+      ctx.ellipse(x - tileW * 0.18, y + tileH * 0.14, tileW * 0.16, tileH * 0.07, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(x + tileW * 0.18, y + tileH * 0.14, tileW * 0.16, tileH * 0.07, 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.type === "peashooter" || p.type === "repeater") {
+      // head
+      ctx.fillStyle = "#62b34a";
+      ctx.beginPath();
+      ctx.ellipse(x, y - tileH * 0.12, tileW * 0.17, tileH * 0.16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // muzzle
+      ctx.fillStyle = "#4a8f3a";
+      ctx.beginPath();
+      ctx.ellipse(x + tileW * 0.17, y - tileH * 0.14, tileW * 0.09, tileH * 0.07, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // eyes
+      ctx.fillStyle = "#1d2b1b";
+      ctx.beginPath(); ctx.arc(x + tileW * 0.02, y - tileH * 0.18, tileW * 0.032, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + tileW * 0.09, y - tileH * 0.18, tileW * 0.032, 0, Math.PI * 2); ctx.fill();
+      // leaves
+      ctx.fillStyle = "#4f9a42";
+      ctx.beginPath();
+      ctx.ellipse(x - tileW * 0.18, y + tileH * 0.15, tileW * 0.16, tileH * 0.07, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.type === "wallnut") {
+      ctx.fillStyle = "#a9773e";
+      ctx.beginPath();
+      ctx.ellipse(x, y - tileH * 0.02, tileW * 0.22, tileH * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#8a5f2f";
+      ctx.beginPath();
+      ctx.ellipse(x - tileW * 0.05, y - tileH * 0.04, tileW * 0.09, tileH * 0.12, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2c1e12";
+      ctx.beginPath(); ctx.arc(x - tileW * 0.07, y - tileH * 0.1, tileW * 0.03, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + tileW * 0.07, y - tileH * 0.1, tileW * 0.03, 0, Math.PI * 2); ctx.fill();
+    } else if (p.type === "cherry") {
+      ctx.fillStyle = "#d8483f";
+      ctx.beginPath(); ctx.arc(x - tileW * 0.11, y - tileH * 0.08, tileW * 0.13, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + tileW * 0.11, y - tileH * 0.08, tileW * 0.13, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#7a2a24";
+      ctx.beginPath(); ctx.arc(x - tileW * 0.15, y - tileH * 0.13, tileW * 0.035, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + tileW * 0.15, y - tileH * 0.13, tileW * 0.035, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#3f7a35";
+      ctx.lineWidth = Math.max(2, tileW * 0.05);
+      ctx.beginPath(); ctx.moveTo(x, y - tileH * 0.18); ctx.lineTo(x, y - tileH * 0.30); ctx.stroke();
+    }
+
+    // damage bar
+    if (hpFrac < 0.98) {
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(x - tileW * 0.24, y + tileH * 0.30, tileW * 0.48, 4);
+      ctx.fillStyle = hpFrac > 0.4 ? "#8fd06a" : "#e07a4a";
+      ctx.fillRect(x - tileW * 0.24, y + tileH * 0.30, tileW * 0.48 * hpFrac, 4);
+    }
+  }
+
+  function drawZombie(z) {
+    const x = boardX + z.x * tileW;
+    const y = boardY + (z.row + 0.5) * tileH;
+    const s = tileH * 0.30;
+    const sway = Math.sin(z.phase) * 0.05;
+    const dying = z.dead;
+
+    ctx.save();
+    ctx.translate(x, y + tileH * 0.18);
+
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.beginPath(); ctx.ellipse(0, s * 0.55, s * 0.55, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+
+    if (dying) {
+      ctx.globalAlpha = Math.max(0, 1 - z.dying / 0.6);
+      ctx.rotate(0.5);
+    }
+
+    // legs
+    ctx.strokeStyle = "#5f7a52";
+    ctx.lineWidth = Math.max(2, s * 0.14);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.12, s * 0.32);
+    ctx.lineTo(-s * 0.22 + Math.sin(z.phase) * s * 0.12, s * 0.58);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(s * 0.12, s * 0.32);
+    ctx.lineTo(s * 0.22 - Math.sin(z.phase) * s * 0.12, s * 0.58);
+    ctx.stroke();
+
+    // torso
+    ctx.fillStyle = ZOMBIE_TYPES[z.kind].color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.34, s * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // arms reaching forward (left)
+    ctx.strokeStyle = "#6b8a5c";
+    ctx.lineWidth = Math.max(2, s * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.18, -s * 0.05);
+    ctx.lineTo(-s * 0.44, s * 0.02 + sway);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(s * 0.18, -s * 0.05);
+    ctx.lineTo(-s * 0.30, s * 0.12 + sway);
+    ctx.stroke();
+
+    // head
+    ctx.fillStyle = "#8fb07a";
+    ctx.beginPath();
+    ctx.arc(-s * 0.06, -s * 0.50, s * 0.26, 0, Math.PI * 2);
+    ctx.fill();
+
+    // eyes
+    ctx.fillStyle = "#1b2417";
+    ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.55, s * 0.05, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(s * 0.04, -s * 0.55, s * 0.05, 0, Math.PI * 2); ctx.fill();
+
+    // mouth
+    ctx.fillStyle = "#3a2a20";
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.06, -s * 0.38, s * 0.10, s * 0.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // cone / bucket / flag props
+    if (z.kind === "cone") {
+      ctx.fillStyle = "#e08a3c";
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.18, -s * 0.72);
+      ctx.lineTo(-s * 0.06, -s * 1.05);
+      ctx.lineTo(s * 0.08, -s * 0.72);
+      ctx.closePath();
+      ctx.fill();
+    } else if (z.kind === "bucket") {
+      ctx.fillStyle = "#9fb0bd";
+      ctx.beginPath();
+      ctx.ellipse(-s * 0.06, -s * 0.74, s * 0.24, s * 0.10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(-s * 0.28, -s * 0.74, s * 0.44, s * 0.20);
+      ctx.fillStyle = "#7d8f9b";
+      ctx.fillRect(-s * 0.28, -s * 0.60, s * 0.44, s * 0.05);
+    } else if (z.kind === "flag") {
+      ctx.strokeStyle = "#4b3a2a";
+      ctx.lineWidth = Math.max(2, s * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(s * 0.18, -s * 0.30);
+      ctx.lineTo(s * 0.24, -s * 0.90);
+      ctx.stroke();
+      ctx.fillStyle = "#d84b4b";
+      ctx.beginPath();
+      ctx.moveTo(s * 0.24, -s * 0.90);
+      ctx.lineTo(s * 0.50, -s * 0.80);
+      ctx.lineTo(s * 0.24, -s * 0.70);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // hp bar
+    if (!dying && z.hp < z.maxHp) {
+      const frac = Math.max(0, z.hp / z.maxHp);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(-s * 0.34, -s * 1.16, s * 0.68, 4);
+      ctx.fillStyle = "#e05656";
+      ctx.fillRect(-s * 0.34, -s * 1.16, s * 0.68 * frac, 4);
+    }
+
+    ctx.restore();
+  }
+
+  function drawBullets() {
+    for (const b of game.bullets) {
+      ctx.fillStyle = "#b6e88b";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, Math.max(3, tileW * 0.045), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.beginPath();
+      ctx.arc(b.x - tileW * 0.02, b.y - tileH * 0.02, Math.max(1, tileW * 0.018), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawMower(m) {
+    const y = boardY + (m.row + 0.5) * tileH;
+    const x = m.x;
+    ctx.fillStyle = "#c23f45";
+    ctx.fillRect(x - tileW * 0.26, y + tileH * 0.06, tileW * 0.5, tileH * 0.16);
+    ctx.fillStyle = "#8a2a30";
+    ctx.fillRect(x - tileW * 0.24, y + tileH * 0.18, tileW * 0.46, tileH * 0.05);
+    ctx.fillStyle = "#2b2b30";
+    ctx.beginPath();
+    ctx.arc(x - tileW * 0.18, y + tileH * 0.24, tileW * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + tileW * 0.16, y + tileH * 0.24, tileW * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#d7d7dd";
+    ctx.fillRect(x - tileW * 0.06, y - tileH * 0.10, tileW * 0.08, tileH * 0.14);
+    if (m.active) {
+      ctx.fillStyle = "rgba(230,80,60,0.35)";
+      ctx.fillRect(x - tileW * 0.3, y - tileH * 0.02, tileW * 0.6, tileH * 0.28);
+    }
+  }
+
+  function drawParticles() {
+    for (const p of game.particles) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(1.5, tileW * 0.03), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawLawn();
+    for (const m of game.mowers) drawMower(m);
+    for (const p of game.plants) drawPlant(p);
+    for (const s of game.suns) drawSun(s);
+    drawBullets();
+    for (const z of game.zombies) drawZombie(z);
+    drawParticles();
+  }
+
+  // ------------------------------------------------------------------
+  // Loop
+  // ------------------------------------------------------------------
+  function loop(ts) {
+    const dt = Math.min(0.04, (ts - game.lastFrame) / 1000 || 0.016);
+    game.lastFrame = ts;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ------------------------------------------------------------------
+  // Interaction
+  // ------------------------------------------------------------------
+  canvas.addEventListener("click", e => {
+    if (game.screen !== "game" || game.over) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) * (W / rect.width);
+    const cy = (e.clientY - rect.top) * (H / rect.height);
+
+    // collect sun first
+    for (const s of game.suns) {
+      if (Math.hypot(cx - s.x, cy - s.y) < s.r + 8) {
+        collectSun(s);
+        return;
+      }
+    }
+
+    if (game.selected < 0) return;
+    const col = Math.floor((cx - boardX) / tileW);
+    const row = Math.floor((cy - boardY) / tileH);
+    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+    plantAt(col, row);
+  });
+
+  // ------------------------------------------------------------------
+  // Screens
+  // ------------------------------------------------------------------
+  const screens = {
+    menu: document.getElementById("ovMenu"),
+    plan: document.getElementById("ovPlan"),
+    help: document.getElementById("ovHelp"),
+    leaderboard: document.getElementById("ovLeaderboard"),
+    end: document.getElementById("ovEnd")
+  };
+
+  function showScreen(name) {
+    for (const k in screens) screens[k].classList.toggle("on", k === name);
+  }
+
+  function startGame() {
+    game.sun = 50;
+    game.score = 0;
+    game.wave = 0;
+    game.time = 0;
+    game.plants = [];
+    game.zombies = [];
+    game.bullets = [];
+    game.suns = [];
+    game.particles = [];
+    game.selected = -1;
+    game.cooldowns = {};
+    game.over = false;
+    game.paused = false;
+    game.waveActive = false;
+    game.spawnQueue = 0;
+    game.spawnTimer = 0;
+    game.difficulty = document.getElementById("difficulty").value;
+    buildMowers();
+    game.screen = "game";
+    refreshHud();
+    syncCards();
+    showScreen("end"); // hide all
+    screens.end.classList.remove("on");
+    startWave();
+  }
+
+  // ------------------------------------------------------------------
+  // Leaderboard
+  // ------------------------------------------------------------------
+  const LB_KEY = "lawn_of_the_dead_leaderboard_v1";
+
+  function loadLeaderboard() {
+    try {
+      const raw = localStorage.getItem(LB_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveLeaderboard(list) {
+    try { localStorage.setItem(LB_KEY, JSON.stringify(list)); } catch {}
+  }
+
+  function renderLeaderboard() {
+    const list = loadLeaderboard().sort((a, b) => b.score - a.score).slice(0, 10);
+    const table = document.getElementById("lbTable");
+    table.innerHTML = `<tr><th>#</th><th>Name</th><th>Score</th><th>Wave</th><th>Date</th></tr>`;
+    if (!list.length) {
+      table.innerHTML += `<tr><td colspan="5">No scores yet.</td></tr>`;
+    } else {
+      list.forEach((r, i) => {
+        const d = new Date(r.at).toLocaleDateString();
+        table.innerHTML += `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${Math.round(r.score)}</td><td>${r.wave}</td><td>${d}</td></tr>`;
+      });
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function addScore(name, score, wave) {
+    const list = loadLeaderboard();
+    list.push({ name: name || "Anonymous", score: Math.round(score), wave, at: new Date().toISOString() });
+    saveLeaderboard(list);
+    renderLeaderboard();
+  }
+
+  // ------------------------------------------------------------------
+  // Buttons
+  // ------------------------------------------------------------------
+  document.getElementById("btnPlay").addEventListener("click", startGame);
+  document.getElementById("btnLeaderboard").addEventListener("click", () => { renderLeaderboard(); showScreen("leaderboard"); });
+  document.getElementById("btnPlan").addEventListener("click", () => showScreen("plan"));
+  document.getElementById("btnHelp").addEventListener("click", () => showScreen("help"));
+  document.getElementById("btnPlanBack").addEventListener("click", () => showScreen("menu"));
+  document.getElementById("btnHelpBack").addEventListener("click", () => showScreen("menu"));
+  document.getElementById("btnLbBack").addEventListener("click", () => showScreen("menu"));
+  document.getElementById("lbAdd").addEventListener("click", () => {
+    const name = document.getElementById("lbName").value.trim();
+    if (!name) { showToast("Enter a name."); return; }
+    addScore(name, game.score, game.wave);
+    document.getElementById("lbName").value = "";
+  });
+  document.getElementById("endSave").addEventListener("click", () => {
+    const name = document.getElementById("endName").value.trim();
+    addScore(name, game.score, game.wave);
+    screens.end.classList.remove("on");
+    renderLeaderboard();
+    showScreen("leaderboard");
+  });
+  document.getElementById("endAgain").addEventListener("click", startGame);
+  document.getElementById("endMenu").addEventListener("click", () => {
+    screens.end.classList.remove("on");
+    game.screen = "menu";
+    showScreen("menu");
+  });
+  document.getElementById("btnMenu").addEventListener("click", () => {
+    game.screen = "menu";
+    screens.end.classList.remove("on");
+    showScreen("menu");
+  });
+  document.getElementById("btnPause").addEventListener("click", () => {
+    game.paused = !game.paused;
+    document.getElementById("btnPause").textContent = game.paused ? "Resume" : "Pause";
+  });
+
+  buildCards();
+  buildMowers();
+  refreshHud();
+  renderLeaderboard();
+})();
+</script>
+</body>
+</html>

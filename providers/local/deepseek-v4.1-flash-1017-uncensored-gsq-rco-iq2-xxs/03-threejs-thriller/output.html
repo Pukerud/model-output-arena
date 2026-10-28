@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Thriller — Michael Jackson, Pepe, Trump and Musk</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #title {
+    position: absolute; left: 50%; top: 22px; transform: translateX(-50%);
+    color: #e8eef8; font: 600 15px/1.3 ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    letter-spacing: .18em; text-transform: uppercase; text-shadow: 0 4px 18px rgba(0,0,0,.8);
+    pointer-events: none;
+  }
+  #hint {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+    color: #8ea0b6; font: 12px/1.4 ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    letter-spacing: .06em; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="title">Thriller — the graveyard shuffle</div>
+<div id="hint">Drag to orbit · scroll to zoom</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// ---------------------------------------------------------------------------
+// Renderer & scene
+// ---------------------------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060a12);
+scene.fog = new THREE.FogExp2(0x0a1020, 0.035);
+
+const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 5.2, 14.5);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.4, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 8;
+controls.maxDistance = 26;
+controls.maxPolarAngle = Math.PI * 0.52;
+
+// ---------------------------------------------------------------------------
+// Lights
+// ---------------------------------------------------------------------------
+const hemi = new THREE.HemisphereLight(0x3b5f9a, 0x0b1018, 0.55);
+scene.add(hemi);
+
+const moonLight = new THREE.DirectionalLight(0xbcd6ff, 1.5);
+moonLight.position.set(-9, 14, 7);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(2048, 2048);
+moonLight.shadow.camera.near = 1;
+moonLight.shadow.camera.far = 45;
+moonLight.shadow.camera.left = -14;
+moonLight.shadow.camera.right = 14;
+moonLight.shadow.camera.top = 14;
+moonLight.shadow.camera.bottom = -14;
+moonLight.shadow.bias = -0.0006;
+scene.add(moonLight);
+
+// warm stage key
+const key = new THREE.SpotLight(0xffc98a, 55, 30, Math.PI / 5, 0.55, 1.5);
+key.position.set(7, 9, 6);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.target.position.set(0, 1.0, 0);
+scene.add(key, key.target);
+
+// cool rim
+const rim = new THREE.SpotLight(0x6fb7ff, 40, 34, Math.PI / 4, 0.8, 1.2);
+rim.position.set(-8, 7, -7);
+rim.target.position.set(0, 1.2, 0);
+scene.add(rim, rim.target);
+
+// violet accent behind
+const violet = new THREE.PointLight(0xb06bff, 18, 22, 2);
+violet.position.set(0, 4, -8);
+scene.add(violet);
+
+// magenta floor bounce
+const bounce = new THREE.PointLight(0xff5a8a, 6, 12, 2);
+bounce.position.set(0, 0.4, 5.5);
+scene.add(bounce);
+
+// ---------------------------------------------------------------------------
+// World: moon, stars, graveyard
+// ---------------------------------------------------------------------------
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(80, 32, 24),
+  new THREE.MeshBasicMaterial({ color: 0x0a1220, side: THREE.BackSide })
+);
+scene.add(sky);
+
+const moon = new THREE.Mesh(
+  new THREE.SphereGeometry(2.1, 32, 24),
+  new THREE.MeshStandardMaterial({ color: 0xdfe9ff, emissive: 0x8fb4e8, emissiveIntensity: 0.6, roughness: 0.9 })
+);
+moon.position.set(-11, 12.5, -10);
+scene.add(moon);
+
+const moonGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(4.6, 32, 24),
+  new THREE.MeshBasicMaterial({ color: 0x9fc4f0, transparent: true, opacity: 0.10, depthWrite: false })
+);
+moonGlow.position.copy(moon.position);
+scene.add(moonGlow);
+
+const starGeo = new THREE.BufferGeometry();
+const starCount = 320;
+const starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+  const r = 26 + Math.random() * 30;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.random() * Math.PI * 0.62;
+  starPos[i * 3] = Math.cos(theta) * r * Math.sin(phi);
+  starPos[i * 3 + 1] = 6 + Math.cos(phi) * r * 0.6;
+  starPos[i * 3 + 2] = Math.sin(theta) * r * Math.sin(phi);
+}
+starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+const stars = new THREE.Points(
+  starGeo,
+  new THREE.PointsMaterial({ color: 0xdce8ff, size: 0.09, transparent: true, opacity: 0.85, depthWrite: false })
+);
+scene.add(stars);
+
+// ground
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(24, 64),
+  new THREE.MeshStandardMaterial({ color: 0x101a14, roughness: 0.95, metalness: 0.0 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// stage disc
+const stage = new THREE.Mesh(
+  new THREE.CylinderGeometry(5.2, 5.4, 0.24, 64),
+  new THREE.MeshStandardMaterial({ color: 0x161a20, roughness: 0.55, metalness: 0.35 })
+);
+stage.position.y = 0.12;
+stage.receiveShadow = true;
+stage.castShadow = true;
+scene.add(stage);
+
+const stageRim = new THREE.Mesh(
+  new THREE.TorusGeometry(5.3, 0.06, 12, 64),
+  new THREE.MeshStandardMaterial({ color: 0x2d3746, roughness: 0.4, metalness: 0.7 })
+);
+stageRim.rotation.x = Math.PI / 2;
+stageRim.position.y = 0.25;
+scene.add(stageRim);
+
+// gravestones
+const stoneMat = new THREE.MeshStandardMaterial({ color: 0x2a3038, roughness: 0.9 });
+const stoneDark = new THREE.MeshStandardMaterial({ color: 0x1d222a, roughness: 0.95 });
+const gravestoneGeo = new THREE.BoxGeometry(0.72, 1.15, 0.18);
+const gravestoneTop = new THREE.CylinderGeometry(0.36, 0.36, 0.16, 16);
+for (let i = 0; i < 14; i++) {
+  const a = (i / 14) * Math.PI * 2 + 0.3;
+  const r = 7.2 + Math.random() * 6;
+  const x = Math.cos(a) * r;
+  const z = Math.sin(a) * r;
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(gravestoneGeo, i % 3 === 0 ? stoneDark : stoneMat);
+  body.position.y = 0.58;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  body.rotation.y = a + Math.PI;
+  g.add(body);
+  const cap = new THREE.Mesh(gravestoneTop, stoneMat);
+  cap.position.y = 1.16;
+  cap.castShadow = true;
+  g.add(cap);
+  g.position.set(x, 0, z);
+  g.rotation.y = Math.random() * 0.4;
+  scene.add(g);
+}
+
+// dead trees
+const treeMat = new THREE.MeshStandardMaterial({ color: 0x161b1c, roughness: 1 });
+for (let i = 0; i < 7; i++) {
+  const a = (i / 7) * Math.PI * 2;
+  const r = 10 + (i % 3) * 2;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 4.6, 8), treeMat);
+  trunk.position.set(Math.cos(a) * r, 2.3, Math.sin(a) * r);
+  trunk.castShadow = true;
+  scene.add(trunk);
+  for (let b = 0; b < 3; b++) {
+    const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 2.1, 6), treeMat);
+    branch.position.set(trunk.position.x + Math.cos(a + b) * 0.6, 3.4 + b * 0.35, trunk.position.z + Math.sin(a + b) * 0.6);
+    branch.rotation.z = Math.cos(a + b) * 0.6;
+    branch.rotation.x = Math.sin(a + b) * 0.5;
+    branch.castShadow = true;
+    scene.add(branch);
+  }
+}
+
+// ground fog slabs
+const fogPlane = new THREE.Mesh(
+  new THREE.CircleGeometry(14, 48),
+  new THREE.MeshBasicMaterial({ color: 0x223247, transparent: true, opacity: 0.08, depthWrite: false })
+);
+fogPlane.rotation.x = -Math.PI / 2;
+fogPlane.position.y = 0.03;
+scene.add(fogPlane);
+
+// ---------------------------------------------------------------------------
+// Character rig
+// ---------------------------------------------------------------------------
+const mat = (color, rough = 0.6, metal = 0.0) =>
+  new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
+
+function capsule(radius, length, material, radial = 12) {
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 8, radial), material);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+function sphere(radius, material, seg = 20) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(radius, seg, seg), material);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+function box(w, h, d, material) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+
+/**
+ * Builds a stylised, articulated humanoid.
+ * Returns { group, leftArm, rightArm, leftLeg, rightLeg, torso, head, leftElbow, rightElbow }
+ */
+function makeHumanoid(cfg) {
+  const group = new THREE.Group();
+
+  const skin = mat(cfg.skin, 0.55);
+  const cloth = mat(cfg.jacket, 0.72);
+  const clothDark = mat(cfg.pants, 0.8);
+  const shirt = mat(cfg.shirt || 0xf2f4f6, 0.7);
+  const shoe = mat(0x14161a, 0.7);
+
+  // legs
+  const hipY = 0.92;
+  const legLen = 0.82;
+
+  const leftLeg = new THREE.Group();
+  leftLeg.position.set(-0.16, hipY, 0);
+  const lThigh = capsule(0.12, 0.55, clothDark);
+  lThigh.position.y = -0.30;
+  leftLeg.add(lThigh);
+  const lShin = capsule(0.10, 0.45, clothDark);
+  lShin.position.y = -0.68;
+  leftLeg.add(lShin);
+  const lShoe = box(0.22, 0.12, 0.38, shoe);
+  lShoe.position.set(0, -0.90, 0.06);
+  leftLeg.add(lShoe);
+  group.add(leftLeg);
+
+  const rightLeg = new THREE.Group();
+  rightLeg.position.set(0.16, hipY, 0);
+  const rThigh = capsule(0.12, 0.55, clothDark);
+  rThigh.position.y = -0.30;
+  rightLeg.add(rThigh);
+  const rShin = capsule(0.10, 0.45, clothDark);
+  rShin.position.y = -0.68;
+  rightLeg.add(rShin);
+  const rShoe = box(0.22, 0.12, 0.38, shoe);
+  rShoe.position.set(0, -0.90, 0.06);
+  rightLeg.add(rShoe);
+  group.add(rightLeg);
+
+  // torso
+  const torsoPivot = new THREE.Group();
+  torsoPivot.position.set(0, hipY, 0);
+  group.add(torsoPivot);
+
+  const torso = capsule(0.30, 0.72, cloth);
+  torso.position.y = 0.38;
+  torso.scale.set(1, 1, 0.85);
+  torsoPivot.add(torso);
+
+  const shirtPanel = box(0.34, 0.55, 0.07, shirt);
+  shirtPanel.position.set(0, 0.42, 0.22);
+  torsoPivot.add(shirtPanel);
+
+  if (cfg.tie) {
+    const tie = box(0.09, 0.30, 0.05, mat(cfg.tie, 0.55));
+    tie.position.set(0, 0.34, 0.27);
+    torsoPivot.add(tie);
+    const knot = box(0.11, 0.09, 0.06, mat(cfg.tie, 0.5));
+    knot.position.set(0, 0.52, 0.27);
+    torsoPivot.add(knot);
+  }
+
+  // shoulders / arms
+  function makeArm(side) {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side * 0.30, hipY + 0.72, 0);
+    torsoPivot.add(shoulder);
+
+    const upper = capsule(0.105, 0.42, cloth);
+    upper.position.y = -0.24;
+    shoulder.add(upper);
+
+    const elbow = new THREE.Group();
+    elbow.position.y = -0.48;
+    shoulder.add(elbow);
+
+    const fore = capsule(0.095, 0.40, cloth);
+    fore.position.y = -0.20;
+    elbow.add(fore);
+
+    const hand = sphere(0.10, skin, 14);
+    hand.position.y = -0.42;
+    elbow.add(hand);
+
+    return { shoulder, elbow };
+  }
+
+  const left = makeArm(-1);
+  const right = makeArm(1);
+
+  // head
+  const neck = capsule(0.075, 0.18, skin, 10);
+  neck.position.set(0, hipY + 0.86, 0);
+  group.add(neck);
+
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, hipY + 1.02, 0);
+  group.add(headPivot);
+
+  const head = sphere(0.235, skin, 24);
+  head.scale.set(1, 1.12, 0.95);
+  headPivot.add(head);
+
+  // eyes
+  const eyeMat = mat(0xf8fafc, 0.4);
+  const pupilMat = mat(0x0d1014, 0.3);
+  for (const sx of [-0.09, 0.09]) {
+    const eye = sphere(0.045, eyeMat, 12);
+    eye.position.set(sx, 0.05, 0.205);
+    headPivot.add(eye);
+    const pupil = sphere(0.022, pupilMat, 10);
+    pupil.position.set(sx, 0.05, 0.24);
+    headPivot.add(pupil);
+  }
+
+  // extra props
+  if (cfg.hat) {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.30, 0.035, 24), mat(cfg.hat, 0.55));
+    brim.position.set(0, 0.22, 0.02);
+    headPivot.add(brim);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.20, 0.26, 20), mat(cfg.hat, 0.55));
+    crown.position.set(0, 0.35, 0.02);
+    headPivot.add(crown);
+  }
+
+  if (cfg.hair) {
+    const hair = sphere(0.245, mat(cfg.hair, 0.8), 18);
+    hair.position.set(0, 0.08, -0.07);
+    hair.scale.set(1.05, 0.85, 1.0);
+    headPivot.add(hair);
+  }
+
+  if (cfg.shades) {
+    const shadesMat = mat(0x0b0d10, 0.25, 0.5);
+    const lens = box(0.22, 0.07, 0.04, shadesMat);
+    lens.position.set(0, 0.06, 0.235);
+    headPivot.add(lens);
+    for (const sx of [-0.10, 0.10]) {
+      const lens2 = box(0.09, 0.07, 0.03, shadesMat);
+      lens2.position.set(sx, 0.06, 0.255);
+      headPivot.add(lens2);
+    }
+  }
+
+  if (cfg.frogEyes) {
+    for (const sx of [-0.13, 0.13]) {
+      const bulge = sphere(0.11, mat(0xd7e8a3, 0.5), 16);
+      bulge.position.set(sx, 0.17, 0.10);
+      headPivot.add(bulge);
+      const pupil = sphere(0.045, mat(0x1a2416, 0.3), 10);
+      pupil.position.set(sx, 0.18, 0.21);
+      headPivot.add(pupil);
+    }
+  }
+
+  if (cfg.mouth) {
+    const mouth = box(0.16, 0.05, 0.03, mat(cfg.mouth, 0.6));
+    mouth.position.set(0, -0.09, 0.22);
+    headPivot.add(mouth);
+  }
+
+  return {
+    group,
+    torsoPivot,
+    headPivot,
+    leftArm: left.shoulder,
+    rightArm: right.shoulder,
+    leftElbow: left.elbow,
+    rightElbow: right.elbow,
+    leftLeg,
+    rightLeg
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Cast
+// ---------------------------------------------------------------------------
+const mj = makeHumanoid({
+  skin: 0x8a5a3c,
+  jacket: 0xb02a2a,
+  pants: 0x15171c,
+  shirt: 0x1b1e24,
+  tie: 0x0e1014,
+  hat: 0x121318,
+  shades: true
+});
+mj.group.position.set(-0.95, 0.24, 0.15);
+mj.group.rotation.y = 0.18;
+mj.group.scale.setScalar(1.05);
+scene.add(mj.group);
+
+const pepe = makeHumanoid({
+  skin: 0x6fae55,
+  jacket: 0x3f7a45,
+  pants: 0x2c4a30,
+  shirt: 0xb9d98d,
+  tie: 0xd24b4b,
+  frogEyes: true,
+  mouth: 0x3b2a24
+});
+pepe.group.position.set(-0.35, 0.24, -0.55);
+pepe.group.rotation.y = -0.10;
+pepe.group.scale.setScalar(0.95);
+scene.add(pepe.group);
+
+const trump = makeHumanoid({
+  skin: 0xe2b48a,
+  jacket: 0x1a2a52,
+  pants: 0x15203c,
+  shirt: 0xf4f6f8,
+  tie: 0xc83535,
+  hair: 0xd9b45a,
+  mouth: 0x8a4b3a
+});
+trump.group.position.set(0.55, 0.24, -0.40);
+trump.group.rotation.y = -0.22;
+trump.group.scale.setScalar(1.0);
+scene.add(trump.group);
+
+const musk = makeHumanoid({
+  skin: 0xd8b392,
+  jacket: 0x23262e,
+  pants: 0x15171c,
+  shirt: 0xf0f2f5,
+  tie: 0x2b2f38,
+  hair: 0x3a2a22,
+  mouth: 0x8a5a48
+});
+musk.group.position.set(1.15, 0.24, 0.25);
+musk.group.rotation.y = 0.14;
+musk.group.scale.setScalar(0.98);
+scene.add(musk.group);
+
+// name plates
+function makeLabel(text) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 64;
+  const c = canvas.getContext("2d");
+  c.clearRect(0, 0, 256, 64);
+  c.font = "600 22px ui-sans-serif, system-ui, Arial";
+  c.fillStyle = "rgba(220,235,255,0.85)";
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText(text, 128, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
+  );
+  sprite.scale.set(1.9, 0.48, 1);
+  return sprite;
+}
+
+const labels = [
+  { obj: mj.group, text: "MICHAEL" },
+  { obj: pepe.group, text: "PEPE" },
+  { obj: trump.group, text: "TRUMP" },
+  { obj: musk.group, text: "MUSK" }
+];
+for (const l of labels) {
+  const s = makeLabel(l.text);
+  s.position.set(0, 2.55, 0);
+  l.obj.add(s);
+}
+
+// ---------------------------------------------------------------------------
+// Dance choreography (Thriller shuffle, 8-count loop)
+// ---------------------------------------------------------------------------
+const dancers = [
+  { rig: mj, offset: 0.0, phase: 0.0 },
+  { rig: pepe, offset: 0.35, phase: 1.2 },
+  { rig: trump, offset: 0.75, phase: 2.1 },
+  { rig: musk, offset: 1.15, phase: 3.0 }
+];
+
+function applyPose(d, time) {
+  const r = d.rig;
+  const b = time * 2.0 + d.offset;
+  const beat = b % (Math.PI * 2);
+  const step = Math.sin(beat);
+  const lift = Math.max(0, Math.sin(beat + Math.PI / 2));
+
+  // zombie shuffle: side-to-side steps, arms reaching like claws
+  r.group.position.y = 0.24 + Math.abs(Math.sin(beat)) * 0.025;
+  r.group.rotation.y = Math.sin(beat * 0.5) * 0.10;
+
+  r.leftLeg.rotation.x = step * 0.26;
+  r.rightLeg.rotation.x = -step * 0.26;
+  r.leftLeg.rotation.z = 0.04;
+  r.rightLeg.rotation.z = -0.04;
+
+  // arms: forward, alternating claw pump
+  const pumpL = 0.5 + Math.sin(beat * 1.5 + 1.4) * 0.28;
+  const pumpR = 0.5 + Math.sin(beat * 1.5) * 0.28;
+
+  r.leftArm.rotation.x = -1.15 + pumpL * 0.35;
+  r.leftArm.rotation.z = -0.55 + step * 0.18;
+  r.leftArm.rotation.y = 0.12;
+  r.leftElbow.rotation.x = -0.75 - pumpL * 0.25;
+  r.leftElbow.rotation.z = 0.15;
+
+  r.rightArm.rotation.x = -1.15 + pumpR * 0.35;
+  r.rightArm.rotation.z = 0.55 - step * 0.18;
+  r.rightArm.rotation.y = -0.12;
+  r.rightElbow.rotation.x = -0.75 - pumpR * 0.25;
+  r.rightElbow.rotation.z = -0.15;
+
+  // torso pulse and head tilt
+  r.torsoPivot.rotation.z = Math.sin(beat * 0.5) * 0.06;
+  r.torsoPivot.rotation.x = Math.sin(beat) * 0.04;
+  r.headPivot.rotation.z = Math.sin(beat + 0.6) * 0.12;
+  r.headPivot.rotation.y = Math.sin(beat * 0.5 + 0.3) * 0.22;
+  r.headPivot.rotation.x = -0.06 + Math.sin(beat) * 0.05;
+
+  // MJ signature: occasional lean and hat-tip
+  if (r === mj) {
+    const lean = Math.sin(time * 1.4) * 0.05;
+    r.torsoPivot.rotation.x += lean;
+    r.headPivot.rotation.z += Math.sin(time * 2.4) * 0.08;
+  }
+
+  // keep everyone grounded
+  r.group.rotation.z = Math.sin(beat * 0.5) * 0.02;
+}
+
+// ---------------------------------------------------------------------------
+// Dust motes for atmosphere
+// ---------------------------------------------------------------------------
+const dustGeo = new THREE.BufferGeometry();
+const dustCount = 140;
+const dustPos = new Float32Array(dustCount * 3);
+for (let i = 0; i < dustCount; i++) {
+  dustPos[i * 3] = (Math.random() - 0.5) * 14;
+  dustPos[i * 3 + 1] = Math.random() * 6;
+  dustPos[i * 3 + 2] = (Math.random() - 0.5) * 14;
+}
+dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(
+  dustGeo,
+  new THREE.PointsMaterial({ color: 0xbcd5ff, size: 0.045, transparent: true, opacity: 0.35, depthWrite: false })
+);
+scene.add(dust);
+
+// ---------------------------------------------------------------------------
+// Animation loop
+// ---------------------------------------------------------------------------
+const clock = new THREE.Clock();
+let elapsed = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  elapsed += dt;
+
+  dancers.forEach((d, i) => applyPose(d, elapsed + i * 0.05));
+
+  // gentle camera breathing + slow orbit target drift
+  const orbit = Math.sin(elapsed * 0.18) * 0.35;
+  camera.position.x = Math.sin(orbit) * 0.9;
+  camera.position.y = 5.2 + Math.sin(elapsed * 0.35) * 0.15;
+
+  // dust drift
+  dust.rotation.y = elapsed * 0.02;
+  stars.rotation.y = elapsed * 0.006;
+
+  // pulsing stage light
+  bounce.intensity = 5.5 + Math.sin(elapsed * 1.6) * 1.6;
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// ---------------------------------------------------------------------------
+// Resize
+// ---------------------------------------------------------------------------
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "provider": "local",
+  "provider_display": "Local (llama.cpp)",
+  "model": "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+  "model_display": "DeepSeek V4.1 Flash 1017 Uncensored (GSQ-RCO IQ2_XXS)",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-26T15:47:06Z",
+  "runner": "DeepSeek V4.1 Flash 1017 Uncensored via OpenClaw Logic session",
+  "notes": "generated_at is the preserved output file modification time, used as the available timestamp proxy. The whole-run elapsed time includes an extended paused checkpoint before finalization. Output was written on a retry; the generating turn ended with a length stop. Owner-side checks found it rendered and responded to orbit controls.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "GGUF IQ2_XXS",
+    "variant": "GSQ-RCO",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

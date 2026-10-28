@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "local",
+  "model": "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs",
+  "scope": "three-prompt-run",
+  "test_ids": [
+    "01-car-parallax",
+    "02-plants-vs-zombies",
+    "03-threejs-thriller"
+  ],
+  "status": "completed",
+  "started_at": "2026-10-26T12:08:32.442Z",
+  "completed_at": "2026-10-27T21:39:52.797Z",
+  "duration_ms": 120680355,
+  "usage": {
+    "coverage": "unavailable",
+    "source": "",
+    "reason": "Whole-run token usage across generation and retry calls is not available from the retained evidence; counts were not estimated. The elapsed wall time includes an extended paused checkpoint between 26 and 27 October.",
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null
+  }
+}

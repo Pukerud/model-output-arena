@@ -74,8 +74,13 @@ test('search tolerates spacing, dots, hyphens, quantization and case', () => {
 test('provider-qualified links resolve every exact submission and legacy links still work', () => {
   for(const model of arena.models){
     assert.equal(Catalog.resolve(catalog,Catalog.id(model)),model);
-    assert.equal(Catalog.resolve(catalog,model.model),model);
+    if(arena.models.filter(candidate => candidate.model === model.model).length === 1)
+      assert.equal(Catalog.resolve(catalog,model.model),model);
   }
+  const repeated = 'deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs';
+  assert.equal(Catalog.resolve(catalog,repeated).provider,'llamacpp');
+  assert.equal(Catalog.resolve(catalog,'local/' + repeated).provider,'local');
+  assert.equal(Catalog.resolve(catalog,'llamacpp/' + repeated).provider,'llamacpp');
   assert.equal(Catalog.resolve(catalog,'laguna-s-2.1 i3XSS').model,'laguna-s-2.1');
   assert.equal(Catalog.resolve(catalog,'local/laguna-s-2.1 i3XSS').model,'laguna-s-2.1');
   assert.equal(Catalog.resolve(catalog,'nonexistent'),undefined);

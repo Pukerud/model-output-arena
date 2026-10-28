@@ -30,13 +30,21 @@
     });
   }
   const id = model => model.provider + "/" + model.model;
+  // This bare link identified the existing llama.cpp submission before a second
+  // run of the same model was added. Preserve that established URL explicitly;
+  // other ambiguous bare slugs must not be guessed.
+  const legacyBareTargets = new Map([
+    ["deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs", "llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs"]
+  ]);
   function resolve(catalog, value){
     const exact = catalog.models.find(model => id(model) === value);
     if(exact) return exact;
     // Preserve old bare-slug links, but do not guess if providers share a slug.
     const matches = catalog.models.filter(model => model.model === value ||
       (model.aliases || []).some(alias => alias === value || model.provider + "/" + alias === value));
-    return matches.length === 1 ? matches[0] : undefined;
+    if(matches.length === 1) return matches[0];
+    const legacyTarget = legacyBareTargets.get(value);
+    return legacyTarget ? matches.find(model => id(model) === legacyTarget) : undefined;
   }
   const api = {create, filter, id, resolve};
   if(typeof module !== "undefined" && module.exports) module.exports = api;

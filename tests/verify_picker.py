@@ -106,6 +106,15 @@ def verify(url, screenshots=None):
         assert "Laguna" in page.locator("#aSelectionName").inner_text()
         assert page.locator("#bSelectionName").inner_text() == "GPT-5.5"
         assert page.evaluate("new URLSearchParams(location.hash.slice(1)).get('a')") == "local/laguna-s-2.1"
+        # A previous bare DeepSeek link retains the originally published run;
+        # the newer separate run is addressable by its provider-qualified ID.
+        repeated = "deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs"
+        page.goto(base + "#" + urlencode({"test":"01-car-parallax","a":repeated}), wait_until="domcontentloaded")
+        assert page.evaluate("new URLSearchParams(location.hash.slice(1)).get('a')") == "llamacpp/" + repeated
+        page.goto(base + "#" + urlencode({"test":"01-car-parallax","a":"local/" + repeated}), wait_until="domcontentloaded")
+        assert page.evaluate("new URLSearchParams(location.hash.slice(1)).get('a')") == "local/" + repeated
+        assert page.locator("#aFrame").get_attribute("src").startswith("providers/local/" + repeated + "/")
+        checks.append("existing bare DeepSeek link and both provider-qualified run identities")
         # Short landscape + narrow mobile + desktop at enlarged effective scale.
         for width, height in [(390,844),(320,568),(844,390),(768,600),(320,240)]:
             page.set_viewport_size({"width":width,"height":height})
