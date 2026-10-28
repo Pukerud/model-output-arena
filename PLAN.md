@@ -97,9 +97,11 @@ Create one per test:
 }
 ```
 
-- `prompt_hash`: SHA‑256 of the exact prompt bytes (the contents of the matching `PROMPTS/*.md`),
-  prefixed with `sha256:`. This lets us detect if a prompt drifted between runs.
-  On most systems: `sha256sum PROMPTS/01-car-parallax.md`.
+- `prompt_hash`: SHA‑256 of the exact saved `prompt.md` bytes used for the run,
+  prefixed with `sha256:`. The validator allows only LF/CRLF differences when
+  comparing to the canonical `PROMPTS/*.md`, but hashes the saved bytes without
+  normalization. This preserves provenance across different checkout platforms.
+  On most systems: `sha256sum providers/<provider>/<model>/01-car-parallax/prompt.md`.
 - `generated_at`: ISO‑8601 UTC timestamp of generation.
 - `runner`: a short human‑readable string saying what generated this.
 - `notes`: optional — anything notable (stylization choices, known limitations).
@@ -189,8 +191,9 @@ python scripts/run_metrics.py build
 python scripts/run_metrics.py check
 ```
 
-Do not run both finish alternatives. `finish` verifies three nonempty outputs, exact prompt bytes and hashes,
-and matching metadata identity; it rejects duplicate completion and invalid counts. It does not judge HTML
+Do not run both finish alternatives. `finish` verifies three nonempty outputs, canonical prompt text
+(allowing only LF/CRLF checkout differences), exact saved-prompt hashes, and matching metadata identity;
+it rejects duplicate completion and invalid counts. It does not judge HTML
 quality, so perform the normal output verification before finishing.
 
 The resulting `run.json` has `schema_version: 1`, `scope: "three-prompt-run"`, all three `test_ids`,

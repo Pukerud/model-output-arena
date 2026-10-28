@@ -113,8 +113,8 @@ class RunMetricsTests(unittest.TestCase):
         self.start()
         self.artifacts()
         folder = metrics.model_dir(self.root, self.model) / metrics.TESTS[0]
-        (folder / "prompt.md").write_bytes(b"Exact prompt\n")
-        with self.assertRaisesRegex(ValueError, "canonical bytes"):
+        (folder / "prompt.md").write_bytes(b"Different prompt\r\n")
+        with self.assertRaisesRegex(ValueError, "canonical text"):
             self.finish()
         (folder / "prompt.md").write_bytes(b"Exact prompt\r\n")
         meta = metrics.read_json(folder / "meta.json")
@@ -122,6 +122,33 @@ class RunMetricsTests(unittest.TestCase):
         metrics.write_json(folder / "meta.json", meta)
         with self.assertRaisesRegex(ValueError, "identity|mismatch"):
             self.finish()
+
+    def test_prompt_line_endings_are_portable_but_raw_hash_is_required(self):
+        self.start()
+        self.artifacts()
+        directory = metrics.model_dir(self.root, self.model)
+        test = metrics.TESTS[0]
+        canonical = self.root / "PROMPTS" / (test + ".md")
+        saved = directory / test / "prompt.md"
+        meta_path = directory / test / "meta.json"
+        meta = metrics.read_json(meta_path)
+        for canonical_bytes, saved_bytes in ((b"Exact prompt\n", b"Exact prompt\r\n"),
+                                             (b"Exact prompt\r\n", b"Exact prompt\n")):
+            with self.subTest(canonical=canonical_bytes, saved=saved_bytes):
+                canonical.write_bytes(canonical_bytes)
+                saved.write_bytes(saved_bytes)
+                meta["prompt_hash"] = "sha256:" + hashlib.sha256(saved_bytes).hexdigest()
+                metrics.write_json(meta_path, meta)
+                metrics.validate_artifacts(self.root, directory)
+        meta["prompt_hash"] = "sha256:" + hashlib.sha256(b"Exact prompt\r\n").hexdigest()
+        metrics.write_json(meta_path, meta)
+        with self.assertRaisesRegex(ValueError, "prompt_hash"):
+            metrics.validate_artifacts(self.root, directory)
+        saved.write_bytes(b"Exact prompt!\n")
+        meta["prompt_hash"] = "sha256:" + hashlib.sha256(saved.read_bytes()).hexdigest()
+        metrics.write_json(meta_path, meta)
+        with self.assertRaisesRegex(ValueError, "canonical text"):
+            metrics.validate_artifacts(self.root, directory)
 
     def test_negative_clock_interval_rejected(self):
         path = self.start()

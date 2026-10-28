@@ -84,9 +84,12 @@ def validate_artifacts(root, directory):
         output = folder / "output.html"
         if not output.is_file() or not output.stat().st_size:
             raise ValueError(f"missing or empty output: {output}")
-        prompt = (root / "PROMPTS" / (test + ".md")).read_bytes()
-        if (folder / "prompt.md").read_bytes() != prompt:
-            raise ValueError(f"prompt differs from canonical bytes: {test}")
+        canonical = (root / "PROMPTS" / (test + ".md")).read_bytes()
+        prompt = (folder / "prompt.md").read_bytes()
+        # Git checkouts may use LF or CRLF. Compare only their line-ending
+        # normalized contents, but hash the exact saved bytes used by the run.
+        if prompt.replace(b"\r\n", b"\n") != canonical.replace(b"\r\n", b"\n"):
+            raise ValueError(f"prompt differs from canonical text: {test}")
         meta = read_json(folder / "meta.json")
         if not isinstance(meta, dict):
             raise ValueError(f"metadata must be a JSON object: {test}")
