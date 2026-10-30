@@ -15,7 +15,7 @@
   "usage": {
     "coverage": "unavailable",
     "source": "",
-    "reason": "OpenClaw session_status exposes rounded per-turn token snapshots with cache counters reported separately, not an exact cumulative whole-run token ledger for this dedicated worker session. Checked-out PROMPTS blobs are CRLF on this Windows clone (core.autocrlf=true); prompt.md was byte-copied from the checkout and meta hashes match those bytes (see disclosed blob/checkout line-ending mismatch).",
+    "reason": "OpenClaw session_status exposes rounded per-turn token snapshots with cache counters reported separately, not an exact cumulative whole-run token ledger for this dedicated worker session. This Windows clone checks out PROMPTS with CRLF (core.autocrlf=true); prompt.md was byte-copied from the checkout and meta hashes those exact bytes, so meta hashes intentionally differ from LF git-blob hashes only by line endings. Contents verified identical to HEAD after CR normalization; harness finish/check normalize line endings and passed (repo commit 41ebeaf).",
     "input_tokens": null,
     "output_tokens": null,
     "total_tokens": null
