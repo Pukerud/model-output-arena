@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "iq3-s-sc117-abliterated-ple-q8",
+  "model_display": "Qwen3.8 Flash Next SC117 Abliterated PLE Q8_0",
+  "test_id": "02-plants-vs-zombies",
+  "prompt_hash": "sha256:3da5f72cfc27dad583cfd7ad9d161f5aded4f8974447e1ec008018c9468dc6b0",
+  "generated_at": "2026-10-30T18:02:31Z",
+  "runner": "Qwen3.8 Flash Next SC117 Abliterated (PLE Q8_0 PLE variant) via OpenClaw worker session, llama.cpp server on 192.168.1.69",
+  "notes": "Full mini PvZ: menu, mode select (Adventure/Tough/Endless), sun economy, 4 seed cards with cooldowns, shovel, lawnmowers, cone/bucket zombies, waves with banners, WebAudio SFX, particles, canvas leaderboard with initials in localStorage. Verified in headless Chrome (channel=chrome) over 127.0.0.1 HTTP: spaced-frame motion deltas, zero console/page errors; game additionally click-tested through menu to live wave.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ3_S + PLE Q8_0",
+    "variant": "SC117 Abliterated",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

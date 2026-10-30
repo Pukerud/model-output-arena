@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "iq3-s-sc117-abliterated-ple-q8",
+  "model_display": "Qwen3.8 Flash Next SC117 Abliterated PLE Q8_0",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-10-30T18:02:31Z",
+  "runner": "Qwen3.8 Flash Next SC117 Abliterated (PLE Q8_0 PLE variant) via OpenClaw worker session, llama.cpp server on 192.168.1.69",
+  "notes": "Three.js r128 graveyard dance: 4 rig-built stylised characters on a 118 BPM move timeline, moon key light, magenta/cyan rim spots, soft shadows, ACES tone mapping, exponential fog, drifting wisps, lightning, orbit dolly, WebAudio bass sequencer, lyric HUD. Verified in headless Chrome (channel=chrome) over 127.0.0.1 HTTP: spaced-frame motion deltas, zero console/page errors; game additionally click-tested through menu to live wave.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ3_S + PLE Q8_0",
+    "variant": "SC117 Abliterated",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

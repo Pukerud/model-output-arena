@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "iq3-s-sc117-abliterated-ple-q8",
+  "model_display": "Qwen3.8 Flash Next SC117 Abliterated PLE Q8_0",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-10-30T18:02:31Z",
+  "runner": "Qwen3.8 Flash Next SC117 Abliterated (PLE Q8_0 PLE variant) via OpenClaw worker session, llama.cpp server on 192.168.1.69",
+  "notes": "Single-file Canvas 2D sunset drive: 7 parallax layers (harmonic ridges, seeded strips) with mathematically seamless 60 s loop, bobbing/pitching car, spinning spoked wheels with motion-blur smear, sunset rim light, vignette grade. Verified in headless Chrome (channel=chrome) over 127.0.0.1 HTTP: spaced-frame motion deltas, zero console/page errors; game additionally click-tested through menu to live wave.",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ3_S + PLE Q8_0",
+    "variant": "SC117 Abliterated",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

@@ -1097,6 +1097,23 @@ window.ARENA = {
       },
     },
 
+    {
+      provider: "llamacpp",
+      provider_display: "llama.cpp",
+      model: "iq3-s-sc117-abliterated-ple-q8",
+      model_display: "Qwen3.8 Flash Next SC117 Abliterated PLE Q8_0",
+      hosting: "local",
+      weights: "open",
+      path: "providers/llamacpp/iq3-s-sc117-abliterated-ple-q8",
+      added: "2026-10-30",
+      outputs: {
+        "01-car-parallax":      "providers/llamacpp/iq3-s-sc117-abliterated-ple-q8/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/llamacpp/iq3-s-sc117-abliterated-ple-q8/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/llamacpp/iq3-s-sc117-abliterated-ple-q8/03-threejs-thriller/output.html",
+      },
+    },
+
+
   ]
 };
 

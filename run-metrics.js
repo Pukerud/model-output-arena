@@ -23,6 +23,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": null
     }
   },
+  "providers/llamacpp/iq3-s-sc117-abliterated-ple-q8": {
+    "schema_version": 1,
+    "provider": "llamacpp",
+    "model": "iq3-s-sc117-abliterated-ple-q8",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-10-30T17:58:42.667Z",
+    "completed_at": "2026-10-30T18:07:16.879Z",
+    "duration_ms": 514212,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "OpenClaw session_status exposes rounded per-turn token snapshots with cache counters reported separately, not an exact cumulative whole-run token ledger for this dedicated worker session. Checked-out PROMPTS blobs are CRLF on this Windows clone (core.autocrlf=true); prompt.md was byte-copied from the checkout and meta hashes match those bytes (see disclosed blob/checkout line-ending mismatch).",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs": {
     "schema_version": 1,
     "provider": "local",
