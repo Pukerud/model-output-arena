@@ -194,6 +194,7 @@ Two independent axes are labelled:
 | OpenCode | Nemotron 3.5 Super VL Free | ☁️ API | 🔒 Proprietary | [`providers/opencode/nemotron-3.5-super-vl-free`](./providers/opencode/nemotron-3.5-super-vl-free) |
 | llama.cpp | DeepSeek V4.1 Flash 1017 Uncensored GSQ RCO IQ2_XXS | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs`](./providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs) |
 | llama.cpp | Qwen3.8 Flash Next SC117 Abliterated PLE Q8_0 | 🖥️ Local | 🔓 Open&#8209;weights | [`providers/llamacpp/iq3-s-sc117-abliterated-ple-q8`](./providers/llamacpp/iq3-s-sc117-abliterated-ple-q8) |
+| llama.cpp | Qwen3.8 Flash Next Unsloth v3.1 IQ4_XS PLE Q8_0 (2-slot) | 🔓 Open&#8209;weights | [`providers/llamacpp/iq3-s-sc117-abliterated-ple-q8`](./providers/llamacpp/iq3-s-sc117-abliterated-ple-q8) | [`providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot`](./providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot) |
 | Local (llama.cpp) | DeepSeek V4.1 Flash 1017 Uncensored (GSQ-RCO IQ2_XXS) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs`](./providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs) |
 
 ## How outputs were generated

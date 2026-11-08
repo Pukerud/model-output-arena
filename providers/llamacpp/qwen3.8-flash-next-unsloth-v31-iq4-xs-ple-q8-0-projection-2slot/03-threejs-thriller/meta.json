@@ -1,0 +1,20 @@
+{
+    "provider":  "llamacpp",
+    "provider_display":  "llama.cpp",
+    "model":  "qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot",
+    "model_display":  "Qwen3.8 Flash Next Unsloth v3.1 IQ4_XS PLE Q8_0 (2-slot)",
+    "test_id":  "03-threejs-thriller",
+    "prompt_hash":  "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+    "generated_at":  "2026-11-08T11:51:10Z",
+    "runner":  "Qwen3.8 Flash Next (Unsloth v3.1 IQ4_XS + PLE Q8_0 projections, 2-slot) via OpenClaw worker session, llama.cpp server on 192.168.1.69",
+    "notes":  "",
+    "hosting":  "local",
+    "weights":  "open",
+    "runtime":  {
+                    "weights":  "open",
+                    "quant":  "IQ4_XS + PLE Q8_0 projections",
+                    "variant":  "Unsloth v3.1",
+                    "engine":  "llama.cpp",
+                    "gpu":  ""
+                }
+}

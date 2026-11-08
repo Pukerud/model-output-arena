@@ -1112,6 +1112,23 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/llamacpp/iq3-s-sc117-abliterated-ple-q8/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "llamacpp",
+      provider_display: "llama.cpp",
+      model: "qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot",
+      model_display: "Qwen3.8 Flash Next Unsloth v3.1 IQ4_XS PLE Q8_0 (2-slot)",
+      hosting: "local",
+      weights: "open",
+      path: "providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot",
+      added: "2026-11-08",
+      outputs: {
+        "01-car-parallax":      "providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot/03-threejs-thriller/output.html",
+      },
+    },
+
+
 
 
   ]
