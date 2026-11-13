@@ -1142,6 +1142,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/google/gemini-4-hydrogen/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemini-4-carbon",
+      model_display: "Gemini 4 Carbon",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/google/gemini-4-carbon",
+      added: "2026-11-13",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemini-4-carbon/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemini-4-carbon/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemini-4-carbon/03-threejs-thriller/output.html",
+      },
+    },
 
 
 

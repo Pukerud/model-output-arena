@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Botanic Bastion — Lawn Defense</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    background: radial-gradient(circle at 50% 20%, #1d3524, #0c1710 75%);
+    color: #f3f7f0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #app {
+    position: relative;
+    width: 960px;
+    height: 600px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.65), inset 0 0 0 2px rgba(255,255,255,0.12);
+    background: #16291b;
+  }
+  canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+  .topbar {
+    position: absolute; top: 10px; left: 12px; right: 12px; height: 68px;
+    background: rgba(20, 34, 24, 0.88);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 14px;
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    backdrop-filter: blur(8px);
+    z-index: 5;
+  }
+  .sun-box {
+    background: linear-gradient(180deg, #3c2e12, #241b0a);
+    border: 1px solid #f5c542;
+    border-radius: 10px;
+    padding: 6px 12px;
+    min-width: 92px;
+    text-align: center;
+  }
+  .sun-box .lbl { font-size: 10px; text-transform: uppercase; color: #f7d97e; letter-spacing: 0.08em; }
+  .sun-box .val { font-size: 22px; font-weight: 800; color: #ffe46b; font-variant-numeric: tabular-nums; }
+  .cards { display: flex; gap: 7px; flex: 1; }
+  .card {
+    position: relative; width: 76px; height: 52px; border-radius: 10px;
+    background: linear-gradient(180deg, #2d4c33, #1c3121);
+    border: 2px solid rgba(255,255,255,0.2);
+    padding: 4px 6px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: space-between;
+    transition: transform 0.12s, border-color 0.12s;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card.selected { border-color: #ffe46b; box-shadow: 0 0 12px rgba(255,228,107,0.45); }
+  .card.disabled { opacity: 0.45; cursor: not-allowed; }
+  .card .name { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .card .cost { font-size: 12px; font-weight: 800; color: #ffe46b; }
+  .card .cd {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.62);
+    border-radius: 8px; pointer-events: none; transform-origin: bottom;
+  }
+  .hud-right { display: flex; align-items: center; gap: 8px; }
+  .stat { font-size: 12px; line-height: 1.35; text-align: right; min-width: 118px; font-variant-numeric: tabular-nums; }
+  .btn {
+    background: #2f5c39; color: #fff; border: 1px solid rgba(255,255,255,0.25);
+    padding: 7px 12px; border-radius: 9px; font-weight: 700; font-size: 12px; cursor: pointer;
+  }
+  .btn:hover { background: #3d7549; }
+  .btn.warn { background: #6b3828; }
+  .btn.warn.selected { border-color: #ff9a76; box-shadow: 0 0 10px rgba(255,120,80,0.5); }
+  .overlay {
+    position: absolute; inset: 0; z-index: 20;
+    background: rgba(10, 18, 12, 0.86);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hidden { display: none !important; }
+  .panel {
+    width: 660px; max-height: 540px; overflow-y: auto;
+    background: linear-gradient(180deg, #1d3323, #122116);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px; padding: 24px 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  }
+  h1 { font-size: 32px; color: #a7f070; margin-bottom: 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; color: #ffe46b; margin: 12px 0 8px; }
+  p.sub { color: #b7ccb9; font-size: 14px; margin-bottom: 16px; }
+  .row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  input[type="text"] {
+    background: #0e1a11; border: 1px solid #486b50; color: #fff;
+    padding: 8px 12px; border-radius: 8px; font-size: 14px; width: 190px;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  th, td { padding: 7px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.09); }
+  th { color: #9ec4a3; font-size: 11px; text-transform: uppercase; }
+  .plan-list { font-size: 13px; color: #cfe0d1; line-height: 1.55; padding-left: 18px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #2d5936; font-size: 11px; color: #b9f58c; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Implementation Plan Embedded & Followed:
+       1. Core Grid & Lawn Architecture: 5x9 turf checkerboard, 5 last-resort lawnmowers, sky & sunflower sun economy.
+       2. Plant Arsenal (5 distinct units): Sunflower (economy), Peashooter (DPS), Snow Pea (slow+DPS), Wall-Nut (tank), Cherry Pod (3x3 instant blast). Shovel tool for tactical removal.
+       3. Zombie Waves (4 archetypes): Walker, Conehead, Buckethead, Sprinter across 5 escalating waves + Endless mode.
+       4. Menus, Pause, Almanac/Plan Modal & Persistent LocalStorage Leaderboard + WebAudio SFX. -->
+  <div class="topbar" id="topbar">
+    <div class="sun-box">
+      <div class="lbl">Sun</div>
+      <div class="val" id="sunVal">150</div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <button class="btn warn" id="shovelBtn" title="Dig up plant (refund 25%)">Shovel</button>
+    <div class="hud-right">
+      <div class="stat">
+        <div>Wave <b id="waveTxt">1/5</b></div>
+        <div>Score <b id="scoreTxt">0</b></div>
+      </div>
+      <button class="btn" id="speedBtn">1x</button>
+      <button class="btn" id="pauseBtn">Menu</button>
+    </div>
+  </div>
+
+  <canvas id="game" width="960" height="600"></canvas>
+
+  <!-- Main / Pause Menu Overlay -->
+  <div class="overlay" id="menuOverlay">
+    <div class="panel">
+      <span class="badge">Tactical Lawn Defense</span>
+      <h1>BOTANIC BASTION</h1>
+      <p class="sub">Defend all 5 garden lanes against the shambling horde. Collect sun, build economy, and climb the leaderboard.</p>
+      <div class="row">
+        <label style="font-size:13px;color:#cfe0d1;">Defender Name:</label>
+        <input id="playerName" type="text" maxlength="16" value="Gardener">
+        <button class="btn" id="startStandardBtn" style="background:#3d8a49;padding:9px 16px;">Play 5-Wave Campaign</button>
+        <button class="btn" id="startEndlessBtn">Play Endless</button>
+        <button class="btn" id="resumeBtn" class="hidden">Resume</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:18px;margin-top:14px;">
+        <div>
+          <h2>Leaderboard (Top 6)</h2>
+          <table>
+            <thead><tr><th>#</th><th>Player</th><th>Mode</th><th>Wave</th><th>Score</th></tr></thead>
+            <tbody id="lbBody"></tbody>
+          </table>
+        </div>
+        <div>
+          <h2>Game Plan & Arsenal</h2>
+          <ul class="plan-list">
+            <li><b>Sunflower (50):</b> Generates +25 sun periodically.</li>
+            <li><b>Peashooter (100):</b> Fires steady peas down its lane.</li>
+            <li><b>Snow Pea (175):</b> Chills & slows zombies by 45%.</li>
+            <li><b>Wall-Nut (50):</b> High-armor blocker to stall waves.</li>
+            <li><b>Cherry Bomb (150):</b> Instant 3x3 explosive clear.</li>
+            <li><b>Lawnmowers:</b> One-time lane clear if breached.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over / Victory Overlay -->
+  <div class="overlay hidden" id="endOverlay">
+    <div class="panel" style="width:460px;text-align:center;">
+      <h1 id="endTitle">VICTORY!</h1>
+      <p class="sub" id="endSub">Your lawn stood firm.</p>
+      <div style="font-size:26px;font-weight:800;color:#ffe46b;margin:12px 0;" id="endScore">Score: 0</div>
+      <div class="row" style="justify-content:center;">
+        <button class="btn" id="playAgainBtn" style="background:#3d8a49;padding:10px 20px;">Play Again</button>
+        <button class="btn" id="backMenuBtn">Main Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  // Audio synthesizer (no external assets)
+  let actx = null;
+  function sfx(freq, dur = 0.08, type = 'sine', gain = 0.06) {
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, actx.currentTime);
+      g.gain.setValueAtTime(gain, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + dur);
+    } catch (_) {}
+  }
+
+  const GRID = { x: 115, y: 102, cols: 9, rows: 5, cw: 88, ch: 92 };
+  const PLANTS = [
+    { id: 'sun', name: 'Sunflower', cost: 50, cd: 5, hp: 100, color: '#f7c942' },
+    { id: 'pea', name: 'Peashooter', cost: 100, cd: 5.5, hp: 120, color: '#6fd943' },
+    { id: 'snow', name: 'Snow Pea', cost: 175, cd: 7, hp: 120, color: '#58c7f5' },
+    { id: 'nut', name: 'Wall-Nut', cost: 50, cd: 14, hp: 520, color: '#b88446' },
+    { id: 'bomb', name: 'Cherry', cost: 150, cd: 18, hp: 999, color: '#e63946' }
+  ];
+
+  const ZTYPES = {
+    walker:   { hp: 110, spd: 21, dps: 22, pts: 100, hat: null },
+    cone:     { hp: 240, spd: 20, dps: 22, pts: 180, hat: 'cone' },
+    bucket:   { hp: 430, spd: 18, dps: 25, pts: 280, hat: 'bucket' },
+    sprinter: { hp: 140, spd: 40, dps: 26, pts: 220, hat: 'visor' }
+  };
+
+  const LB_KEY = 'botanic_bastion_lb_v1';
+  function loadLB() {
+    try {
+      const d = JSON.parse(localStorage.getItem(LB_KEY) || '[]');
+      if (d.length) return d;
+    } catch (_) {}
+    return [
+      { name: 'CrazyDave', mode: 'Campaign', wave: 5, score: 4250 },
+      { name: 'FloraQueen', mode: 'Endless', wave: 8, score: 6120 },
+      { name: 'Sprout', mode: 'Campaign', wave: 4, score: 2490 }
+    ];
+  }
+  function saveScore(entry) {
+    const list = loadLB();
+    list.push(entry);
+    list.sort((a, b) => b.score - a.score);
+    localStorage.setItem(LB_KEY, JSON.stringify(list.slice(0, 8)));
+    renderLB();
+  }
+  function renderLB() {
+    const body = document.getElementById('lbBody');
+    body.innerHTML = loadLB().slice(0, 6).map((r, i) =>
+      `<tr><td>${i + 1}</td><td>${r.name.replace(/[<>&]/g, '')}</td><td>${r.mode}</td><td>${r.wave}</td><td><b>${r.score}</b></td></tr>`
+    ).join('');
+  }
+
+  let state = null;
+  let running = false, paused = true, speedMult = 1;
+  let selectedCard = 'pea', shovelMode = false;
+  let hoverCell = null;
+
+  const cardsEl = document.getElementById('cards');
+  PLANTS.forEach((p, idx) => {
+    const el = document.createElement('div');
+    el.className = 'card' + (p.id === selectedCard ? ' selected' : '');
+    el.dataset.id = p.id;
+    el.innerHTML = `<div class="name">[${idx + 1}] ${p.name}</div><div class="cost">☀ ${p.cost}</div><div class="cd" style="transform:scaleY(0)"></div>`;
+    el.onclick = () => selectPlant(p.id);
+    cardsEl.appendChild(el);
+  });
+
+  function selectPlant(id) {
+    shovelMode = false;
+    document.getElementById('shovelBtn').classList.remove('selected');
+    selectedCard = id;
+    document.querySelectorAll('.card').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+  }
+
+  document.getElementById('shovelBtn').onclick = () => {
+    shovelMode = !shovelMode;
+    document.getElementById('shovelBtn').classList.toggle('selected', shovelMode);
+    if (shovelMode) document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  };
+
+  window.addEventListener('keydown', (e) => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= PLANTS.length) selectPlant(PLANTS[n - 1].id);
+    if (e.key.toLowerCase() === 's') document.getElementById('shovelBtn').click();
+    if (e.key === 'Escape' && running) togglePause();
+  });
+
+  function initGame(endless = false) {
+    state = {
+      endless,
+      sun: 150,
+      score: 0,
+      wave: 1,
+      maxWaves: endless ? 99 : 5,
+      plants: [],
+      zombies: [],
+      shots: [],
+      suns: [],
+      fx: [],
+      mowers: Array.from({ length: 5 }, (_, r) => ({ row: r, x: GRID.x - 42, active: false, used: false })),
+      cds: Object.fromEntries(PLANTS.map(p => [p.id, 0])),
+      skyTimer: 4.5,
+      toSpawn: [],
+      spawnTimer: 2.5,
+      waveBanner: { txt: 'WAVE 1', t: 2.2 },
+      time: 0
+    };
+    buildWave(1);
+    running = true;
+    paused = false;
+    document.getElementById('menuOverlay').classList.add('hidden');
+    document.getElementById('endOverlay').classList.add('hidden');
+    document.getElementById('resumeBtn').classList.remove('hidden');
+    selectPlant('sun');
+  }
+
+  function buildWave(w) {
+    const count = 5 + w * 4;
+    const q = [];
+    for (let i = 0; i < count; i++) {
+      let type = 'walker';
+      const roll = Math.random();
+      if (w >= 2 && roll > 0.52) type = 'cone';
+      if (w >= 3 && roll > 0.76) type = 'sprinter';
+      if (w >= 4 && roll > 0.84) type = 'bucket';
+      q.push(type);
+    }
+    state.toSpawn = q;
+    state.spawnTimer = 3.0;
+    state.waveBanner = { txt: w === state.maxWaves ? 'FINAL HUGE WAVE!' : `WAVE ${w}`, t: 2.4 };
+    sfx(260, 0.25, 'triangle', 0.08);
+  }
+
+  function togglePause() {
+    if (!running) return;
+    paused = !paused;
+    document.getElementById('menuOverlay').classList.toggle('hidden', !paused);
+  }
+
+  document.getElementById('pauseBtn').onclick = togglePause;
+  document.getElementById('resumeBtn').onclick = () => { paused = false; document.getElementById('menuOverlay').classList.add('hidden'); };
+  document.getElementById('speedBtn').onclick = (e) => {
+    speedMult = speedMult === 1 ? 2 : 1;
+    e.target.textContent = speedMult + 'x';
+  };
+  document.getElementById('startStandardBtn').onclick = () => initGame(false);
+  document.getElementById('startEndlessBtn').onclick = () => initGame(true);
+  document.getElementById('playAgainBtn').onclick = () => initGame(state ? state.endless : false);
+  document.getElementById('backMenuBtn').onclick = () => {
+    document.getElementById('endOverlay').classList.add('hidden');
+    document.getElementById('menuOverlay').classList.remove('hidden');
+  };
+
+  function finishGame(won) {
+    running = false;
+    paused = true;
+    if (won) state.score += state.sun * 2 + state.mowers.filter(m => !m.used).length * 250;
+    const name = (document.getElementById('playerName').value || 'Gardener').trim();
+    saveScore({
+      name,
+      mode: state.endless ? 'Endless' : 'Campaign',
+      wave: state.wave,
+      score: Math.round(state.score)
+    });
+    document.getElementById('endTitle').textContent = won ? 'LAWN SECURED!' : 'ZOMBIES ATE YOUR GARDEN!';
+    document.getElementById('endTitle').style.color = won ? '#a7f070' : '#ff6b6b';
+    document.getElementById('endSub').textContent = won
+      ? 'Unused lawnmowers & surplus sun bonus tallied to leaderboard.'
+      : `Overrun on Wave ${state.wave}. Score recorded to leaderboard.`;
+    document.getElementById('endScore').textContent = `Final Score: ${Math.round(state.score)}`;
+    document.getElementById('endOverlay').classList.remove('hidden');
+    sfx(won ? 520 : 140, 0.35, 'sawtooth', 0.08);
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const c = Math.floor((mx - GRID.x) / GRID.cw);
+    const r = Math.floor((my - GRID.y) / GRID.ch);
+    hoverCell = (c >= 0 && c < GRID.cols && r >= 0 && r < GRID.rows) ? { r, c, mx, my } : null;
+
+    // Auto-hover collect sun nicely if very close
+    if (state && !paused) {
+      for (const s of state.suns) {
+        if (!s.collected && Math.hypot(mx - s.x, my - s.y) < 30) {
+          s.collected = true;
+          state.sun += s.val;
+          state.score += 5;
+          sfx(680, 0.07, 'sine', 0.06);
+        }
+      }
+    }
+  });
+
+  canvas.addEventListener('click', (e) => {
+    if (!state || paused || !running) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Click sun tokens first
+    for (const s of state.suns) {
+      if (!s.collected && Math.hypot(mx - s.x, my - s.y) < 34) {
+        s.collected = true;
+        state.sun += s.val;
+        state.score += 5;
+        sfx(720, 0.08, 'sine', 0.07);
+        return;
+      }
+    }
+
+    const c = Math.floor((mx - GRID.x) / GRID.cw);
+    const r = Math.floor((my - GRID.y) / GRID.ch);
+    if (c < 0 || c >= GRID.cols || r < 0 || r >= GRID.rows) return;
+
+    const existingIdx = state.plants.findIndex(p => p.r === r && p.c === c);
+    if (shovelMode) {
+      if (existingIdx >= 0) {
+        const rem = state.plants.splice(existingIdx, 1)[0];
+        state.sun += Math.floor(rem.spec.cost * 0.25);
+        sfx(220, 0.09, 'triangle', 0.07);
+      }
+      return;
+    }
+
+    if (existingIdx >= 0) return;
+    const spec = PLANTS.find(p => p.id === selectedCard);
+    if (!spec || state.sun < spec.cost || state.cds[spec.id] > 0) {
+      sfx(150, 0.06, 'sawtooth', 0.04);
+      return;
+    }
+
+    state.sun -= spec.cost;
+    state.cds[spec.id] = spec.cd;
+    const px = GRID.x + c * GRID.cw + GRID.cw * 0.5;
+    const py = GRID.y + r * GRID.ch + GRID.ch * 0.55;
+
+    if (spec.id === 'bomb') {
+      state.fx.push({ x: px, y: py, r: 10, maxR: 135, life: 0.45, color: 'rgba(255,90,60,' });
+      sfx(110, 0.28, 'sawtooth', 0.12);
+      for (const z of state.zombies) {
+        const zy = GRID.y + z.row * GRID.ch + GRID.ch * 0.5;
+        if (Math.abs(z.row - r) <= 1 && Math.abs(z.x - px) <= GRID.cw * 1.65) {
+          z.hp -= 600;
+        }
+      }
+      return;
+    }
+
+    state.plants.push({ r, c, x: px, y: py, spec, hp: spec.hp, maxHp: spec.hp, timer: spec.id === 'sun' ? 4.5 : 0.9 });
+    sfx(420, 0.08, 'triangle', 0.06);
+  });
+
+  function update(dt) {
+    state.time += dt;
+    if (state.waveBanner.t > 0) state.waveBanner.t -= dt;
+
+    for (const k in state.cds) if (state.cds[k] > 0) state.cds[k] = Math.max(0, state.cds[k] - dt);
+
+    // Sky sun drops
+    state.skyTimer -= dt;
+    if (state.skyTimer <= 0) {
+      state.skyTimer = 6.8;
+      const tx = GRID.x + 50 + Math.random() * (GRID.cols * GRID.cw - 100);
+      state.suns.push({ x: tx, y: 80, ty: GRID.y + 60 + Math.random() * (GRID.rows * GRID.ch - 100), val: 25, life: 11, collected: false });
+    }
+
+    // Spawn zombies
+    if (state.toSpawn.length > 0) {
+      state.spawnTimer -= dt;
+      if (state.spawnTimer <= 0) {
+        const typeKey = state.toSpawn.shift();
+        const zt = ZTYPES[typeKey];
+        const row = Math.floor(Math.random() * GRID.rows);
+        state.zombies.push({
+          typeKey, zt, row,
+          x: canvas.width + 25,
+          hp: zt.hp * (1 + (state.wave - 1) * 0.1),
+          maxHp: zt.hp * (1 + (state.wave - 1) * 0.1),
+          chill: 0, wob: Math.random() * 6.28
+        });
+        state.spawnTimer = Math.max(0.85, 3.2 - state.wave * 0.32) * (0.7 + Math.random() * 0.6);
+      }
+    } else if (state.zombies.length === 0) {
+      if (state.wave >= state.maxWaves) {
+        finishGame(true);
+        return;
+      }
+      state.wave++;
+      state.score += 300;
+      buildWave(state.wave);
+    }
+
+    // Plants act
+    for (const p of state.plants) {
+      p.timer -= dt;
+      if (p.spec.id === 'sun' && p.timer <= 0) {
+        p.timer = 9.0;
+        state.suns.push({ x: p.x + (Math.random() - 0.5) * 24, y: p.y - 18, ty: p.y + 12, val: 25, life: 10, collected: false });
+      } else if ((p.spec.id === 'pea' || p.spec.id === 'snow') && p.timer <= 0) {
+        const hasTarget = state.zombies.some(z => z.row === p.r && z.x > p.x - 10 && z.x < canvas.width);
+        if (hasTarget) {
+          p.timer = 1.38;
+          state.shots.push({ row: p.r, x: p.x + 20, y: p.y - 10, snow: p.spec.id === 'snow', dmg: 24 });
+          sfx(p.spec.id === 'snow' ? 580 : 490, 0.04, 'sine', 0.03);
+        } else {
+          p.timer = 0.2;
+        }
+      }
+    }
+
+    // Shots move & hit
+    for (let i = state.shots.length - 1; i >= 0; i--) {
+      const s = state.shots[i];
+      s.x += 330 * dt;
+      const hit = state.zombies.find(z => z.row === s.row && Math.abs(z.x - s.x) < 22);
+      if (hit) {
+        hit.hp -= s.dmg;
+        if (s.snow) hit.chill = 3.5;
+        state.fx.push({ x: s.x, y: s.y, r: 3, maxR: 16, life: 0.18, color: s.snow ? 'rgba(110,215,255,' : 'rgba(130,240,95,' });
+        state.shots.splice(i, 1);
+      } else if (s.x > canvas.width + 30) {
+        state.shots.splice(i, 1);
+      }
+    }
+
+    // Zombies move & bite
+    for (let i = state.zombies.length - 1; i >= 0; i--) {
+      const z = state.zombies[i];
+      if (z.hp <= 0) {
+        state.score += z.zt.pts;
+        state.fx.push({ x: z.x, y: GRID.y + z.row * GRID.ch + 46, r: 6, maxR: 28, life: 0.28, color: 'rgba(180,220,140,' });
+        state.zombies.splice(i, 1);
+        continue;
+      }
+      if (z.chill > 0) z.chill -= dt;
+      z.wob += dt * (z.chill > 0 ? 3.2 : 5.6);
+
+      const blocker = state.plants.find(p => p.r === z.row && Math.abs(p.x - z.x) < 28);
+      if (blocker) {
+        blocker.hp -= z.zt.dps * (z.chill > 0 ? 0.65 : 1) * dt;
+        if (blocker.hp <= 0) {
+          state.plants.splice(state.plants.indexOf(blocker), 1);
+          sfx(180, 0.1, 'sawtooth', 0.05);
+        }
+      } else {
+        z.x -= z.zt.spd * (z.chill > 0 ? 0.55 : 1) * dt;
+      }
+
+      // Lawnmower check
+      const mower = state.mowers[z.row];
+      if (!mower.used && z.x < GRID.x - 6) {
+        mower.active = true;
+        sfx(140, 0.25, 'sawtooth', 0.09);
+      }
+      if (mower.used && !mower.active && z.x < GRID.x - 36) {
+        finishGame(false);
+        return;
+      }
+    }
+
+    // Lawnmowers sweep
+    for (const m of state.mowers) {
+      if (m.active) {
+        m.x += 430 * dt;
+        for (const z of state.zombies) {
+          if (z.row === m.row && Math.abs(z.x - m.x) < 34) z.hp = -999;
+        }
+        if (m.x > canvas.width + 50) { m.active = false; m.used = true; }
+      }
+    }
+
+    // Suns & FX
+    for (let i = state.suns.length - 1; i >= 0; i--) {
+      const s = state.suns[i];
+      if (s.collected) {
+        s.x += (65 - s.x) * 9 * dt;
+        s.y += (38 - s.y) * 9 * dt;
+        if (Math.hypot(s.x - 65, s.y - 38) < 18) state.suns.splice(i, 1);
+      } else {
+        if (s.y < s.ty) s.y += 58 * dt;
+        s.life -= dt;
+        if (s.life <= 0) state.suns.splice(i, 1);
+      }
+    }
+    for (let i = state.fx.length - 1; i >= 0; i--) {
+      const f = state.fx[i];
+      f.life -= dt;
+      f.r += (f.maxR - f.r) * 10 * dt;
+      if (f.life <= 0) state.fx.splice(i, 1);
+    }
+
+    // Sync HUD
+    document.getElementById('sunVal').textContent = state.sun;
+    document.getElementById('waveTxt').textContent = state.endless ? `${state.wave}` : `${state.wave}/${state.maxWaves}`;
+    document.getElementById('scoreTxt').textContent = Math.round(state.score);
+    PLANTS.forEach(p => {
+      const card = cardsEl.querySelector(`[data-id="${p.id}"]`);
+      card.classList.toggle('disabled', state.sun < p.cost || state.cds[p.id] > 0);
+      card.querySelector('.cd').style.transform = `scaleY(${(state.cds[p.id] / p.cd).toFixed(3)})`;
+    });
+  }
+
+  function draw() {
+    ctx.fillStyle = '#1b3822';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // House porch left strip
+    ctx.fillStyle = '#3d2b1f';
+    ctx.fillRect(0, GRID.y - 8, GRID.x - 12, GRID.rows * GRID.ch + 16);
+
+    // Turf grid
+    for (let r = 0; r < GRID.rows; r++) {
+      for (let c = 0; c < GRID.cols; c++) {
+        const even = (r + c) % 2 === 0;
+        ctx.fillStyle = even ? '#3d7a37' : '#356c30';
+        ctx.fillRect(GRID.x + c * GRID.cw, GRID.y + r * GRID.ch, GRID.cw, GRID.ch);
+      }
+    }
+
+    if (hoverCell && state && !paused) {
+      ctx.strokeStyle = shovelMode ? 'rgba(255,110,80,0.85)' : 'rgba(255,235,130,0.75)';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(GRID.x + hoverCell.c * GRID.cw + 2, GRID.y + hoverCell.r * GRID.ch + 2, GRID.cw - 4, GRID.ch - 4);
+    }
+
+    if (!state) return;
+
+    // Lawnmowers
+    for (const m of state.mowers) {
+      if (m.used && !m.active) continue;
+      const my = GRID.y + m.row * GRID.ch + GRID.ch * 0.58;
+      ctx.fillStyle = '#d93829';
+      ctx.beginPath(); ctx.roundRect(m.x - 18, my - 14, 34, 22, 6); ctx.fill();
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(m.x - 10, my + 10, 6, 0, 6.28); ctx.arc(m.x + 10, my + 10, 6, 0, 6.28); ctx.fill();
+    }
+
+    // Plants
+    for (const p of state.plants) {
+      const bob = Math.sin(state.time * 4 + p.c) * 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath(); ctx.ellipse(p.x, p.y + 22, 22, 8, 0, 0, 6.28); ctx.fill();
+
+      if (p.spec.id === 'sun') {
+        ctx.fillStyle = '#6f4716';
+        for (let a = 0; a < 8; a++) {
+          const ang = (a / 8) * 6.28 + state.time * 0.5;
+          ctx.fillStyle = '#ffd23f';
+          ctx.beginPath(); ctx.arc(p.x + Math.cos(ang) * 18, p.y - 4 + bob + Math.sin(ang) * 18, 8, 0, 6.28); ctx.fill();
+        }
+        ctx.fillStyle = '#5c3811';
+        ctx.beginPath(); ctx.arc(p.x, p.y - 4 + bob, 14, 0, 6.28); ctx.fill();
+      } else if (p.spec.id === 'nut') {
+        ctx.fillStyle = p.hp < p.maxHp * 0.45 ? '#8f6230' : '#b88446';
+        ctx.beginPath(); ctx.ellipse(p.x, p.y - 2, 21, 26, 0, 0, 6.28); ctx.fill();
+        ctx.fillStyle = '#1d140a';
+        ctx.beginPath(); ctx.arc(p.x - 6, p.y - 8, 3, 0, 6.28); ctx.arc(p.x + 7, p.y - 8, 3, 0, 6.28); ctx.fill();
+      } else {
+        const col = p.spec.id === 'snow' ? '#4cc3f7' : '#65d63e';
+        ctx.fillStyle = '#265c21';
+        ctx.fillRect(p.x - 4, p.y, 8, 20);
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(p.x - 2, p.y - 8 + bob, 16, 0, 6.28); ctx.fill();
+        ctx.fillRect(p.x + 6, p.y - 16 + bob, 16, 13);
+        ctx.fillStyle = '#122615';
+        ctx.beginPath(); ctx.arc(p.x + 2, p.y - 12 + bob, 3, 0, 6.28); ctx.fill();
+      }
+
+      if (p.hp < p.maxHp) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(p.x - 20, p.y + 25, 40, 4);
+        ctx.fillStyle = '#8ef060'; ctx.fillRect(p.x - 20, p.y + 25, 40 * (p.hp / p.maxHp), 4);
+      }
+    }
+
+    // Zombies
+    for (const z of state.zombies) {
+      const zy = GRID.y + z.row * GRID.ch + GRID.ch * 0.56;
+      const sway = Math.sin(z.wob) * 3;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(z.x, zy + 24, 18, 7, 0, 0, 6.28); ctx.fill();
+
+      ctx.fillStyle = z.typeKey === 'sprinter' ? '#8c2d38' : '#3a4654';
+      ctx.fillRect(z.x - 10, zy - 8, 20, 28);
+      ctx.fillStyle = z.chill > 0 ? '#74b9d9' : '#7ba678';
+      ctx.beginPath(); ctx.arc(z.x + sway * 0.4, zy - 20, 14, 0, 6.28); ctx.fill();
+      // Outstretched arms
+      ctx.fillRect(z.x - 22, zy - 6 + sway * 0.3, 15, 6);
+
+      if (z.zt.hat === 'cone') {
+        ctx.fillStyle = '#eb7a23';
+        ctx.beginPath(); ctx.moveTo(z.x, zy - 48); ctx.lineTo(z.x - 13, zy - 28); ctx.lineTo(z.x + 13, zy - 28); ctx.fill();
+      } else if (z.zt.hat === 'bucket') {
+        ctx.fillStyle = '#9aa5b1';
+        ctx.fillRect(z.x - 13, zy - 44, 26, 18);
+      } else if (z.zt.hat === 'visor') {
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(z.x - 15, zy - 28, 22, 5);
+      }
+
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(z.x - 18, zy - 54, 36, 4);
+      ctx.fillStyle = '#ff6b6b'; ctx.fillRect(z.x - 18, zy - 54, 36 * Math.max(0, z.hp / z.maxHp), 4);
+    }
+
+    // Shots
+    for (const s of state.shots) {
+      ctx.fillStyle = s.snow ? '#7be0ff' : '#95f96b';
+      ctx.beginPath(); ctx.arc(s.x, s.y, 7, 0, 6.28); ctx.fill();
+    }
+
+    // FX
+    for (const f of state.fx) {
+      ctx.fillStyle = f.color + Math.max(0, f.life * 1.8).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.28); ctx.fill();
+    }
+
+    // Sun tokens
+    for (const s of state.suns) {
+      ctx.fillStyle = 'rgba(255, 225, 85, 0.32)';
+      ctx.beginPath(); ctx.arc(s.x, s.y, 22, 0, 6.28); ctx.fill();
+      ctx.fillStyle = '#ffe14d';
+      ctx.beginPath(); ctx.arc(s.x, s.y, 14, 0, 6.28); ctx.fill();
+    }
+
+    // Wave Banner
+    if (state.waveBanner.t > 0) {
+      ctx.fillStyle = `rgba(0,0,0,${Math.min(0.55, state.waveBanner.t)})`;
+      ctx.fillRect(0, 270, canvas.width, 64);
+      ctx.fillStyle = '#ffe46b';
+      ctx.font = '800 30px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(state.waveBanner.txt, canvas.width / 2, 312);
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (running && !paused && state) update(dt * speedMult);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  renderLB();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

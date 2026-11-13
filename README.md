@@ -197,6 +197,7 @@ Two independent axes are labelled:
 | llama.cpp | Qwen3.8 Flash Next Unsloth v3.1 IQ4_XS PLE Q8_0 (2-slot) | 🔓 Open&#8209;weights | [`providers/llamacpp/iq3-s-sc117-abliterated-ple-q8`](./providers/llamacpp/iq3-s-sc117-abliterated-ple-q8) | [`providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot`](./providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot) |
 | Local (llama.cpp) | DeepSeek V4.1 Flash 1017 Uncensored (GSQ-RCO IQ2_XXS) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs`](./providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs) |
 | Google | Gemini 4 Hydrogen | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-4-hydrogen`](./providers/google/gemini-4-hydrogen) |
+| Google | Gemini 4 Carbon | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-4-carbon`](./providers/google/gemini-4-carbon) |
 
 ## How outputs were generated
 

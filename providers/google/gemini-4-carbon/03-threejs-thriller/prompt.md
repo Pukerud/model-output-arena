@@ -1,0 +1,1 @@
+Write the complete Three.js code for a scene featuring Michael Jackson, Pepe the Frog, Donald Trump, and Elon Musk performing the "Thriller" choreography, aiming for maximum visual perfection, detailed animation, lighting, high-quality rendering, and an overall cinematic.
