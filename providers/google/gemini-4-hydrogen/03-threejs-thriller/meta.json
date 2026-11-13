@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-4-hydrogen",
+  "model_display": "Gemini 4 Hydrogen",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-11-13T08:48:00Z",
+  "runner": "Gemini 4 Hydrogen via OpenClaw",
+  "notes": "Single-file Three.js r128 Thriller graveyard dance scene with stylized articulated lead dancer in red leather jacket and five zombie backup dancers in synchronized multi-phase choreography, volumetric moonlight, fog, flickering lanterns, swirling mist, OrbitControls/cinematic camera toggle, and Web Audio procedural synth bass & beat.",
+  "hosting": "api",
+  "weights": "closed"
+}

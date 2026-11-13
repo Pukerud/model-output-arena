@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "provider": "google",
+  "model": "gemini-4-hydrogen",
+  "scope": "three-prompt-run",
+  "test_ids": [
+    "01-car-parallax",
+    "02-plants-vs-zombies",
+    "03-threejs-thriller"
+  ],
+  "status": "completed",
+  "started_at": "2026-11-13T08:25:58.351Z",
+  "completed_at": "2026-11-13T16:52:43.961Z",
+  "duration_ms": 30405610,
+  "usage": {
+    "coverage": "unavailable",
+    "source": "",
+    "reason": "OpenClaw session_status returned Tokens: unavailable (incomplete response) after mid-run compaction",
+    "input_tokens": null,
+    "output_tokens": null,
+    "total_tokens": null
+  }
+}

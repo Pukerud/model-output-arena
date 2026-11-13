@@ -1127,6 +1127,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "google",
+      provider_display: "Google",
+      model: "gemini-4-hydrogen",
+      model_display: "Gemini 4 Hydrogen",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/google/gemini-4-hydrogen",
+      added: "2026-11-13",
+      outputs: {
+        "01-car-parallax":      "providers/google/gemini-4-hydrogen/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/google/gemini-4-hydrogen/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/google/gemini-4-hydrogen/03-threejs-thriller/output.html",
+      },
+    },
 
 
 
