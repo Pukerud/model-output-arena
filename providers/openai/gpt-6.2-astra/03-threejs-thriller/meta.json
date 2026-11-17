@@ -1,0 +1,13 @@
+{
+  "provider": "openai",
+  "provider_display": "OpenAI",
+  "model": "gpt-6.2-astra",
+  "model_display": "GPT-6.2 Astra",
+  "test_id": "03-threejs-thriller",
+  "prompt_hash": "sha256:369baf3b1b2b714bb2ea2f4e34e98a8d204c2a6244cc0cc4148380dd98712864",
+  "generated_at": "2026-11-17T19:37:58Z",
+  "runner": "GPT-6.2 Astra via OpenClaw",
+  "notes": "",
+  "hosting": "api",
+  "weights": "closed"
+}

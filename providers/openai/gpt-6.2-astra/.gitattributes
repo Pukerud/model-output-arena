@@ -1,0 +1,2 @@
+# Preserve the exact bytes used for prompt_hash.
+prompt.md -text

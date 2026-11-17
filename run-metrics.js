@@ -299,6 +299,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": null
     }
   },
+  "providers/openai/gpt-6.2-astra": {
+    "schema_version": 1,
+    "provider": "openai",
+    "model": "gpt-6.2-astra",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-11-17T19:26:38.807Z",
+    "completed_at": "2026-11-17T19:41:38.054Z",
+    "duration_ms": 899247,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "The harness exposes rounded per-turn usage, not an exact whole-run token report.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/openai/gpt-6.2-sol": {
     "schema_version": 1,
     "provider": "openai",
