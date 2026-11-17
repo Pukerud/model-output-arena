@@ -299,6 +299,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": null
     }
   },
+  "providers/openai/gpt-6.2-sol": {
+    "schema_version": 1,
+    "provider": "openai",
+    "model": "gpt-6.2-sol",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-11-17T19:05:56.759Z",
+    "completed_at": "2026-11-17T19:23:16.320Z",
+    "duration_ms": 1039561,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "The current OpenClaw session does not expose an exact cumulative token ledger covering the whole three-prompt run and its verification.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/opencode/beam-free": {
     "schema_version": 1,
     "provider": "opencode",

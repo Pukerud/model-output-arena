@@ -1,0 +1,2 @@
+# The submission metadata hashes the exact prompt bytes the model received.
+prompt.md -text

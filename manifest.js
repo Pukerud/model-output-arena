@@ -1157,6 +1157,21 @@ window.ARENA = {
         "03-threejs-thriller":  "providers/google/gemini-4-carbon/03-threejs-thriller/output.html",
       },
     },
+    {
+      provider: "openai",
+      provider_display: "OpenAI",
+      model: "gpt-6.2-sol",
+      model_display: "GPT-6.2 Sol",
+      hosting: "api",
+      weights: "closed",
+      path: "providers/openai/gpt-6.2-sol",
+      added: "2026-11-17",
+      outputs: {
+        "01-car-parallax":      "providers/openai/gpt-6.2-sol/01-car-parallax/output.html",
+        "02-plants-vs-zombies": "providers/openai/gpt-6.2-sol/02-plants-vs-zombies/output.html",
+        "03-threejs-thriller":  "providers/openai/gpt-6.2-sol/03-threejs-thriller/output.html",
+      },
+    },
 
 
 

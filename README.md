@@ -198,6 +198,7 @@ Two independent axes are labelled:
 | Local (llama.cpp) | DeepSeek V4.1 Flash 1017 Uncensored (GSQ-RCO IQ2_XXS) | 🖥️&nbsp;Local | 🔓&nbsp;Open&#8209;weights | [`providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs`](./providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs) |
 | Google | Gemini 4 Hydrogen | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-4-hydrogen`](./providers/google/gemini-4-hydrogen) |
 | Google | Gemini 4 Carbon | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-4-carbon`](./providers/google/gemini-4-carbon) |
+| OpenAI | GPT-6.2 Sol | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-6.2-sol`](./providers/openai/gpt-6.2-sol) |
 
 ## How outputs were generated
 
