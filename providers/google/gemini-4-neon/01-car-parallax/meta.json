@@ -1,0 +1,13 @@
+{
+  "provider": "google",
+  "provider_display": "Google",
+  "model": "gemini-4-neon",
+  "model_display": "Gemini 4 Neon",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-11-19T10:22:00Z",
+  "runner": "Gemini 4 Neon via OpenClaw",
+  "notes": "Vanilla HTML5 Canvas full-page parallax driving scene with zero external libraries, multi-speed mountain/hill/wind-turbine/treeline/utility-pole/guardrail/foreground parallax, metallic grand tourer with rotating twin-spoke wheels and stationary brake calipers, road-coupled suspension bob/pitch, exhaust dust, volumetric headlights, and Sunset/Dusk/Daylight + cruise speed controls.",
+  "hosting": "api",
+  "weights": "closed"
+}

@@ -200,6 +200,7 @@ Two independent axes are labelled:
 | Google | Gemini 4 Carbon | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-4-carbon`](./providers/google/gemini-4-carbon) |
 | OpenAI | GPT-6.2 Sol | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-6.2-sol`](./providers/openai/gpt-6.2-sol) |
 | OpenAI | GPT-6.2 Astra | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/openai/gpt-6.2-astra`](./providers/openai/gpt-6.2-astra) |
+| Google | Gemini 4 Neon | ☁️&nbsp;API | 🔒&nbsp;Proprietary | [`providers/google/gemini-4-neon`](./providers/google/gemini-4-neon) |
 
 ## How outputs were generated
 

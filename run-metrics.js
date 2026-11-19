@@ -46,6 +46,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": null
     }
   },
+  "providers/google/gemini-4-neon": {
+    "schema_version": 1,
+    "provider": "google",
+    "model": "gemini-4-neon",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-11-19T10:07:03.279Z",
+    "completed_at": "2026-11-19T10:35:25.863Z",
+    "duration_ms": 1702584,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "OpenClaw session_status exposes only rounded per-turn token strings without an exact whole-run integer token ledger across multi-turn sessions and compaction",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/llamacpp/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs": {
     "schema_version": 1,
     "provider": "llamacpp",
