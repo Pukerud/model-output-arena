@@ -1,0 +1,20 @@
+{
+  "provider": "llamacpp",
+  "provider_display": "llama.cpp",
+  "model": "qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot-v0166",
+  "model_display": "Qwen3.8 Flash Next Unsloth v3.1 IQ4_XS PLE Q8_0 (2-slot) v0166",
+  "test_id": "01-car-parallax",
+  "prompt_hash": "sha256:3a5f2534f77094cfb4fcf93378579624a48aa35a8a7098033574d2287a0360e3",
+  "generated_at": "2026-11-24T15:13:41Z",
+  "runner": "Qwen3.8 Flash Next (Unsloth v3.1 IQ4_XS + PLE Q8_0 projections, 2-slot, llama.cpp v0166 build) via OpenClaw dashboard worker session",
+  "notes": "",
+  "hosting": "local",
+  "weights": "open",
+  "runtime": {
+    "weights": "open",
+    "quant": "IQ4_XS + PLE Q8_0 projections",
+    "variant": "Unsloth v3.1 v0166",
+    "engine": "llama.cpp",
+    "gpu": ""
+  }
+}

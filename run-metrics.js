@@ -138,6 +138,29 @@ window.ARENA_RUN_METRICS = {
       "total_tokens": null
     }
   },
+  "providers/llamacpp/qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot-v0166": {
+    "schema_version": 1,
+    "provider": "llamacpp",
+    "model": "qwen3.8-flash-next-unsloth-v31-iq4-xs-ple-q8-0-projection-2slot-v0166",
+    "scope": "three-prompt-run",
+    "test_ids": [
+      "01-car-parallax",
+      "02-plants-vs-zombies",
+      "03-threejs-thriller"
+    ],
+    "status": "completed",
+    "started_at": "2026-11-24T15:11:52.560Z",
+    "completed_at": "2026-11-24T15:40:56.277Z",
+    "duration_ms": 1743717,
+    "usage": {
+      "coverage": "unavailable",
+      "source": "",
+      "reason": "OpenClaw session_status exposes rounded per-turn token snapshots with cache counters reported separately, not an exact cumulative whole-run token ledger for this worker session. No trustworthy whole-run input/output token counts exist for this run, so they are recorded as null rather than estimated.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null
+    }
+  },
   "providers/local/deepseek-v4.1-flash-1017-uncensored-gsq-rco-iq2-xxs": {
     "schema_version": 1,
     "provider": "local",
